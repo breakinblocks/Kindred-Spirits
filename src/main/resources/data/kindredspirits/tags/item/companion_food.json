@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "kindredspirits:spirit_treat",
+    "minecraft:cooked_chicken",
+    "minecraft:cooked_rabbit",
+    "minecraft:sweet_berries"
+  ]
+}

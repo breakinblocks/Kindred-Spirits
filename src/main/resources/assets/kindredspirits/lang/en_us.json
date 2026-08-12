@@ -1,0 +1,53 @@
+{
+  "itemGroup.kindredspirits": "Kindred Spirits",
+
+  "entity.kindredspirits.emberfox": "Emberfox",
+  "entity.kindredspirits.name_with_level": "%s (Lv %s)",
+
+  "item.kindredspirits.kindred_charm": "Kindred Charm",
+  "item.kindredspirits.spirit_treat": "Spirit Treat",
+  "item.kindredspirits.emberfox_spawn_egg": "Emberfox Spawn Egg",
+
+  "ability.kindredspirits.swift_step": "Swift Step",
+  "ability.kindredspirits.swift_step.desc": "Quickens your pace while your companion is close.",
+  "ability.kindredspirits.mending_presence": "Mending Presence",
+  "ability.kindredspirits.mending_presence.desc": "Slowly knits your wounds back together.",
+  "ability.kindredspirits.ember_ward": "Ember Ward",
+  "ability.kindredspirits.ember_ward.desc": "Snuffs out flames that catch on you.",
+  "ability.kindredspirits.kindled_vigour": "Kindled Vigour",
+  "ability.kindredspirits.kindled_vigour.desc": "Your companion recovers its own health over time.",
+
+  "command.kindredspirits.mode.follow": "Follow",
+  "command.kindredspirits.mode.stay": "Stay",
+  "command.kindredspirits.mode.wander": "Wander",
+  "command.kindredspirits.player_only": "This command has to be run by a player.",
+  "command.kindredspirits.no_companion": "No companion of yours is nearby.",
+  "command.kindredspirits.info": "%s - level %s (%s/%s xp), bond %s, abilities: %s",
+  "command.kindredspirits.xp_granted": "Granted %s experience to %s, now level %s",
+
+  "message.kindredspirits.level_up": "%s reached level %s",
+  "message.kindredspirits.command_set": "%s is now set to %s",
+  "message.kindredspirits.charm_bound": "The charm is now bound to %s",
+  "message.kindredspirits.charm_empty": "This charm is not bound to a companion.",
+  "message.kindredspirits.charm_recalled": "%s answers the charm",
+  "message.kindredspirits.charm_missing": "The bound companion is too far away to answer.",
+
+  "tooltip.kindredspirits.charm_unbound": "Unbound",
+  "tooltip.kindredspirits.charm_species": "Bound to %s",
+  "tooltip.kindredspirits.charm_level": "Level %s",
+  "tooltip.kindredspirits.charm_bond": "Bond %s",
+
+  "config.jade.plugin_kindredspirits": "Kindred Spirits",
+  "config.jade.plugin_kindredspirits.companion_status": "Companion Status",
+
+  "jade.kindredspirits.level": "Level %s / %s",
+  "jade.kindredspirits.experience": "Experience %s / %s",
+  "jade.kindredspirits.bond": "Bond %s / %s",
+  "jade.kindredspirits.command": "Orders: %s",
+
+  "jei.kindredspirits.kindred_charm": "Use the charm on a companion you own to bind it. Use the charm in the air to call that companion to your side.",
+  "jei.kindredspirits.spirit_treat": "Feed to a wild spirit to tame it, or to your companion to grant experience and raise its bond.",
+
+  "key.category.kindredspirits.companion": "Kindred Spirits",
+  "key.kindredspirits.cycle_command": "Cycle Companion Orders"
+}

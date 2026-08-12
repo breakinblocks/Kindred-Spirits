@@ -1,0 +1,81 @@
+# Gradle
+gradle
+.gradle
+
+# IntelliJ
+.idea
+
+# general
+build
+bin
+run
+run-data
+run-server
+src/generated/resources/.cache
+
+# Visual Studio Code
+.vscode/
+.eclipse/
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+# Ignore markdown files in root except README, CONTRIBUTING and LICENSE
+/*.md
+!/[Rr][Ee][Aa][Dd][Mm][Ee].[Mm][Dd]
+!/[Cc][Oo][Nn][Tt][Rr][Ii][Bb][Uu][Tt][Ii][Nn][Gg].[Mm][Dd]
+!/[Ll][Ii][Cc][Ee][Nn][Ss][Ee].[Mm][Dd]
+!README.md
+!LICENSE.md
+
+# Ignore Python files as they are generally untility scripts unrelated to the project
+*.py
+
+*.csv
+
+# Ignore everything in tools/ except wiki sync scripts
+tools/*
+!tools/sync-wiki.sh
+!tools/git-hooks/
+!tools/git-hooks/*
+!tools/port-lang.py
+!tools/lang-key-map.json
+
+gradlew
+
+gradlew.bat
+run-gametest/
+metadata/dungeon_mobs.md
+
+altar.bbmodel
+
+errors.txt
+
+porting/
+
+gt.log
+
+*.log
+
+run-client.log
+
+metadata/cf.md
+
+metadata/ROADMAP.md
+
+metadata/showcase.md
+
+# Translation glossary is source, not generated data
+!crowdin/glossary.csv
+
+# Secrets - never commit
+.env
+.env.*
+!.env.example
+*.token
+*.pem
+secrets.txt
+crowdin_token*
+
