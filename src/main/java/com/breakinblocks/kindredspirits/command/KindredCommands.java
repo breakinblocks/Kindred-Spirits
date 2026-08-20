@@ -3,6 +3,9 @@ package com.breakinblocks.kindredspirits.command;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
+import com.breakinblocks.kindredspirits.item.KindredCharmItem;
+import com.breakinblocks.kindredspirits.registry.KindredAttachments;
+import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -26,11 +29,32 @@ public final class KindredCommands {
         event.getDispatcher().register(Commands.literal(KindredSpirits.MOD_ID)
                 .then(Commands.literal("info")
                         .executes(context -> reportCompanion(context.getSource())))
+                .then(Commands.literal("release")
+                        .executes(context -> releaseBond(context.getSource())))
                 .then(Commands.literal("xp")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                                 .executes(context -> grantExperience(context.getSource(),
                                         IntegerArgumentType.getInteger(context, "amount"))))));
+    }
+
+    private static int releaseBond(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.translatable("command.kindredspirits.player_only"));
+            return 0;
+        }
+
+        CompanionBond bond = KindredAttachments.bond(player);
+        if (!bond.isBound()) {
+            source.sendFailure(Component.translatable("message.kindredspirits.charm_empty"));
+            return 0;
+        }
+
+        Component name = bond.snapshot().orElseThrow().displayName();
+        KindredCharmItem.releaseBond(player);
+        source.sendSuccess(() -> Component.translatable("message.kindredspirits.charm_released", name), false);
+        return 1;
     }
 
     private static int reportCompanion(CommandSourceStack source) {

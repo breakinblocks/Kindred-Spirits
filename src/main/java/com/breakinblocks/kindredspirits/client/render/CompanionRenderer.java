@@ -6,6 +6,7 @@ import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.geckolib.model.DefaultedEntityGeoModel;
 import com.geckolib.renderer.GeoEntityRenderer;
+import com.geckolib.renderer.layer.builtin.AutoGlowingGeoLayer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.network.chat.Component;
@@ -14,6 +15,7 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
     public CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species) {
         super(context, new DefaultedEntityGeoModel<CompanionEntity>(KindredSpirits.id(species.getSerializedName())));
         this.withScale(species.renderScale());
+        this.withRenderLayer(new AutoGlowingGeoLayer<>(this));
         this.shadowRadius = species.width() * 0.6f;
     }
 

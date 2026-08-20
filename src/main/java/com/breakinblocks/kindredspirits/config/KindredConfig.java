@@ -28,6 +28,8 @@ public final class KindredConfig {
         public final ModConfigSpec.DoubleValue healthPerLevel;
         public final ModConfigSpec.DoubleValue attackPerLevel;
         public final ModConfigSpec.BooleanValue abilitiesEnabled;
+        public final ModConfigSpec.IntValue reviveCooldownSeconds;
+        public final ModConfigSpec.DoubleValue reviveExperiencePenalty;
 
         Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
@@ -56,21 +58,26 @@ public final class KindredConfig {
                     .comment("Run companion abilities. Turn off to leave companions as cosmetic pets.")
                     .define("abilities_enabled", true);
             builder.pop();
+
+            builder.push("charm");
+            reviveCooldownSeconds = builder
+                    .comment("Seconds a charm must rest before it can revive a companion that died.")
+                    .defineInRange("revive_cooldown_seconds", 300, 0, 86400);
+            reviveExperiencePenalty = builder
+                    .comment("Fraction of progress towards the next level lost when a companion is revived.")
+                    .defineInRange("revive_experience_penalty", 0.5, 0.0, 1.0);
+            builder.pop();
         }
     }
 
     public static final class Client {
         public final ModConfigSpec.BooleanValue showLevelInName;
-        public final ModConfigSpec.BooleanValue showAbilityTooltips;
 
         Client(ModConfigSpec.Builder builder) {
             builder.push("display");
             showLevelInName = builder
                     .comment("Append the companion's level to its name plate.")
                     .define("show_level_in_name", true);
-            showAbilityTooltips = builder
-                    .comment("List unlocked abilities on Jade and item tooltips.")
-                    .define("show_ability_tooltips", true);
             builder.pop();
         }
     }

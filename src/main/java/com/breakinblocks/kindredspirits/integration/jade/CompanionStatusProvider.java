@@ -3,8 +3,6 @@ package com.breakinblocks.kindredspirits.integration.jade;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionLevels;
-import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
-import com.breakinblocks.kindredspirits.config.KindredConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -29,23 +27,11 @@ public enum CompanionStatusProvider implements IEntityComponentProvider {
             return;
         }
 
+        if (!companion.isBonded()) {
+            return;
+        }
+
         tooltip.add(Component.translatable("jade.kindredspirits.level",
                 companion.getLevel(), CompanionLevels.maxLevel()).withStyle(ChatFormatting.GOLD));
-
-        if (companion.getLevel() < CompanionLevels.maxLevel()) {
-            tooltip.add(Component.translatable("jade.kindredspirits.experience",
-                    companion.getExperience(), companion.experienceToNextLevel()));
-        }
-
-        tooltip.add(Component.translatable("jade.kindredspirits.bond",
-                companion.getBond(), CompanionLevels.bondCap()));
-
-        tooltip.add(Component.translatable("jade.kindredspirits.command", companion.getCommand().displayName()));
-
-        if (KindredConfig.CLIENT.showAbilityTooltips.get()) {
-            for (CompanionAbility ability : companion.unlockedAbilities()) {
-                tooltip.add(Component.literal("- ").append(ability.displayName()).withStyle(ChatFormatting.GRAY));
-            }
-        }
     }
 }

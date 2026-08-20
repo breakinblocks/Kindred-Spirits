@@ -9,6 +9,7 @@ version = "${mod_version}"
 displayName = "${mod_name}"
 displayURL = "https://github.com/breakinblocks/Kindred-Spirits"
 authors = "${mod_authors}"
+credits = "${mod_credits}"
 description = '''${mod_description}'''
 
 [[dependencies.${mod_id}]]

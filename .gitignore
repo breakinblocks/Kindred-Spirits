@@ -32,6 +32,11 @@ src/generated/resources/.cache
 
 # Ignore Python files as they are generally untility scripts unrelated to the project
 *.py
+!metadata/bb2geo.py
+__pycache__/
+
+# Licensed third-party art packs - never redistribute
+samus2002_*.zip
 
 *.csv
 
@@ -79,3 +84,4 @@ metadata/showcase.md
 secrets.txt
 crowdin_token*
 
+metadata/bb2geo.py

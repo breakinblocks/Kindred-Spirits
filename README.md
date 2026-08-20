@@ -31,3 +31,9 @@ redistributed, modified, or included in a modpack without written permission.
 ## Authors
 
 Saereth, AlfredGG
+
+## Credits
+
+The Emberfox model, texture and animations are by **samus2002**, from the
+RPG Pet Pack Vol.2 (Oriental) asset pack, used under its licence. The pack's terms
+permit editing and use in content with credit to the creator, and prohibit resale.

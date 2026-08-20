@@ -49,6 +49,11 @@ repositories {
 neoForge {
     version = neoforge_version
 
+    interfaceInjectionData.from provider {
+        zipTree(configurations.geckolibInterfaces.singleFile)
+                .matching { include 'META-INF/interface_injections.json' }
+    }
+
     runs {
         configureEach {
             logLevel = org.slf4j.event.Level.INFO
@@ -90,9 +95,12 @@ neoForge {
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+    geckolibInterfaces
 }
 
 dependencies {
+    geckolibInterfaces "maven.modrinth:geckolib:${geckolib_version}"
+
     compileOnly "io.github.llamalad7:mixinextras-common:${mixinextras_version}"
     annotationProcessor "io.github.llamalad7:mixinextras-common:${mixinextras_version}"
 
@@ -127,6 +135,7 @@ tasks.named('processResources', ProcessResources).configure {
             mod_license            : mod_license,
             mod_version            : mod_version,
             mod_authors            : mod_authors,
+            mod_credits            : mod_credits,
             mod_description        : mod_description
     ]
 
