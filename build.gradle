@@ -160,6 +160,12 @@ tasks.named('jar', Jar).configure {
     }
 }
 
+tasks.register('publishMaven') {
+    description = 'Publishes the mod JAR and sources JAR to the BreakInBlocks Maven repository.'
+    group = 'publishing'
+    dependsOn 'publishMavenJavaPublicationToBreakInBlocksRepository'
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
