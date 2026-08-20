@@ -4,11 +4,13 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
+import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.AABB;
@@ -16,6 +18,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -35,7 +38,38 @@ public final class KindredCommands {
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                                 .executes(context -> grantExperience(context.getSource(),
-                                        IntegerArgumentType.getInteger(context, "amount"))))));
+                                        IntegerArgumentType.getInteger(context, "amount")))))
+                .then(Commands.literal("resetrevive")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .then(Commands.argument("players", EntityArgument.players())
+                                .executes(context -> resetRevive(context.getSource(),
+                                        EntityArgument.getPlayers(context, "players"))))));
+    }
+
+    private static int resetRevive(CommandSourceStack source, Collection<ServerPlayer> players) {
+        int cleared = 0;
+
+        for (ServerPlayer player : players) {
+            CompanionBond bond = KindredAttachments.bond(player);
+
+            if (!bond.isBound() || bond.reviveReadyAt() <= 0L) {
+                continue;
+            }
+
+            KindredAttachments.modifyBond(player, current -> current.withReviveReadyAt(0L));
+            KindredNetworking.sendCharmView(player, false);
+            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_revive_ready"));
+            cleared++;
+        }
+
+        if (cleared == 0) {
+            source.sendFailure(Component.translatable("command.kindredspirits.revive_not_waiting"));
+            return 0;
+        }
+
+        int count = cleared;
+        source.sendSuccess(() -> Component.translatable("command.kindredspirits.revive_reset", count), true);
+        return cleared;
     }
 
     private static int releaseBond(CommandSourceStack source) {

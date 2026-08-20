@@ -657,17 +657,23 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             return;
         }
 
+        boolean previous = this.rangedMode;
         LivingEntity target = this.getTarget();
+
         if (target == null || target.getType().builtInRegistryHolder().is(KindredTags.DANGEROUS_PREY)) {
             this.rangedMode = true;
-            return;
+        } else {
+            double distance = this.distanceTo(target);
+
+            if (distance <= MELEE_SWITCH_RANGE) {
+                this.rangedMode = false;
+            } else if (distance >= BOW_SWITCH_RANGE) {
+                this.rangedMode = true;
+            }
         }
 
-        double distance = this.distanceTo(target);
-        if (distance <= MELEE_SWITCH_RANGE) {
-            this.rangedMode = false;
-        } else if (distance >= BOW_SWITCH_RANGE) {
-            this.rangedMode = true;
+        if (previous != this.rangedMode) {
+            this.refreshEquipment();
         }
     }
 
@@ -676,14 +682,17 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             return;
         }
 
-        ItemStack weapon = new ItemStack(Items.IRON_SWORD);
+        this.equip(EquipmentSlot.MAINHAND, this.rangedMode ? new ItemStack(Items.BOW) : this.meleeWeapon());
+        this.equip(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+    }
+
+    private ItemStack meleeWeapon() {
         if (KindredConfig.COMMON.mimicOwnerWeapon.get() && this.getOwner() instanceof Player owner
                 && isMeleeWeapon(owner.getMainHandItem())) {
-            weapon = owner.getMainHandItem().copy();
+            return owner.getMainHandItem().copy();
         }
 
-        this.equip(EquipmentSlot.MAINHAND, weapon);
-        this.equip(EquipmentSlot.OFFHAND, new ItemStack(Items.BOW));
+        return new ItemStack(Items.IRON_SWORD);
     }
 
     private void equip(EquipmentSlot slot, ItemStack stack) {
@@ -722,6 +731,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             return;
         }
 
+        if (!(this.getMainHandItem().getItem() instanceof BowItem)) {
+            this.refreshEquipment();
+        }
+
         this.bowCooldown = BOW_INTERVAL;
         this.playCompanionAnim(CompanionAnimations.SHOOT);
         this.performRangedAttack(target,
@@ -735,6 +748,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
 
         ItemStack bow = this.getItemInHand(ProjectileUtil.getWeaponHoldingHand(this, item -> item instanceof BowItem));
+        if (!(bow.getItem() instanceof BowItem)) {
+            bow = new ItemStack(Items.BOW);
+        }
+
         ItemStack ammo = new ItemStack(Items.ARROW);
         AbstractArrow arrow = ProjectileUtil.getMobArrow(this, ammo, power, bow);
 
@@ -934,6 +951,12 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private PlayState animateMain(AnimationTest<CompanionEntity> test) {
         CompanionEntity companion = test.animatable();
         CompanionSpecies species = companion.species();
+
+        AnimationController<CompanionEntity> action =
+                test.manager().getAnimationControllers().get(ACTION_CONTROLLER);
+        if (action != null && action.isPlayingTriggeredAnimation() && !action.hasAnimationFinished()) {
+            return PlayState.STOP;
+        }
 
         if (companion.isInSittingPose() && species.hasAnimation(CompanionAnimations.SIT)) {
             return test.setAndContinue(SIT);
