@@ -7,7 +7,9 @@ import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.geckolib.model.DefaultedEntityGeoModel;
 import com.geckolib.model.GeoModel;
 import com.geckolib.renderer.GeoEntityRenderer;
+import com.breakinblocks.kindredspirits.companion.CompanionAnimations;
 import com.geckolib.renderer.base.BoneSnapshots;
+import com.geckolib.renderer.base.GeoRenderState;
 import com.geckolib.renderer.base.RenderPassInfo;
 import com.geckolib.renderer.layer.builtin.AutoGlowingGeoLayer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -32,6 +34,13 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
         this.species = species;
         this.withScale(species.renderScale());
         this.shadowRadius = species.width() * 0.6f;
+    }
+
+    @Override
+    protected float getDeathMaxRotation(GeoRenderState renderState) {
+        return this.species.hasAnimation(CompanionAnimations.DEATH)
+                ? 0.0f
+                : super.getDeathMaxRotation(renderState);
     }
 
     @Override

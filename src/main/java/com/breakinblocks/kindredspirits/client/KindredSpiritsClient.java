@@ -4,7 +4,9 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.render.CompanionRenderer;
 import com.breakinblocks.kindredspirits.client.render.MiniPlayerRenderer;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
+import com.breakinblocks.kindredspirits.client.screen.KindredStorageScreen;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
+import com.breakinblocks.kindredspirits.registry.KindredMenus;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -22,10 +24,15 @@ public final class KindredSpiritsClient {
         modEventBus.addListener(KindredSpiritsClient::clientSetup);
         modEventBus.addListener(KindredSpiritsClient::registerRenderers);
         modEventBus.addListener(KindredKeyMappings::register);
+        modEventBus.addListener(KindredSpiritsClient::registerScreens);
     }
 
     private static void clientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> KindredSpirits.LOGGER.debug("Kindred Spirits client setup complete"));
+    }
+
+    private static void registerScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
+        event.register(KindredMenus.COMPANION_STORAGE.get(), KindredStorageScreen::new);
     }
 
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {

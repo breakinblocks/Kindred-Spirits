@@ -1,6 +1,7 @@
 package com.breakinblocks.kindredspirits.registry;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.companion.CompanionLevels;
 import com.breakinblocks.kindredspirits.companion.CompanionSnapshot;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -11,7 +12,9 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
@@ -97,6 +100,13 @@ public final class KindredAttachments {
         }
     }
 
+    public static final Supplier<AttachmentType<ItemContainerContents>> COMPANION_STORAGE =
+            ATTACHMENT_TYPES.register("companion_storage", () ->
+                    AttachmentType.builder(() -> ItemContainerContents.EMPTY)
+                            .serialize(ItemContainerContents.CODEC.fieldOf("items"))
+                            .copyOnDeath()
+                            .build());
+
     public static final Supplier<AttachmentType<CompanionBond>> COMPANION_BOND = ATTACHMENT_TYPES.register(
             "companion_bond", () -> AttachmentType.builder(() -> CompanionBond.NONE)
                     .serialize(CompanionBond.CODEC)
@@ -118,6 +128,19 @@ public final class KindredAttachments {
 
     public static void modifyBond(Player player, UnaryOperator<CompanionBond> modifier) {
         player.setData(COMPANION_BOND, modifier.apply(player.getData(COMPANION_BOND)));
+    }
+
+    public static SimpleContainer storageContainer(Player player) {
+        SimpleContainer container = new SimpleContainer(CompanionLevels.MAX_STORAGE_SLOTS) {
+            @Override
+            public void setChanged() {
+                super.setChanged();
+                player.setData(COMPANION_STORAGE, ItemContainerContents.fromItems(this.getItems()));
+            }
+        };
+
+        player.getData(COMPANION_STORAGE).copyInto(container.getItems());
+        return container;
     }
 
     private KindredAttachments() {

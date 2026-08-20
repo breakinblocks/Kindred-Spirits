@@ -9,6 +9,9 @@ import net.minecraft.world.item.Item;
 public final class KindredTags {
     public static final TagKey<Item> COMPANION_FOOD = TagKey.create(Registries.ITEM, KindredSpirits.id("companion_food"));
 
+    public static final TagKey<Item> COMPANION_HEALING =
+            TagKey.create(Registries.ITEM, KindredSpirits.id("companion_healing"));
+
     public static final TagKey<EntityType<?>> DANGEROUS_PREY =
             TagKey.create(Registries.ENTITY_TYPE, KindredSpirits.id("dangerous_prey"));
 

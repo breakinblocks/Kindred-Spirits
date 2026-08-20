@@ -35,10 +35,6 @@ public final class KindredEntities {
         return BY_SPECIES.get(species).get();
     }
 
-    public static DeferredHolder<EntityType<?>, EntityType<CompanionEntity>> holder(CompanionSpecies species) {
-        return BY_SPECIES.get(species);
-    }
-
     private KindredEntities() {
     }
 }

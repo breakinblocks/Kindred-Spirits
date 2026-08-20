@@ -8,6 +8,7 @@ import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.net.KindredNetworking.CharmActionPayload;
 import com.breakinblocks.kindredspirits.net.KindredNetworking.CharmActionPayload.Action;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -67,8 +68,6 @@ public class KindredCharmScreen extends Screen {
 
     private static final int REFRESH_INTERVAL = 20;
     private static final int MAX_SKIN_LENGTH = 16;
-    private static final int KEY_ENTER = 257;
-    private static final int KEY_NUMPAD_ENTER = 335;
 
     private CharmView view;
     private int refreshTimer;
@@ -200,10 +199,10 @@ public class KindredCharmScreen extends Screen {
         this.dismissButton.active = present;
 
         this.commandButton.setMessage(this.commandLabel());
-        this.commandButton.active = present;
+        this.commandButton.active = bound;
 
         this.aggressionButton.setMessage(this.aggressionLabel());
-        this.aggressionButton.active = present;
+        this.aggressionButton.active = bound;
 
         this.releaseButton.active = bound;
 
@@ -256,6 +255,15 @@ public class KindredCharmScreen extends Screen {
                     this.left + PAD, this.top + CONTENT_Y, COLOUR_VALUE);
             graphics.textWithWordWrap(this.font, Component.translatable("screen.kindredspirits.unbound_hint"),
                     this.left + PAD, this.top + CONTENT_Y + TEXT_HEIGHT + 5, PANEL_WIDTH - PAD * 2, COLOUR_LABEL);
+
+            if (this.view.companionsBonded() > 0) {
+                graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_bonded",
+                        this.view.companionsBonded()), this.left + PAD, this.top + STATE_Y - 12, COLOUR_LABEL);
+            }
+            if (this.view.highestLevel() > 0) {
+                graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_highest_level",
+                        this.view.highestLevel()), this.left + PAD, this.top + STATE_Y, COLOUR_LABEL);
+            }
             return;
         }
 
@@ -366,7 +374,7 @@ public class KindredCharmScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        if (event.key() == KEY_ENTER || event.key() == KEY_NUMPAD_ENTER) {
+        if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) {
             for (TextField field : this.fields()) {
                 if (field.commitOnEnter()) {
                     return true;

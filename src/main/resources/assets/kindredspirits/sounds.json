@@ -1,0 +1,11 @@
+{
+  "entity.baby_dragon.death": {
+    "category": "neutral",
+    "subtitle": "subtitles.kindredspirits.baby_dragon_death",
+    "sounds": [
+      {
+        "name": "kindredspirits:yeet"
+      }
+    ]
+  }
+}

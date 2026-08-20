@@ -2,11 +2,9 @@ package com.breakinblocks.kindredspirits.net;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.KindredClientHooks;
-import com.breakinblocks.kindredspirits.companion.CompanionCommand;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -14,15 +12,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.Comparator;
-import java.util.List;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class KindredNetworking {
@@ -134,22 +129,10 @@ public final class KindredNetworking {
 
         public static void handleOnServer(CycleCommandPayload payload, IPayloadContext context) {
             context.enqueueWork(() -> {
-                if (!(context.player() instanceof ServerPlayer player)) {
-                    return;
+                if (context.player() instanceof ServerPlayer player) {
+                    CompanionEntity.nearestOwned(player, COMMAND_RANGE)
+                            .ifPresent(companion -> companion.cycleCommandBy(player));
                 }
-
-                AABB search = player.getBoundingBox().inflate(COMMAND_RANGE);
-                List<CompanionEntity> owned = player.level().getEntitiesOfClass(CompanionEntity.class, search,
-                        companion -> companion.isTame() && companion.isOwnedBy(player));
-
-                owned.stream()
-                        .min(Comparator.comparingDouble(companion -> companion.distanceToSqr(player)))
-                        .ifPresent(companion -> {
-                            CompanionCommand command = companion.getCommand().next();
-                            companion.setCommand(command);
-                            player.sendSystemMessage(Component.translatable("message.kindredspirits.command_set",
-                                    companion.getDisplayName(), command.displayName()));
-                        });
             });
         }
     }

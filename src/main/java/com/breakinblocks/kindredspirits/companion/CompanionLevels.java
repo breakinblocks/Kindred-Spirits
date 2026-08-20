@@ -4,6 +4,8 @@ import com.breakinblocks.kindredspirits.config.KindredConfig;
 
 public final class CompanionLevels {
     public static final int MIN_LEVEL = 1;
+    public static final int MAX_STORAGE_ROWS = 3;
+    public static final int MAX_STORAGE_SLOTS = MAX_STORAGE_ROWS * 9;
 
     public static int maxLevel() {
         return KindredConfig.COMMON.maxLevel.get();
@@ -26,6 +28,12 @@ public final class CompanionLevels {
 
     public static int bondCap() {
         return KindredConfig.COMMON.maxBond.get();
+    }
+
+    public static int storageSlots(CompanionSpecies species, int bond) {
+        int max = species.storageSlots();
+        int unlocked = Math.ceilDiv(max * Math.clamp(bond, 0, bondCap()), bondCap());
+        return Math.clamp(Math.max(KindredConfig.COMMON.storageBaseSlots.get(), unlocked), 0, max);
     }
 
     private CompanionLevels() {

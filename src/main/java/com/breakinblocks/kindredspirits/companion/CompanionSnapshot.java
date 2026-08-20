@@ -65,6 +65,16 @@ public record CompanionSnapshot(String species, int level, int experience, int b
                 this.command, this.aggression, skin);
     }
 
+    public CompanionSnapshot withCommand(int command) {
+        return new CompanionSnapshot(this.species, this.level, this.experience, this.bond, this.name,
+                command, this.aggression, this.skin);
+    }
+
+    public CompanionSnapshot withAggression(int aggression) {
+        return new CompanionSnapshot(this.species, this.level, this.experience, this.bond, this.name,
+                this.command, aggression, this.skin);
+    }
+
     public Optional<CompanionSpecies> resolveSpecies() {
         return CompanionSpecies.byName(this.species);
     }

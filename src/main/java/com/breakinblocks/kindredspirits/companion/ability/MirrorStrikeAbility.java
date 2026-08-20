@@ -84,7 +84,7 @@ public final class MirrorStrikeAbility implements CompanionAbility {
     private static void echo(CompanionEntity companion, ServerLevel level, LivingEntity target, float damage) {
         companion.setAbilityCooldown(CompanionAbilities.MIRROR_STRIKE.id(), COOLDOWN_TICKS);
         companion.playCompanionAnim(CompanionAnimations.SPECIAL_ATTACK);
-        companion.playSound(companion.species().sounds().specialAttack(), 0.7f, 1.4f);
+        companion.playSound(companion.species().sounds().specialAttack().get(), 0.7f, 1.4f);
 
         level.sendParticles(ParticleTypes.ENCHANTED_HIT, target.getX(), target.getY(0.6), target.getZ(),
                 8, 0.25, 0.25, 0.25, 0.05);

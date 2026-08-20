@@ -8,12 +8,13 @@ import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredCreativeTabs;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
+import com.breakinblocks.kindredspirits.registry.KindredMenus;
+import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -38,6 +39,8 @@ public class KindredSpirits {
         KindredItems.ITEMS.register(modEventBus);
         KindredAttachments.ATTACHMENT_TYPES.register(modEventBus);
         KindredCreativeTabs.CREATIVE_TABS.register(modEventBus);
+        KindredSounds.SOUND_EVENTS.register(modEventBus);
+        KindredMenus.MENUS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, KindredConfig.COMMON_SPEC);
 
@@ -61,7 +64,4 @@ public class KindredSpirits {
         }
     }
 
-    public static boolean isModLoaded(String modId) {
-        return ModList.get().isLoaded(modId);
-    }
 }

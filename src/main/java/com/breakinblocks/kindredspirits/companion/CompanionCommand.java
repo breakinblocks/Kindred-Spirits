@@ -29,6 +29,15 @@ public enum CompanionCommand implements StringRepresentable {
 
     public static CompanionCommand byOrdinal(int ordinal) {
         CompanionCommand[] values = values();
-        return ordinal >= 0 && ordinal < values.length ? values[ordinal] : FOLLOW;
+        return values[Math.floorMod(ordinal, values.length)];
+    }
+
+    public static CompanionCommand byName(String name) {
+        for (CompanionCommand value : values()) {
+            if (value.name.equals(name)) {
+                return value;
+            }
+        }
+        return FOLLOW;
     }
 }

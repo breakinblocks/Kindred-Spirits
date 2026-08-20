@@ -4,7 +4,10 @@ public final class CompanionAnimations {
     public static final String IDLE = "idle";
     public static final String WALK = "walk";
     public static final String RUN = "run";
+    public static final String FLY = "fly";
     public static final String SIT = "sit";
+    public static final String SIT_STILL = "sit_still";
+    public static final String SIT_RARE = "sit_rare";
     public static final String ATTACK = "attack";
     public static final String SPECIAL_ATTACK = "special_attack";
     public static final String SHOOT = "shoot";

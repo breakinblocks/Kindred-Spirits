@@ -11,6 +11,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -18,10 +19,13 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                         int level, int experience, int experienceToNext, int bond, int maxBond,
                         float health, float maxHealth, float armour, float attackDamage,
                         int command, int aggression, boolean stored, int reviveSeconds, boolean present,
-                        String skin) {
+                        String skin, int companionsBonded, int highestLevel) {
 
-    public static final CharmView EMPTY = new CharmView(false, "", Optional.empty(),
-            0, 0, 1, 0, 1, 0.0f, 0.0f, 0.0f, 0.0f, 0, 1, true, 0, false, "");
+    public static CharmView unbound(int companionsBonded, int highestLevel) {
+        return new CharmView(false, "", Optional.empty(),
+                0, 0, 1, 0, 1, 0.0f, 0.0f, 0.0f, 0.0f, 0, 1, true, 0, false, "",
+                companionsBonded, highestLevel);
+    }
 
     public static final StreamCodec<ByteBuf, CharmView> STREAM_CODEC = new StreamCodec<>() {
         @Override
@@ -44,7 +48,9 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                     ByteBufCodecs.BOOL.decode(buffer),
                     ByteBufCodecs.VAR_INT.decode(buffer),
                     ByteBufCodecs.BOOL.decode(buffer),
-                    ByteBufCodecs.STRING_UTF8.decode(buffer));
+                    ByteBufCodecs.STRING_UTF8.decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer));
         }
 
         @Override
@@ -67,6 +73,8 @@ public record CharmView(boolean bound, String species, Optional<String> name,
             ByteBufCodecs.VAR_INT.encode(buffer, view.reviveSeconds());
             ByteBufCodecs.BOOL.encode(buffer, view.present());
             ByteBufCodecs.STRING_UTF8.encode(buffer, view.skin());
+            ByteBufCodecs.VAR_INT.encode(buffer, view.companionsBonded());
+            ByteBufCodecs.VAR_INT.encode(buffer, view.highestLevel());
         }
     };
 
@@ -86,7 +94,8 @@ public record CharmView(boolean bound, String species, Optional<String> name,
         return CompanionAggression.byOrdinal(this.aggression);
     }
 
-    public static CharmView of(CompanionBond bond, CompanionEntity live, long gameTime) {
+    public static CharmView of(CompanionBond bond, @Nullable CompanionEntity live, long gameTime,
+                               int companionsBonded, int highestLevel) {
         CompanionSnapshot snapshot = bond.snapshot().orElseThrow();
         int level = live != null ? live.getLevel() : snapshot.level();
 
@@ -109,6 +118,7 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                 bond.stored(),
                 (int) Math.max(0, (bond.reviveReadyAt() - gameTime) / 20),
                 live != null,
-                live != null ? live.getSkinName() : snapshot.skin().orElse(""));
+                live != null ? live.getSkinName() : snapshot.skin().orElse(""),
+                companionsBonded, highestLevel);
     }
 }

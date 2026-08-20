@@ -5,6 +5,7 @@ import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
+import com.breakinblocks.kindredspirits.menu.KindredStorageMenu;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
 import com.breakinblocks.kindredspirits.registry.KindredTags;
@@ -31,6 +32,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
@@ -75,7 +78,9 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedAttackMob {
@@ -100,7 +105,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop(CompanionAnimations.IDLE);
     private static final RawAnimation WALK = RawAnimation.begin().thenLoop(CompanionAnimations.WALK);
     private static final RawAnimation RUN = RawAnimation.begin().thenLoop(CompanionAnimations.RUN);
+    private static final RawAnimation FLY = RawAnimation.begin().thenLoop(CompanionAnimations.FLY);
     private static final RawAnimation SIT = RawAnimation.begin().thenLoop(CompanionAnimations.SIT);
+    private static final RawAnimation SIT_STILL = RawAnimation.begin().thenLoop(CompanionAnimations.SIT_STILL);
+    private static final RawAnimation SIT_RARE = RawAnimation.begin().thenLoop(CompanionAnimations.SIT_RARE);
     private static final RawAnimation ATTACK = RawAnimation.begin().thenPlay(CompanionAnimations.ATTACK);
     private static final RawAnimation SPECIAL_ATTACK = RawAnimation.begin().thenPlay(CompanionAnimations.SPECIAL_ATTACK);
     private static final RawAnimation JUMP_ATTACK = RawAnimation.begin().thenPlay(CompanionAnimations.JUMP_ATTACK);
@@ -123,6 +131,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final float FACE_TARGET_STEP = 25.0f;
 
     public static final double RUN_DISTANCE = 10.0;
+    private static final int SIT_VARIANT_HOLD = 60;
+    private static final int SIT_RARE_HOLD = 31;
+    private static final float SIT_RARE_CHANCE = 0.05f;
+    private static final float SIT_RESTLESS_CHANCE = 0.25f;
     private static final float HITBOX_YAW_STEP = 5.0f;
     private static final Identifier VANILLA_SPRINT_MODIFIER = Identifier.withDefaultNamespace("sprinting");
     private static final AttributeModifier RUN_SPEED_MODIFIER = new AttributeModifier(
@@ -140,7 +152,11 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private boolean rangedMode = true;
     private boolean followingOwner;
     private float hitboxYaw = Float.NaN;
+    private RawAnimation sitVariant = SIT;
+    private long sitVariantUntil;
     private int bowCooldown;
+    private List<CompanionAbility> cachedAbilities = List.of();
+    private int cachedAbilityLevel = -1;
 
     public CompanionEntity(EntityType<? extends CompanionEntity> type, Level level, CompanionSpecies species) {
         super(type, level);
@@ -306,13 +322,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.entityData.set(DATA_AGGRESSION, (byte) CompanionAggression
                 .byName(input.getStringOr("Aggression", CompanionAggression.NEUTRAL.getSerializedName())).ordinal());
 
-        String command = input.getStringOr("Command", CompanionCommand.FOLLOW.getSerializedName());
-        for (CompanionCommand value : CompanionCommand.values()) {
-            if (value.getSerializedName().equals(command)) {
-                this.entityData.set(DATA_COMMAND, (byte) value.ordinal());
-                break;
-            }
-        }
+        this.entityData.set(DATA_COMMAND, (byte) CompanionCommand
+                .byName(input.getStringOr("Command", CompanionCommand.FOLLOW.getSerializedName())).ordinal());
 
         this.applyLevelScaling(false);
     }
@@ -374,8 +385,39 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.entityData.set(DATA_SKIN, name);
     }
 
+    public void openStorage(ServerPlayer player) {
+        int accessible = CompanionLevels.storageSlots(this.species, this.getBond());
+        SimpleContainer storage = KindredAttachments.storageContainer(player);
+
+        int highestFilled = -1;
+        for (int i = 0; i < storage.getContainerSize(); i++) {
+            if (!storage.getItem(i).isEmpty()) {
+                highestFilled = i;
+            }
+        }
+
+        int rows = Math.clamp(Math.max(Mth.positiveCeilDiv(accessible, 9),
+                Mth.positiveCeilDiv(highestFilled + 1, 9)), 1, CompanionLevels.MAX_STORAGE_ROWS);
+
+        player.openMenu(new SimpleMenuProvider(
+                        (id, playerInventory, unused) ->
+                                new KindredStorageMenu(id, playerInventory, storage, rows, accessible, this),
+                        this.getDisplayName()),
+                buffer -> {
+                    buffer.writeVarInt(rows);
+                    buffer.writeVarInt(accessible);
+                });
+    }
+
     public List<CompanionAbility> unlockedAbilities() {
-        return this.species.abilitiesAt(this.getLevel());
+        int level = this.getLevel();
+
+        if (level != this.cachedAbilityLevel) {
+            this.cachedAbilities = this.species.abilitiesAt(level);
+            this.cachedAbilityLevel = level;
+        }
+
+        return this.cachedAbilities;
     }
 
     public boolean hasAbility(CompanionAbility ability) {
@@ -418,6 +460,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             }
 
             if (this.getOwner() instanceof ServerPlayer owner) {
+                int reached = level;
+                KindredAttachments.modify(owner, record -> record.withHighestLevel(reached));
                 owner.sendSystemMessage(Component.translatable("message.kindredspirits.level_up",
                         this.getDisplayName(), level));
                 KindredNetworking.sendLevelUp(owner, this.getId(), level);
@@ -512,6 +556,20 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
     }
 
+    public void cycleCommandBy(Player player) {
+        CompanionCommand command = this.getCommand().next();
+        this.setCommand(command);
+        player.sendSystemMessage(Component.translatable("message.kindredspirits.command_set",
+                this.getDisplayName(), command.displayName()));
+    }
+
+    public static Optional<CompanionEntity> nearestOwned(Player player, double range) {
+        return player.level().getEntitiesOfClass(CompanionEntity.class,
+                        player.getBoundingBox().inflate(range),
+                        companion -> companion.isTame() && companion.isOwnedBy(player)).stream()
+                .min(Comparator.comparingDouble(companion -> companion.distanceToSqr(player)));
+    }
+
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
@@ -523,12 +581,35 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         if (this.isTame() && this.isOwnedBy(player)) {
             if (player.isSecondaryUseActive()) {
                 if (!this.level().isClientSide()) {
-                    CompanionCommand command = this.getCommand().next();
-                    this.setCommand(command);
-                    player.sendSystemMessage(Component.translatable("message.kindredspirits.command_set",
-                            this.getDisplayName(), command.displayName()));
+                    this.cycleCommandBy(player);
                 }
                 return InteractionResult.SUCCESS;
+            }
+
+            if (stack.is(KindredTags.COMPANION_HEALING) && this.getHealth() < this.getMaxHealth()) {
+                if (!this.level().isClientSide()) {
+                    stack.consume(1, player);
+                    this.heal((float) (double) KindredConfig.COMMON.healingPerItem.get());
+                    this.playCompanionAnim(CompanionAnimations.INTERACT);
+                    this.playSound(this.species.sounds().interact().get(), 0.8f, 1.0f);
+
+                    if (this.level() instanceof ServerLevel serverLevel) {
+                        serverLevel.sendParticles(ParticleTypes.HEART,
+                                this.getX(), this.getY() + this.getBbHeight(), this.getZ(), 5, 0.3, 0.3, 0.3, 0.0);
+                    }
+                }
+                return InteractionResult.SUCCESS;
+            }
+
+            if (this.isBonded() && stack.isEmpty()) {
+                if (this.level().isClientSide()) {
+                    return InteractionResult.SUCCESS;
+                }
+
+                if (player instanceof ServerPlayer serverPlayer) {
+                    this.openStorage(serverPlayer);
+                }
+                return InteractionResult.SUCCESS_SERVER;
             }
 
             if (this.isFood(stack)) {
@@ -538,7 +619,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                     this.addBond(1);
                     this.heal(2.0f);
                     this.playCompanionAnim(CompanionAnimations.INTERACT);
-                    this.playSound(this.species.sounds().interact(), 0.8f, 1.0f);
+                    this.playSound(this.species.sounds().interact().get(), 0.8f, 1.0f);
                 }
                 return InteractionResult.SUCCESS;
             }
@@ -685,7 +766,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             return;
         }
 
-        this.equip(EquipmentSlot.MAINHAND, this.rangedMode ? new ItemStack(Items.BOW) : this.meleeWeapon());
+        this.equip(EquipmentSlot.MAINHAND, !this.isBonded() ? ItemStack.EMPTY
+                : this.rangedMode ? new ItemStack(Items.BOW) : this.meleeWeapon());
         this.equip(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
     }
 
@@ -908,7 +990,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         boolean hit = super.doHurtTarget(level, target);
         if (hit) {
             this.playCompanionAnim(CompanionAnimations.ATTACK);
-            this.playSound(this.species.sounds().attack(), 0.9f, 1.0f);
+            this.playSound(this.species.sounds().attack().get(), 0.9f, 1.0f);
         }
         return hit;
     }
@@ -925,7 +1007,6 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     @Override
     public void die(DamageSource source) {
         if (!this.level().isClientSide()) {
-            this.playCompanionAnim(CompanionAnimations.DEATH);
             KindredCharmItem.onCompanionDied(this);
         }
         super.die(source);
@@ -933,17 +1014,17 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     @Override
     protected @Nullable SoundEvent getAmbientSound() {
-        return this.species.sounds().ambient();
+        return this.species.sounds().ambient().get();
     }
 
     @Override
     protected @Nullable SoundEvent getHurtSound(DamageSource source) {
-        return this.species.sounds().hurt();
+        return this.species.sounds().hurt().get();
     }
 
     @Override
     protected @Nullable SoundEvent getDeathSound() {
-        return this.species.sounds().death();
+        return this.species.sounds().death().get();
     }
 
     @Override
@@ -956,7 +1037,6 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         addTriggerable(action, CompanionAnimations.JUMP_ATTACK, JUMP_ATTACK);
         addTriggerable(action, CompanionAnimations.SHOOT, SHOOT);
         addTriggerable(action, CompanionAnimations.HURT, HURT);
-        addTriggerable(action, CompanionAnimations.DEATH, DEATH);
         addTriggerable(action, CompanionAnimations.SPAWN, SPAWN);
         addTriggerable(action, CompanionAnimations.INTERACT, INTERACT);
 
@@ -974,6 +1054,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         CompanionEntity companion = test.animatable();
         CompanionSpecies species = companion.species();
 
+        if (companion.isDeadOrDying() && species.hasAnimation(CompanionAnimations.DEATH)) {
+            return test.setAndContinue(DEATH);
+        }
+
         AnimationController<CompanionEntity> action =
                 test.manager().getAnimationControllers().get(ACTION_CONTROLLER);
         if (action != null && action.isPlayingTriggeredAnimation() && !action.hasAnimationFinished()) {
@@ -981,15 +1065,50 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
 
         if (companion.isInSittingPose() && species.hasAnimation(CompanionAnimations.SIT)) {
-            return test.setAndContinue(SIT);
+            return test.setAndContinue(companion.sitAnimation());
         }
+
+        companion.sitVariantUntil = 0L;
+
         if (!test.isMoving()) {
             return test.setAndContinue(IDLE);
         }
         if (companion.isSprinting() && species.hasAnimation(CompanionAnimations.RUN)) {
             return test.setAndContinue(RUN);
         }
-        return test.setAndContinue(species.hasAnimation(CompanionAnimations.WALK) ? WALK : IDLE);
+        if (species.hasAnimation(CompanionAnimations.WALK)) {
+            return test.setAndContinue(WALK);
+        }
+        if (species.hasAnimation(CompanionAnimations.FLY)) {
+            return test.setAndContinue(FLY);
+        }
+        return test.setAndContinue(IDLE);
+    }
+
+    private RawAnimation sitAnimation() {
+        if (!this.species.hasAnimation(CompanionAnimations.SIT_STILL)) {
+            return SIT;
+        }
+
+        long time = this.level().getGameTime();
+        if (time < this.sitVariantUntil) {
+            return this.sitVariant;
+        }
+
+        float roll = this.random.nextFloat();
+
+        if (roll < SIT_RARE_CHANCE && this.species.hasAnimation(CompanionAnimations.SIT_RARE)) {
+            this.sitVariant = SIT_RARE;
+            this.sitVariantUntil = time + SIT_RARE_HOLD;
+        } else if (roll < SIT_RESTLESS_CHANCE) {
+            this.sitVariant = SIT;
+            this.sitVariantUntil = time + SIT_VARIANT_HOLD;
+        } else {
+            this.sitVariant = SIT_STILL;
+            this.sitVariantUntil = time + SIT_VARIANT_HOLD;
+        }
+
+        return this.sitVariant;
     }
 
     @Override

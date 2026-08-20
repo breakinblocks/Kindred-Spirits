@@ -111,6 +111,8 @@ public final class KindredConfig {
         public final ModConfigSpec.IntValue maxLevel;
         public final ModConfigSpec.IntValue baseExperience;
         public final ModConfigSpec.IntValue experiencePerFeed;
+        public final ModConfigSpec.DoubleValue healingPerItem;
+        public final ModConfigSpec.IntValue storageBaseSlots;
         public final ModConfigSpec.IntValue maxBond;
         public final ModConfigSpec.DoubleValue healthPerLevel;
         public final ModConfigSpec.DoubleValue attackPerLevel;
@@ -131,6 +133,13 @@ public final class KindredConfig {
             experiencePerFeed = builder
                     .comment("Experience granted when a companion is fed.")
                     .defineInRange("experience_per_feed", 4, 0, 1000);
+            storageBaseSlots = builder
+                    .comment("Storage slots a companion grants at zero bond. The rest unlock as bond grows,",
+                            "up to the species maximum.")
+                    .defineInRange("storage_base_slots", 3, 0, 27);
+            healingPerItem = builder
+                    .comment("Health restored when a companion is given an item from the companion_healing tag.")
+                    .defineInRange("healing_per_item", 10.0, 0.0, 1024.0);
             maxBond = builder
                     .comment("Highest bond value a companion can reach.")
                     .defineInRange("max_bond", 100, 1, 1000);
