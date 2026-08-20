@@ -1,12 +1,11 @@
 {
   "itemGroup.kindredspirits": "Kindred Spirits",
-
   "entity.kindredspirits.emberfox": "Emberfox",
+  "entity.kindredspirits.trex": "T-Rex",
   "entity.kindredspirits.name_with_level": "%s (Lv %s)",
-
   "item.kindredspirits.kindred_charm": "Kindred Charm",
   "item.kindredspirits.emberfox_spawn_egg": "Emberfox Spawn Egg",
-
+  "item.kindredspirits.trex_spawn_egg": "T-Rex Spawn Egg",
   "ability.kindredspirits.swift_step": "Swift Step",
   "ability.kindredspirits.swift_step.desc": "Quickens your pace while your companion is close.",
   "ability.kindredspirits.mending_presence": "Mending Presence",
@@ -17,7 +16,10 @@
   "ability.kindredspirits.kindled_vigour.desc": "Your companion recovers its own health over time.",
   "ability.kindredspirits.shadow_ball": "Shadow Ball",
   "ability.kindredspirits.shadow_ball.desc": "Hurls a spirit flame at your companion's target, leaving it adrift.",
-
+  "ability.kindredspirits.savage_leap": "Savage Leap",
+  "ability.kindredspirits.savage_leap.desc": "Pounces onto its quarry, slamming down on everything around it.",
+  "ability.kindredspirits.crushing_might": "Crushing Might",
+  "ability.kindredspirits.crushing_might.desc": "Its heavy tread loosens stone, quickening your hands.",
   "command.kindredspirits.mode.follow": "Follow",
   "command.kindredspirits.mode.stay": "Stay",
   "command.kindredspirits.mode.wander": "Wander",
@@ -25,7 +27,6 @@
   "command.kindredspirits.no_companion": "No companion of yours is nearby.",
   "command.kindredspirits.info": "%s - level %s (%s/%s xp), bond %s, abilities: %s",
   "command.kindredspirits.xp_granted": "Granted %s experience to %s, now level %s",
-
   "message.kindredspirits.level_up": "%s reached level %s",
   "message.kindredspirits.command_set": "%s is now set to %s",
   "message.kindredspirits.charm_bound": "The charm is now bound to %s",
@@ -43,11 +44,9 @@
   "message.kindredspirits.charm_released": "You release your bond with %s",
   "message.kindredspirits.charm_renamed": "Your companion is now called %s",
   "message.kindredspirits.charm_name_cleared": "Your companion goes back to its given name",
-
   "aggression.kindredspirits.passive": "Passive",
   "aggression.kindredspirits.neutral": "Neutral",
   "aggression.kindredspirits.aggressive": "Aggressive",
-
   "screen.kindredspirits.charm": "Kindred Charm",
   "screen.kindredspirits.summon": "Summon",
   "screen.kindredspirits.recall": "Call to me",
@@ -67,7 +66,6 @@
   "screen.kindredspirits.stats_unavailable": "Summon to see full stats",
   "screen.kindredspirits.unbound": "This charm holds no bond.",
   "screen.kindredspirits.unbound_hint": "Sneak and use the charm on a tamed spirit to bond with it. Sneak and use it again to release that bond.",
-
   "tooltip.kindredspirits.charm_unbound": "Unbound",
   "tooltip.kindredspirits.charm_species": "Bound to %s",
   "tooltip.kindredspirits.charm_level": "Level %s (%s to next)",
@@ -75,14 +73,10 @@
   "tooltip.kindredspirits.charm_recovering": "Recovering, %s seconds",
   "tooltip.kindredspirits.charm_resting": "Resting in the charm",
   "tooltip.kindredspirits.charm_out": "Out in the world",
-
   "config.jade.plugin_kindredspirits": "Kindred Spirits",
   "config.jade.plugin_kindredspirits.companion_status": "Companion Status",
-
   "jade.kindredspirits.level": "Level %s / %s",
-
   "jei.kindredspirits.kindred_charm": "Sneak and use the charm on a tamed spirit to bond with it. Use the charm on its own to open the bond screen, where you can summon or dismiss your companion, give it orders, set how readily it fights, and release the bond. You can only be bonded to one spirit at a time, and every charm you carry answers to that same bond. Only a bonded spirit gains levels, uses abilities and fights alongside you.",
-
   "key.category.kindredspirits.companion": "Kindred Spirits",
   "key.kindredspirits.cycle_command": "Cycle Companion Orders"
 }

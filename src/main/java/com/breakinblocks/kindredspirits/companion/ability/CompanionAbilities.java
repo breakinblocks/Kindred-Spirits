@@ -51,6 +51,15 @@ public final class CompanionAbilities {
 
     public static final CompanionAbility SHADOW_BALL = register(new ShadowBallAbility(KindredSpirits.id("shadow_ball")));
 
+    public static final CompanionAbility SAVAGE_LEAP = register(new SavageLeapAbility(KindredSpirits.id("savage_leap")));
+
+    public static final CompanionAbility CRUSHING_MIGHT = register(new SimpleAbility(KindredSpirits.id("crushing_might"), 40,
+            (companion, owner) -> {
+                if (owner != null && companion.distanceToSqr(owner) < 144.0) {
+                    owner.addEffect(new MobEffectInstance(MobEffects.HASTE, 60, 0, true, false, true));
+                }
+            }));
+
     public static CompanionAbility register(CompanionAbility ability) {
         REGISTRY.put(ability.id(), ability);
         return ability;
@@ -62,6 +71,48 @@ public final class CompanionAbilities {
 
     public static Map<Identifier, CompanionAbility> all() {
         return Collections.unmodifiableMap(REGISTRY);
+    }
+
+    private record SavageLeapAbility(Identifier id) implements CompanionAbility {
+        private static final int COOLDOWN_TICKS = 200;
+        private static final double MIN_RANGE_SQR = 9.0;
+        private static final double MAX_RANGE_SQR = 100.0;
+        private static final double SLAM_RADIUS = 2.5;
+        private static final float DAMAGE_MULTIPLIER = 1.5f;
+        private static final double KNOCKBACK = 0.5;
+
+        @Override
+        public int intervalTicks() {
+            return 10;
+        }
+
+        @Override
+        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
+            if (companion.level().isClientSide() || !companion.isAbilityReady(this.id)) {
+                return;
+            }
+
+            LivingEntity target = companion.getTarget();
+            double distance = target == null ? 0.0 : companion.distanceToSqr(target);
+
+            if (target == null || !target.isAlive() || !companion.onGround()
+                    || distance < MIN_RANGE_SQR || distance > MAX_RANGE_SQR
+                    || !companion.hasLineOfSight(target)) {
+                return;
+            }
+
+            companion.setAbilityCooldown(this.id, COOLDOWN_TICKS);
+            companion.playCompanionAnim(CompanionAnimations.JUMP_ATTACK);
+            companion.playSound(companion.species().sounds().specialAttack(), 1.0f, 1.0f);
+
+            Vec3 leap = target.position().subtract(companion.position()).normalize();
+            companion.setDeltaMovement(new Vec3(leap.x * 0.85, 0.45, leap.z * 0.85));
+            companion.hurtMarked = true;
+
+            companion.scheduleLeapImpact(
+                    (float) companion.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE_MULTIPLIER,
+                    SLAM_RADIUS, KNOCKBACK);
+        }
     }
 
     private record ShadowBallAbility(Identifier id) implements CompanionAbility {
@@ -98,7 +149,7 @@ public final class CompanionAbilities {
             level.sendParticles(ParticleTypes.SCULK_SOUL, target.getX(), target.getY(0.5), target.getZ(),
                     10, 0.25, 0.25, 0.25, 0.02);
 
-            target.hurtServer(level, companion.damageSources().indirectMagic(companion, companion.getOwner()),
+            target.hurtServer(level, companion.damageSources().indirectMagic(companion, companion),
                     (float) companion.getAttributeValue(Attributes.ATTACK_DAMAGE) * 0.5f);
             target.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 40, 0, false, true, true));
         }

@@ -11,7 +11,10 @@ import java.util.Optional;
 import java.util.Set;
 
 public enum CompanionSpecies implements StringRepresentable {
-    EMBERFOX("emberfox", 0.7f, 0.8f, 1.0f, 14.0, 0.32, 3.0, CombatStyle.RANGED, true,
+    EMBERFOX("emberfox",
+            new Size(0.7f, 0.8f, 1.0f),
+            new Stats(14.0, 0.32, 3.0, 2.0, 0.0),
+            CombatStyle.RANGED, true,
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK,
                     CompanionAnimations.SPECIAL_ATTACK, CompanionAnimations.INTERACT),
             new SoundSet(SoundEvents.FOX_AMBIENT, SoundEvents.FOX_HURT, SoundEvents.FOX_DEATH,
@@ -20,32 +23,37 @@ public enum CompanionSpecies implements StringRepresentable {
                     new Unlock(1, CompanionAbilities.SWIFT_STEP),
                     new Unlock(1, CompanionAbilities.SHADOW_BALL),
                     new Unlock(8, CompanionAbilities.EMBER_WARD),
-                    new Unlock(16, CompanionAbilities.KINDLED_VIGOUR)));
+                    new Unlock(16, CompanionAbilities.KINDLED_VIGOUR))),
+
+    TREX("trex",
+            new Size(1.2f, 1.7f, 0.6f),
+            new Stats(30.0, 0.25, 4.0, 2.0, 0.6),
+            CombatStyle.MELEE, false,
+            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
+                    CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.JUMP_ATTACK, CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
+            new SoundSet(SoundEvents.RAVAGER_AMBIENT, SoundEvents.RAVAGER_HURT, SoundEvents.RAVAGER_DEATH,
+                    SoundEvents.RAVAGER_ATTACK, SoundEvents.RAVAGER_ROAR, SoundEvents.RAVAGER_STEP),
+            List.of(
+                    new Unlock(1, CompanionAbilities.SAVAGE_LEAP),
+                    new Unlock(1, CompanionAbilities.CRUSHING_MIGHT),
+                    new Unlock(10, CompanionAbilities.KINDLED_VIGOUR)));
 
     private final String name;
-    private final float width;
-    private final float height;
-    private final float renderScale;
-    private final double baseHealth;
-    private final double moveSpeed;
-    private final double attackDamage;
+    private final Size size;
+    private final Stats stats;
     private final CombatStyle combatStyle;
     private final boolean huntsDangerousPrey;
     private final Set<String> animations;
     private final SoundSet sounds;
     private final List<Unlock> unlocks;
 
-    CompanionSpecies(String name, float width, float height, float renderScale,
-                     double baseHealth, double moveSpeed, double attackDamage,
+    CompanionSpecies(String name, Size size, Stats stats,
                      CombatStyle combatStyle, boolean huntsDangerousPrey, Set<String> animations,
                      SoundSet sounds, List<Unlock> unlocks) {
         this.name = name;
-        this.width = width;
-        this.height = height;
-        this.renderScale = renderScale;
-        this.baseHealth = baseHealth;
-        this.moveSpeed = moveSpeed;
-        this.attackDamage = attackDamage;
+        this.size = size;
+        this.stats = stats;
         this.combatStyle = combatStyle;
         this.huntsDangerousPrey = huntsDangerousPrey;
         this.animations = animations;
@@ -59,27 +67,35 @@ public enum CompanionSpecies implements StringRepresentable {
     }
 
     public float width() {
-        return this.width;
+        return this.size.width();
     }
 
     public float height() {
-        return this.height;
+        return this.size.height();
     }
 
     public float renderScale() {
-        return this.renderScale;
+        return this.size.renderScale();
     }
 
     public double baseHealth() {
-        return this.baseHealth;
+        return this.stats.health();
     }
 
     public double moveSpeed() {
-        return this.moveSpeed;
+        return this.stats.moveSpeed();
     }
 
     public double attackDamage() {
-        return this.attackDamage;
+        return this.stats.attackDamage();
+    }
+
+    public double armour() {
+        return this.stats.armour();
+    }
+
+    public double knockbackResistance() {
+        return this.stats.knockbackResistance();
     }
 
     public CombatStyle combatStyle() {
@@ -120,6 +136,13 @@ public enum CompanionSpecies implements StringRepresentable {
             }
         }
         return Optional.empty();
+    }
+
+    public record Size(float width, float height, float renderScale) {
+    }
+
+    public record Stats(double health, double moveSpeed, double attackDamage,
+                        double armour, double knockbackResistance) {
     }
 
     public record Unlock(int level, CompanionAbility ability) {
