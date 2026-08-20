@@ -119,6 +119,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final double MELEE_SWITCH_RANGE = 3.0;
     private static final double BOW_SWITCH_RANGE = 6.0;
     private static final double BOW_POWER_DIVISOR = 4.0;
+    private static final double FACE_TARGET_RANGE_SQR = 16.0;
+    private static final float FACE_TARGET_STEP = 25.0f;
 
     public static final double RUN_DISTANCE = 10.0;
     private static final float HITBOX_YAW_STEP = 5.0f;
@@ -488,6 +490,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
 
         this.updateCombatMode();
+        this.faceTarget();
 
         if (this.tickCount % EQUIPMENT_INTERVAL == 0) {
             this.refreshEquipment();
@@ -718,12 +721,31 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public void faceInstantly(Entity target) {
-        float yaw = (float) (Mth.atan2(target.getZ() - this.getZ(), target.getX() - this.getX())
-                * Mth.RAD_TO_DEG) - 90.0f;
+        this.turnBodyTo(yawTowards(this, target));
+        this.setYHeadRot(this.getYRot());
+    }
 
+    private void faceTarget() {
+        LivingEntity target = this.getTarget();
+
+        if (target == null || !target.isAlive() || this.isInSittingPose()) {
+            return;
+        }
+
+        if (this.distanceToSqr(target) > FACE_TARGET_RANGE_SQR && !this.getNavigation().isDone()) {
+            return;
+        }
+
+        this.turnBodyTo(Mth.approachDegrees(this.getYRot(), yawTowards(this, target), FACE_TARGET_STEP));
+    }
+
+    private void turnBodyTo(float yaw) {
         this.setYRot(yaw);
         this.yBodyRot = yaw;
-        this.setYHeadRot(yaw);
+    }
+
+    private static float yawTowards(Entity from, Entity to) {
+        return (float) (Mth.atan2(to.getZ() - from.getZ(), to.getX() - from.getX()) * Mth.RAD_TO_DEG) - 90.0f;
     }
 
     public void tryRangedAttack(LivingEntity target) {
