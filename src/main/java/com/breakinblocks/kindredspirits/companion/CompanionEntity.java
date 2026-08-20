@@ -1,5 +1,6 @@
 package com.breakinblocks.kindredspirits.companion;
 
+import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
@@ -38,6 +39,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -52,11 +55,21 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.OwnerHurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.OwnerHurtTargetGoal;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.monster.RangedAttackMob;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -65,7 +78,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
-public class CompanionEntity extends TamableAnimal implements GeoEntity {
+public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedAttackMob {
     private static final EntityDataAccessor<Integer> DATA_LEVEL =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_EXPERIENCE =
@@ -78,6 +91,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Boolean> DATA_BONDED =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<String> DATA_SKIN =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
 
     public static final String MAIN_CONTROLLER = "main";
     public static final String ACTION_CONTROLLER = "action";
@@ -88,6 +103,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
     private static final RawAnimation SIT = RawAnimation.begin().thenLoop(CompanionAnimations.SIT);
     private static final RawAnimation ATTACK = RawAnimation.begin().thenPlay(CompanionAnimations.ATTACK);
     private static final RawAnimation SPECIAL_ATTACK = RawAnimation.begin().thenPlay(CompanionAnimations.SPECIAL_ATTACK);
+    private static final RawAnimation JUMP_ATTACK = RawAnimation.begin().thenPlay(CompanionAnimations.JUMP_ATTACK);
+    private static final RawAnimation SHOOT = RawAnimation.begin().thenPlay(CompanionAnimations.SHOOT);
     private static final RawAnimation HURT = RawAnimation.begin().thenPlay(CompanionAnimations.HURT);
     private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold(CompanionAnimations.DEATH);
     private static final RawAnimation SPAWN = RawAnimation.begin().thenPlay(CompanionAnimations.SPAWN);
@@ -97,6 +114,18 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
     private static final int LOCATION_UPDATE_INTERVAL = 100;
     private static final int LEAP_IMPACT_TIMEOUT = 40;
     private static final int SHOCKWAVE_TICKS = 8;
+    private static final int EQUIPMENT_INTERVAL = 20;
+    private static final int BOW_INTERVAL = 35;
+    private static final double MELEE_SWITCH_RANGE = 3.0;
+    private static final double BOW_SWITCH_RANGE = 6.0;
+    private static final double BOW_POWER_DIVISOR = 4.0;
+
+    public static final double RUN_DISTANCE = 10.0;
+    private static final float HITBOX_YAW_STEP = 5.0f;
+    private static final Identifier VANILLA_SPRINT_MODIFIER = Identifier.withDefaultNamespace("sprinting");
+    private static final AttributeModifier RUN_SPEED_MODIFIER = new AttributeModifier(
+            KindredSpirits.id("running"),
+            0.2, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
     private static final double SHOCKWAVE_MAX_RADIUS = 4.0;
 
     private final CompanionSpecies species;
@@ -106,6 +135,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
     private int shockwaveTicks;
     private Vec3 shockwaveOrigin = Vec3.ZERO;
     private boolean playedSpawnAnimation;
+    private boolean rangedMode = true;
+    private boolean followingOwner;
+    private float hitboxYaw = Float.NaN;
+    private int bowCooldown;
 
     public CompanionEntity(EntityType<? extends CompanionEntity> type, Level level, CompanionSpecies species) {
         super(type, level);
@@ -113,10 +146,18 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
         this.setTame(false, false);
 
         if (level instanceof ServerLevel) {
-            Goal attack = species.combatStyle() == CompanionSpecies.CombatStyle.RANGED
-                    ? new CompanionRangedAttackGoal(this, 1.1)
-                    : new MeleeAttackGoal(this, 1.2, true);
-            this.goalSelector.addGoal(3, this.gated(attack, () -> true));
+            switch (species.combatStyle()) {
+                case RANGED -> this.goalSelector.addGoal(3,
+                        this.gated(new CompanionRangedAttackGoal(this, 1.1), () -> true));
+                case MELEE -> this.goalSelector.addGoal(3,
+                        this.gated(new MeleeAttackGoal(this, 1.2, true), () -> true));
+                case HYBRID -> {
+                    this.goalSelector.addGoal(3,
+                            this.gated(new CompanionRangedAttackGoal(this, 1.1), this::isRangedMode));
+                    this.goalSelector.addGoal(4,
+                            this.gated(new MeleeAttackGoal(this, 1.2, true), () -> !this.isRangedMode()));
+                }
+            }
         }
     }
 
@@ -127,7 +168,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
                 .add(Attributes.ATTACK_DAMAGE, species.attackDamage())
                 .add(Attributes.ARMOR, species.armour())
                 .add(Attributes.KNOCKBACK_RESISTANCE, species.knockbackResistance())
-                .add(Attributes.FOLLOW_RANGE, 24.0);
+                .add(Attributes.FOLLOW_RANGE, species.followRange());
     }
 
     public CompanionSpecies species() {
@@ -147,6 +188,18 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
             @Override
             public boolean canContinueToUse() {
                 return CompanionEntity.this.getCommand() == CompanionCommand.FOLLOW && super.canContinueToUse();
+            }
+
+            @Override
+            public void start() {
+                super.start();
+                CompanionEntity.this.followingOwner = true;
+            }
+
+            @Override
+            public void stop() {
+                super.stop();
+                CompanionEntity.this.followingOwner = false;
             }
         });
         this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.9));
@@ -225,6 +278,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
         entityData.define(DATA_COMMAND, (byte) CompanionCommand.FOLLOW.ordinal());
         entityData.define(DATA_AGGRESSION, (byte) CompanionAggression.NEUTRAL.ordinal());
         entityData.define(DATA_BONDED, false);
+        entityData.define(DATA_SKIN, "");
     }
 
     @Override
@@ -236,6 +290,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
         output.putString("Command", this.getCommand().getSerializedName());
         output.putString("Aggression", this.getAggression().getSerializedName());
         output.putBoolean("PlayedSpawnAnimation", this.playedSpawnAnimation);
+        output.putString("Skin", this.getSkinName());
     }
 
     @Override
@@ -245,6 +300,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
         this.entityData.set(DATA_EXPERIENCE, input.getIntOr("Experience", 0));
         this.entityData.set(DATA_BOND, input.getIntOr("Bond", 0));
         this.playedSpawnAnimation = input.getBooleanOr("PlayedSpawnAnimation", true);
+        this.entityData.set(DATA_SKIN, input.getStringOr("Skin", ""));
         this.entityData.set(DATA_AGGRESSION, (byte) CompanionAggression
                 .byName(input.getStringOr("Aggression", CompanionAggression.NEUTRAL.getSerializedName())).ordinal());
 
@@ -308,8 +364,20 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
         this.entityData.set(DATA_BOND, Math.clamp(this.getBond() + amount, 0, CompanionLevels.bondCap()));
     }
 
+    public String getSkinName() {
+        return this.entityData.get(DATA_SKIN);
+    }
+
+    public void setSkinName(String name) {
+        this.entityData.set(DATA_SKIN, name);
+    }
+
     public List<CompanionAbility> unlockedAbilities() {
         return this.species.abilitiesAt(this.getLevel());
+    }
+
+    public boolean hasAbility(CompanionAbility ability) {
+        return this.unlockedAbilities().contains(ability);
     }
 
     public int experienceToNextLevel() {
@@ -398,6 +466,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
     @Override
     public void tick() {
         super.tick();
+        this.tickHitboxOffset();
 
         if (this.level().isClientSide()) {
             return;
@@ -408,10 +477,20 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
             this.playCompanionAnim(CompanionAnimations.SPAWN);
         }
 
-        this.setSprinting(this.getTarget() != null);
+        this.updateRunning();
 
         if (this.isAlive() && this.tickCount % LOCATION_UPDATE_INTERVAL == 0) {
             this.refreshBondState();
+        }
+
+        if (this.bowCooldown > 0) {
+            this.bowCooldown--;
+        }
+
+        this.updateCombatMode();
+
+        if (this.tickCount % EQUIPMENT_INTERVAL == 0) {
+            this.refreshEquipment();
         }
 
         this.tickAbilityCooldowns();
@@ -496,6 +575,167 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
     @Override
     public boolean wantsToAttack(LivingEntity target, LivingEntity owner) {
         return !(target instanceof CompanionEntity companion && companion.isOwnedBy(owner));
+    }
+
+    @Override
+    public int getMaxHeadYRot() {
+        if (this.species == null || this.species.headBones().isEmpty()) {
+            return super.getMaxHeadYRot();
+        }
+
+        return (int) this.species.maxHeadYaw();
+    }
+
+    @Override
+    protected AABB makeBoundingBox(Vec3 position) {
+        double offset = this.species == null ? 0.0 : this.species.hitboxOffset();
+
+        if (offset == 0.0) {
+            return super.makeBoundingBox(position);
+        }
+
+        float yaw = this.yBodyRot * Mth.DEG_TO_RAD;
+        return super.makeBoundingBox(position.add(Mth.sin(yaw) * offset, 0.0, -Mth.cos(yaw) * offset));
+    }
+
+    private void tickHitboxOffset() {
+        if (this.species.hitboxOffset() == 0.0) {
+            return;
+        }
+
+        if (Float.isNaN(this.hitboxYaw)
+                || Math.abs(Mth.wrapDegrees(this.yBodyRot - this.hitboxYaw)) >= HITBOX_YAW_STEP) {
+            this.hitboxYaw = this.yBodyRot;
+            this.setPos(this.getX(), this.getY(), this.getZ());
+        }
+    }
+
+    private void updateRunning() {
+        boolean running = this.shouldRun();
+
+        if (running != this.isSprinting()) {
+            this.setSprinting(running);
+        }
+    }
+
+    private boolean shouldRun() {
+        if (!this.species.hasAnimation(CompanionAnimations.RUN) || this.isInSittingPose()) {
+            return false;
+        }
+
+        if (this.followingOwner) {
+            return true;
+        }
+
+        LivingEntity target = this.getTarget();
+        return target != null && target.isAlive() && this.distanceTo(target) > RUN_DISTANCE;
+    }
+
+    @Override
+    public void setSprinting(boolean sprinting) {
+        super.setSprinting(sprinting);
+
+        AttributeInstance speed = this.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speed == null) {
+            return;
+        }
+
+        speed.removeModifier(VANILLA_SPRINT_MODIFIER);
+        speed.removeModifier(RUN_SPEED_MODIFIER.id());
+
+        if (sprinting) {
+            speed.addTransientModifier(RUN_SPEED_MODIFIER);
+        }
+    }
+
+    public boolean isRangedMode() {
+        return this.rangedMode;
+    }
+
+    private void updateCombatMode() {
+        if (this.species.combatStyle() != CompanionSpecies.CombatStyle.HYBRID) {
+            return;
+        }
+
+        LivingEntity target = this.getTarget();
+        if (target == null || target.getType().builtInRegistryHolder().is(KindredTags.DANGEROUS_PREY)) {
+            this.rangedMode = true;
+            return;
+        }
+
+        double distance = this.distanceTo(target);
+        if (distance <= MELEE_SWITCH_RANGE) {
+            this.rangedMode = false;
+        } else if (distance >= BOW_SWITCH_RANGE) {
+            this.rangedMode = true;
+        }
+    }
+
+    private void refreshEquipment() {
+        if (!this.species.carriesWeapons()) {
+            return;
+        }
+
+        ItemStack weapon = new ItemStack(Items.IRON_SWORD);
+        if (KindredConfig.COMMON.mimicOwnerWeapon.get() && this.getOwner() instanceof Player owner
+                && isMeleeWeapon(owner.getMainHandItem())) {
+            weapon = owner.getMainHandItem().copy();
+        }
+
+        this.equip(EquipmentSlot.MAINHAND, weapon);
+        this.equip(EquipmentSlot.OFFHAND, new ItemStack(Items.BOW));
+    }
+
+    private void equip(EquipmentSlot slot, ItemStack stack) {
+        if (!ItemStack.matches(this.getItemBySlot(slot), stack)) {
+            this.setItemSlot(slot, stack);
+        }
+
+        this.setDropChance(slot, 0.0f);
+    }
+
+    private static boolean isMeleeWeapon(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+
+        for (ItemAttributeModifiers.Entry entry : stack.getAttributeModifiers().modifiers()) {
+            if (entry.attribute().equals(Attributes.ATTACK_DAMAGE) && entry.slot().test(EquipmentSlot.MAINHAND)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void tryRangedAttack(LivingEntity target) {
+        if (this.bowCooldown > 0 || !this.species.carriesWeapons() || !this.isBonded()) {
+            return;
+        }
+
+        this.bowCooldown = BOW_INTERVAL;
+        this.playCompanionAnim(CompanionAnimations.SHOOT);
+        this.performRangedAttack(target,
+                (float) (CompanionLevels.attackDamageAt(this.species, this.getLevel()) / BOW_POWER_DIVISOR));
+    }
+
+    @Override
+    public void performRangedAttack(LivingEntity target, float power) {
+        if (!(this.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        ItemStack bow = this.getItemInHand(ProjectileUtil.getWeaponHoldingHand(this, item -> item instanceof BowItem));
+        ItemStack ammo = new ItemStack(Items.ARROW);
+        AbstractArrow arrow = ProjectileUtil.getMobArrow(this, ammo, power, bow);
+
+        double x = target.getX() - this.getX();
+        double y = target.getY(0.333) - arrow.getY();
+        double z = target.getZ() - this.getZ();
+        double horizontal = Math.sqrt(x * x + z * z);
+
+        Projectile.spawnProjectileUsingShoot(arrow, level, ammo, x, y + horizontal * 0.2, z, 1.6f, 6.0f);
+        this.playSound(SoundEvents.SKELETON_SHOOT, 1.0f, 1.0f / (this.getRandom().nextFloat() * 0.4f + 0.8f));
     }
 
     public boolean isAbilityReady(Identifier ability) {
@@ -665,6 +905,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity {
 
         addTriggerable(action, CompanionAnimations.ATTACK, ATTACK);
         addTriggerable(action, CompanionAnimations.SPECIAL_ATTACK, SPECIAL_ATTACK);
+        addTriggerable(action, CompanionAnimations.JUMP_ATTACK, JUMP_ATTACK);
+        addTriggerable(action, CompanionAnimations.SHOOT, SHOOT);
         addTriggerable(action, CompanionAnimations.HURT, HURT);
         addTriggerable(action, CompanionAnimations.DEATH, DEATH);
         addTriggerable(action, CompanionAnimations.SPAWN, SPAWN);

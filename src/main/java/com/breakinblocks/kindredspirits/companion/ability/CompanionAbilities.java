@@ -60,6 +60,9 @@ public final class CompanionAbilities {
                 }
             }));
 
+    public static final CompanionAbility MIRROR_STRIKE =
+            register(new MirrorStrikeAbility(KindredSpirits.id("mirror_strike")));
+
     public static CompanionAbility register(CompanionAbility ability) {
         REGISTRY.put(ability.id(), ability);
         return ability;
@@ -76,7 +79,7 @@ public final class CompanionAbilities {
     private record SavageLeapAbility(Identifier id) implements CompanionAbility {
         private static final int COOLDOWN_TICKS = 200;
         private static final double MIN_RANGE_SQR = 9.0;
-        private static final double MAX_RANGE_SQR = 100.0;
+        private static final double MAX_RANGE_SQR = CompanionEntity.RUN_DISTANCE * CompanionEntity.RUN_DISTANCE;
         private static final double SLAM_RADIUS = 2.5;
         private static final float DAMAGE_MULTIPLIER = 1.5f;
         private static final double KNOCKBACK = 0.5;

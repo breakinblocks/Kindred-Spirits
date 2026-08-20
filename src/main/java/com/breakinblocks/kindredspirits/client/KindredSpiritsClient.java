@@ -2,6 +2,7 @@ package com.breakinblocks.kindredspirits.client;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.render.CompanionRenderer;
+import com.breakinblocks.kindredspirits.client.render.MiniPlayerRenderer;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
@@ -29,7 +30,9 @@ public final class KindredSpiritsClient {
 
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         for (CompanionSpecies species : CompanionSpecies.values()) {
-            event.registerEntityRenderer(KindredEntities.type(species), context -> new CompanionRenderer(context, species));
+            event.registerEntityRenderer(KindredEntities.type(species), context -> species.usesPlayerSkin()
+                    ? new MiniPlayerRenderer(context, species)
+                    : new CompanionRenderer(context, species));
         }
     }
 

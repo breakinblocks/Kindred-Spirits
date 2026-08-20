@@ -116,6 +116,7 @@ public final class KindredNetworking {
             SET_COMMAND,
             SET_AGGRESSION,
             SET_NAME,
+            SET_SKIN,
             REFRESH
         }
     }

@@ -20,6 +20,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.StringUtil;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -135,6 +136,7 @@ public class KindredCharmItem extends Item {
                 }
             }
             case SET_NAME -> rename(player, bond, live, text, value == 1);
+            case SET_SKIN -> setSkin(player, bond, live, text, value == 1);
             case REFRESH -> {
             }
         }
@@ -162,6 +164,46 @@ public class KindredCharmItem extends Item {
         player.sendSystemMessage(name
                 .map(value -> Component.translatable("message.kindredspirits.charm_renamed", value))
                 .orElseGet(() -> Component.translatable("message.kindredspirits.charm_name_cleared")));
+    }
+
+    private static void setSkin(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live,
+                                String text, boolean announce) {
+        CompanionSnapshot current = bond.snapshot().orElseThrow();
+        boolean wearsSkin = live != null
+                ? live.species().usesPlayerSkin()
+                : current.resolveSpecies().map(CompanionSpecies::usesPlayerSkin).orElse(false);
+
+        if (!wearsSkin) {
+            return;
+        }
+
+        if (!KindredConfig.COMMON.allowSkinChoice.get()) {
+            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_skin_disabled"));
+            return;
+        }
+
+        String cleaned = text.trim();
+        if (!cleaned.isEmpty() && !StringUtil.isValidPlayerName(cleaned)) {
+            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_skin_invalid", cleaned));
+            return;
+        }
+
+        if (live != null) {
+            live.setSkinName(cleaned);
+            KindredAttachments.modifyBond(player, bondState -> snapshot(bondState, live));
+        } else {
+            CompanionSnapshot updated = current.withSkin(cleaned.isEmpty() ? Optional.empty() : Optional.of(cleaned));
+            KindredAttachments.modifyBond(player, bondState ->
+                    bondState.withSnapshot(bondState.companion().orElseThrow(), updated));
+        }
+
+        if (!announce) {
+            return;
+        }
+
+        player.sendSystemMessage(cleaned.isEmpty()
+                ? Component.translatable("message.kindredspirits.charm_skin_cleared")
+                : Component.translatable("message.kindredspirits.charm_skin_set", cleaned));
     }
 
     private static Optional<String> sanitiseName(String text) {
@@ -248,6 +290,7 @@ public class KindredCharmItem extends Item {
         companion.snapTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0f);
         companion.tame(player);
         snapshot.name().ifPresent(name -> companion.setCustomName(Component.literal(name)));
+        companion.setSkinName(snapshot.skin().orElse(""));
 
         boolean reviving = bond.reviveReadyAt() > 0;
         companion.restoreProgress(snapshot.level(),

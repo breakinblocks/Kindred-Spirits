@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component;
 import java.util.Optional;
 
 public record CompanionSnapshot(String species, int level, int experience, int bond, Optional<String> name,
-                                int command, int aggression) {
+                                int command, int aggression, Optional<String> skin) {
     public static final Codec<CompanionSnapshot> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("species").forGetter(CompanionSnapshot::species),
             Codec.INT.fieldOf("level").forGetter(CompanionSnapshot::level),
@@ -20,7 +20,8 @@ public record CompanionSnapshot(String species, int level, int experience, int b
             Codec.INT.optionalFieldOf("command", CompanionCommand.FOLLOW.ordinal())
                     .forGetter(CompanionSnapshot::command),
             Codec.INT.optionalFieldOf("aggression", CompanionAggression.NEUTRAL.ordinal())
-                    .forGetter(CompanionSnapshot::aggression)
+                    .forGetter(CompanionSnapshot::aggression),
+            Codec.STRING.optionalFieldOf("skin").forGetter(CompanionSnapshot::skin)
     ).apply(instance, CompanionSnapshot::new));
 
     public static final StreamCodec<ByteBuf, CompanionSnapshot> STREAM_CODEC = StreamCodec.composite(
@@ -31,6 +32,7 @@ public record CompanionSnapshot(String species, int level, int experience, int b
             ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8), CompanionSnapshot::name,
             ByteBufCodecs.VAR_INT, CompanionSnapshot::command,
             ByteBufCodecs.VAR_INT, CompanionSnapshot::aggression,
+            ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8), CompanionSnapshot::skin,
             CompanionSnapshot::new);
 
     public static CompanionSnapshot of(CompanionEntity companion) {
@@ -41,7 +43,8 @@ public record CompanionSnapshot(String species, int level, int experience, int b
                 companion.getBond(),
                 Optional.ofNullable(companion.getCustomName()).map(Component::getString),
                 companion.getCommand().ordinal(),
-                companion.getAggression().ordinal());
+                companion.getAggression().ordinal(),
+                companion.getSkinName().isEmpty() ? Optional.empty() : Optional.of(companion.getSkinName()));
     }
 
     public CompanionCommand commandValue() {
@@ -54,7 +57,12 @@ public record CompanionSnapshot(String species, int level, int experience, int b
 
     public CompanionSnapshot withName(Optional<String> name) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bond, name,
-                this.command, this.aggression);
+                this.command, this.aggression, this.skin);
+    }
+
+    public CompanionSnapshot withSkin(Optional<String> skin) {
+        return new CompanionSnapshot(this.species, this.level, this.experience, this.bond, this.name,
+                this.command, this.aggression, skin);
     }
 
     public Optional<CompanionSpecies> resolveSpecies() {

@@ -15,11 +15,13 @@ public final class CompanionLevels {
     }
 
     public static double healthAt(CompanionSpecies species, int level) {
-        return species.baseHealth() + (level - 1) * KindredConfig.COMMON.healthPerLevel.get();
+        return species.baseHealth()
+                + (level - 1) * KindredConfig.COMMON.healthPerLevel.get() * species.growthMultiplier();
     }
 
     public static double attackDamageAt(CompanionSpecies species, int level) {
-        return species.attackDamage() + (level - 1) * KindredConfig.COMMON.attackPerLevel.get();
+        return species.attackDamage()
+                + (level - 1) * KindredConfig.COMMON.attackPerLevel.get() * species.growthMultiplier();
     }
 
     public static int bondCap() {

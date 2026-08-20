@@ -20,6 +20,9 @@ import net.minecraft.world.entity.EntitySpawnReason;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class KindredCharmScreen extends Screen {
     private static final int PANEL_WIDTH = 288;
     private static final int PANEL_HEIGHT = 236;
@@ -28,7 +31,10 @@ public class KindredCharmScreen extends Screen {
     private static final int CONTENT_Y = 26;
     private static final int PORTRAIT_WIDTH = 104;
     private static final int PORTRAIT_BOTTOM = 192;
+    private static final int PORTRAIT_BOTTOM_WITH_SKIN = 174;
     private static final int NAME_BOX_Y = 198;
+    private static final int NAME_BOX_Y_WITH_SKIN = 180;
+    private static final int SKIN_BOX_Y = 198;
     private static final int NAME_BOX_HEIGHT = 14;
     private static final int STATE_Y = 218;
 
@@ -60,14 +66,15 @@ public class KindredCharmScreen extends Screen {
     private static final int COLOUR_BOND = 0xFFD79BE8;
 
     private static final int REFRESH_INTERVAL = 20;
+    private static final int MAX_SKIN_LENGTH = 16;
+    private static final int KEY_ENTER = 257;
+    private static final int KEY_NUMPAD_ENTER = 335;
 
     private CharmView view;
     private int refreshTimer;
-    private boolean nameDirty;
-    private boolean nameChanged;
-    private boolean nameWasFocused;
-    private boolean settingName;
-    private @Nullable EditBox nameBox;
+    private boolean skinRow;
+    private @Nullable TextField nameField;
+    private @Nullable TextField skinField;
     private @Nullable CompanionEntity display;
     private int left;
     private int top;
@@ -84,16 +91,27 @@ public class KindredCharmScreen extends Screen {
     }
 
     public void updateView(CharmView view) {
-        boolean sameCompanion = this.view.species().equals(view.species()) && this.view.name().equals(view.name());
+        boolean sameCompanion = this.view.species().equals(view.species())
+                && this.view.name().equals(view.name())
+                && this.view.skin().equals(view.skin());
         this.view = view;
 
         if (!sameCompanion) {
             this.display = null;
         }
 
-        if (this.nameBox != null && !this.nameBox.isFocused() && !this.nameDirty) {
-            this.setNameBoxValue(view.name().orElse(""));
-            this.nameBox.setHint(this.speciesName().copy().withStyle(ChatFormatting.DARK_GRAY));
+        if (this.summonButton != null && this.skinRow != this.wantsSkinRow()) {
+            this.rebuildWidgets();
+            return;
+        }
+
+        if (this.nameField != null) {
+            this.nameField.seed(view.name().orElse(""));
+            this.nameField.box.setHint(this.speciesName().copy().withStyle(ChatFormatting.DARK_GRAY));
+        }
+
+        if (this.skinField != null) {
+            this.skinField.seed(view.skin());
         }
 
         if (this.summonButton != null) {
@@ -101,10 +119,23 @@ public class KindredCharmScreen extends Screen {
         }
     }
 
+    private boolean wantsSkinRow() {
+        return this.view.bound() && this.view.usesPlayerSkin();
+    }
+
+    private int portraitBottom() {
+        return this.skinRow ? PORTRAIT_BOTTOM_WITH_SKIN : PORTRAIT_BOTTOM;
+    }
+
+    private int nameBoxY() {
+        return this.skinRow ? NAME_BOX_Y_WITH_SKIN : NAME_BOX_Y;
+    }
+
     @Override
     protected void init() {
         this.left = (this.width - PANEL_WIDTH) / 2;
         this.top = (this.height - PANEL_HEIGHT) / 2;
+        this.skinRow = this.wantsSkinRow();
 
         int buttonX = this.left + COLUMN_X;
         int y = this.top + BUTTON_Y;
@@ -131,50 +162,32 @@ public class KindredCharmScreen extends Screen {
                         button -> this.send(Action.RELEASE, 0))
                 .bounds(buttonX, y + BUTTON_SPACING * 4, COLUMN_WIDTH, BUTTON_HEIGHT).build());
 
-        this.nameBox = new EditBox(this.font, this.left + PAD, this.top + NAME_BOX_Y,
+        EditBox nameBox = new EditBox(this.font, this.left + PAD, this.top + this.nameBoxY(),
                 PORTRAIT_WIDTH, NAME_BOX_HEIGHT, Component.translatable("screen.kindredspirits.name"));
-        this.nameBox.setMaxLength(CharmActionPayload.MAX_NAME_LENGTH);
-        this.nameBox.setHint(this.speciesName().copy().withStyle(ChatFormatting.DARK_GRAY));
-        this.nameBox.setValue(this.view.name().orElse(""));
-        this.nameBox.setResponder(value -> {
-            if (!this.settingName) {
-                this.nameDirty = true;
-            }
-        });
-        this.addRenderableWidget(this.nameBox);
+        nameBox.setMaxLength(CharmActionPayload.MAX_NAME_LENGTH);
+        nameBox.setHint(this.speciesName().copy().withStyle(ChatFormatting.DARK_GRAY));
+        nameBox.setValue(this.view.name().orElse(""));
+        this.nameField = new TextField(Action.SET_NAME, this.addRenderableWidget(nameBox));
 
-        this.updateButtonState();
-    }
-
-    private void setNameBoxValue(String value) {
-        if (this.nameBox == null || this.nameBox.getValue().equals(value)) {
-            return;
+        if (this.skinRow) {
+            EditBox skinBox = new EditBox(this.font, this.left + PAD, this.top + SKIN_BOX_Y,
+                    PORTRAIT_WIDTH, NAME_BOX_HEIGHT, Component.translatable("screen.kindredspirits.skin"));
+            skinBox.setMaxLength(MAX_SKIN_LENGTH);
+            skinBox.setHint(Component.translatable("screen.kindredspirits.skin_hint")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            skinBox.setValue(this.view.skin());
+            this.skinField = new TextField(Action.SET_SKIN, this.addRenderableWidget(skinBox));
+        } else {
+            this.skinField = null;
         }
 
-        this.settingName = true;
-        this.nameBox.setValue(value);
-        this.settingName = false;
+        this.updateButtonState();
     }
 
     private Component speciesName() {
         return this.view.resolveSpecies()
                 .map(species -> (Component) Component.translatable(species.translationKey()))
                 .orElse(Component.empty());
-    }
-
-    private void commitName(boolean announce) {
-        if (this.nameBox == null || (!this.nameDirty && !announce)) {
-            return;
-        }
-
-        if (!this.nameDirty && !this.nameChanged) {
-            return;
-        }
-
-        this.nameDirty = false;
-        this.nameChanged = true;
-        ClientPacketDistributor.sendToServer(
-                new CharmActionPayload(Action.SET_NAME, announce ? 1 : 0, this.nameBox.getValue()));
     }
 
     private void updateButtonState() {
@@ -194,9 +207,14 @@ public class KindredCharmScreen extends Screen {
 
         this.releaseButton.active = bound;
 
-        if (this.nameBox != null) {
-            this.nameBox.visible = bound;
-            this.nameBox.setEditable(bound);
+        if (this.nameField != null) {
+            this.nameField.box.visible = bound;
+            this.nameField.box.setEditable(bound);
+        }
+
+        if (this.skinField != null) {
+            this.skinField.box.visible = bound;
+            this.skinField.box.setEditable(bound);
         }
     }
 
@@ -249,7 +267,7 @@ public class KindredCharmScreen extends Screen {
         int x0 = this.left + PAD;
         int y0 = this.top + CONTENT_Y;
         int x1 = x0 + PORTRAIT_WIDTH;
-        int y1 = this.top + PORTRAIT_BOTTOM;
+        int y1 = this.top + this.portraitBottom();
 
         graphics.fill(x0 - 1, y0 - 1, x1 + 1, y1 + 1, COLOUR_EDGE);
         graphics.fill(x0, y0, x1, y1, COLOUR_PORTRAIT);
@@ -333,35 +351,51 @@ public class KindredCharmScreen extends Screen {
 
         if (this.display != null) {
             this.view.name().ifPresent(name -> this.display.setCustomName(Component.literal(name)));
+
+            if (species.usesPlayerSkin()) {
+                this.display.setSkinName(this.view.skin().isEmpty() ? this.localName() : this.view.skin());
+            }
         }
 
         return this.display;
     }
 
+    private String localName() {
+        return this.minecraft == null ? "" : this.minecraft.getGameProfile().name();
+    }
+
     @Override
     public boolean keyPressed(KeyEvent event) {
-        if (this.nameBox != null && this.nameBox.isFocused() && (event.key() == 257 || event.key() == 335)) {
-            this.commitName(false);
-            this.nameBox.setFocused(false);
-            this.nameWasFocused = false;
-            return true;
+        if (event.key() == KEY_ENTER || event.key() == KEY_NUMPAD_ENTER) {
+            for (TextField field : this.fields()) {
+                if (field.commitOnEnter()) {
+                    return true;
+                }
+            }
         }
 
         return super.keyPressed(event);
+    }
+
+    private List<TextField> fields() {
+        List<TextField> fields = new ArrayList<>(2);
+
+        if (this.nameField != null) {
+            fields.add(this.nameField);
+        }
+        if (this.skinField != null) {
+            fields.add(this.skinField);
+        }
+
+        return fields;
     }
 
     @Override
     public void tick() {
         super.tick();
 
-        if (this.nameBox != null) {
-            boolean focused = this.nameBox.isFocused();
-
-            if (this.nameWasFocused && !focused) {
-                this.commitName(false);
-            }
-
-            this.nameWasFocused = focused;
+        for (TextField field : this.fields()) {
+            field.tickFocus();
         }
 
         if (++this.refreshTimer >= REFRESH_INTERVAL) {
@@ -377,8 +411,76 @@ public class KindredCharmScreen extends Screen {
 
     @Override
     public void onClose() {
-        this.commitName(true);
+        for (TextField field : this.fields()) {
+            field.commit(true);
+        }
+
         this.display = null;
         super.onClose();
+    }
+
+    private final class TextField {
+        private final Action action;
+        private final EditBox box;
+        private boolean dirty;
+        private boolean changed;
+        private boolean wasFocused;
+        private boolean setting;
+
+        private TextField(Action action, EditBox box) {
+            this.action = action;
+            this.box = box;
+            this.box.setResponder(value -> {
+                if (!this.setting) {
+                    this.dirty = true;
+                }
+            });
+        }
+
+        private void seed(String value) {
+            if (this.box.isFocused() || this.dirty || this.box.getValue().equals(value)) {
+                return;
+            }
+
+            this.setting = true;
+            this.box.setValue(value);
+            this.setting = false;
+        }
+
+        private void commit(boolean announce) {
+            if (!this.dirty && !announce) {
+                return;
+            }
+
+            if (!this.dirty && !this.changed) {
+                return;
+            }
+
+            this.dirty = false;
+            this.changed = true;
+            ClientPacketDistributor.sendToServer(
+                    new CharmActionPayload(this.action, announce ? 1 : 0, this.box.getValue()));
+        }
+
+        private boolean commitOnEnter() {
+            if (!this.box.isFocused()) {
+                return false;
+            }
+
+            this.commit(false);
+            this.box.setFocused(false);
+            this.wasFocused = false;
+            return true;
+        }
+
+        private void tickFocus() {
+            boolean focused = this.box.isFocused();
+
+            if (this.wasFocused && !focused) {
+                this.commit(false);
+            }
+
+            this.wasFocused = focused;
+        }
     }
 }

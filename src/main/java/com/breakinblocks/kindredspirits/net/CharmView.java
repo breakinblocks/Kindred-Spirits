@@ -17,10 +17,11 @@ import java.util.Optional;
 public record CharmView(boolean bound, String species, Optional<String> name,
                         int level, int experience, int experienceToNext, int bond, int maxBond,
                         float health, float maxHealth, float armour, float attackDamage,
-                        int command, int aggression, boolean stored, int reviveSeconds, boolean present) {
+                        int command, int aggression, boolean stored, int reviveSeconds, boolean present,
+                        String skin) {
 
     public static final CharmView EMPTY = new CharmView(false, "", Optional.empty(),
-            0, 0, 1, 0, 1, 0.0f, 0.0f, 0.0f, 0.0f, 0, 1, true, 0, false);
+            0, 0, 1, 0, 1, 0.0f, 0.0f, 0.0f, 0.0f, 0, 1, true, 0, false, "");
 
     public static final StreamCodec<ByteBuf, CharmView> STREAM_CODEC = new StreamCodec<>() {
         @Override
@@ -42,7 +43,8 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                     ByteBufCodecs.VAR_INT.decode(buffer),
                     ByteBufCodecs.BOOL.decode(buffer),
                     ByteBufCodecs.VAR_INT.decode(buffer),
-                    ByteBufCodecs.BOOL.decode(buffer));
+                    ByteBufCodecs.BOOL.decode(buffer),
+                    ByteBufCodecs.STRING_UTF8.decode(buffer));
         }
 
         @Override
@@ -64,8 +66,13 @@ public record CharmView(boolean bound, String species, Optional<String> name,
             ByteBufCodecs.BOOL.encode(buffer, view.stored());
             ByteBufCodecs.VAR_INT.encode(buffer, view.reviveSeconds());
             ByteBufCodecs.BOOL.encode(buffer, view.present());
+            ByteBufCodecs.STRING_UTF8.encode(buffer, view.skin());
         }
     };
+
+    public boolean usesPlayerSkin() {
+        return this.resolveSpecies().map(CompanionSpecies::usesPlayerSkin).orElse(false);
+    }
 
     public Optional<CompanionSpecies> resolveSpecies() {
         return CompanionSpecies.byName(this.species);
@@ -101,6 +108,7 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                 live != null ? live.getAggression().ordinal() : snapshot.aggression(),
                 bond.stored(),
                 (int) Math.max(0, (bond.reviveReadyAt() - gameTime) / 20),
-                live != null);
+                live != null,
+                live != null ? live.getSkinName() : snapshot.skin().orElse(""));
     }
 }

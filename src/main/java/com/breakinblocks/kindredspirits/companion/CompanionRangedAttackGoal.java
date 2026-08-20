@@ -66,6 +66,10 @@ public class CompanionRangedAttackGoal extends Goal {
         this.companion.getLookControl().setLookAt(target, 30.0f, 30.0f);
         this.companion.setAggressive(true);
 
+        if (canSee && this.seeTime >= 5 && distanceSqr <= MAXIMUM_RANGE * MAXIMUM_RANGE) {
+            this.companion.tryRangedAttack(target);
+        }
+
         if (distanceSqr > PREFERRED_RANGE * PREFERRED_RANGE || this.seeTime < 5) {
             this.companion.getNavigation().moveTo(target, this.speedModifier);
             return;

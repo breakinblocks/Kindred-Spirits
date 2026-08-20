@@ -32,6 +32,8 @@ public class KindredSpirits {
     }
 
     public KindredSpirits(IEventBus modEventBus, ModContainer modContainer, Dist dist) {
+        modContainer.registerConfig(ModConfig.Type.STARTUP, KindredConfig.STARTUP_SPEC);
+
         KindredEntities.ENTITY_TYPES.register(modEventBus);
         KindredItems.ITEMS.register(modEventBus);
         KindredAttachments.ATTACHMENT_TYPES.register(modEventBus);

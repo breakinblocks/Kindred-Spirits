@@ -2,6 +2,8 @@ package com.breakinblocks.kindredspirits.companion;
 
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
+import com.breakinblocks.kindredspirits.config.KindredConfig;
+import com.breakinblocks.kindredspirits.config.KindredConfig.SpeciesStat;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.StringRepresentable;
@@ -12,8 +14,8 @@ import java.util.Set;
 
 public enum CompanionSpecies implements StringRepresentable {
     EMBERFOX("emberfox",
-            new Size(0.7f, 0.8f, 1.0f),
-            new Stats(14.0, 0.32, 3.0, 2.0, 0.0),
+            new Size(0.7f, 0.8f, 1.0f, 0.0f),
+            new Stats(14.0, 0.32, 3.0, 2.0, 0.0, 1.0),
             CombatStyle.RANGED, true,
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK,
                     CompanionAnimations.SPECIAL_ATTACK, CompanionAnimations.INTERACT),
@@ -26,8 +28,8 @@ public enum CompanionSpecies implements StringRepresentable {
                     new Unlock(16, CompanionAbilities.KINDLED_VIGOUR))),
 
     TREX("trex",
-            new Size(1.2f, 1.7f, 0.6f),
-            new Stats(30.0, 0.25, 4.0, 2.0, 0.6),
+            new Size(1.2f, 1.7f, 0.6f, 0.5f),
+            new Stats(30.0, 0.25, 4.0, 2.0, 0.6, 1.0),
             CombatStyle.MELEE, false,
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
                     CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
@@ -37,7 +39,23 @@ public enum CompanionSpecies implements StringRepresentable {
             List.of(
                     new Unlock(1, CompanionAbilities.SAVAGE_LEAP),
                     new Unlock(1, CompanionAbilities.CRUSHING_MIGHT),
-                    new Unlock(10, CompanionAbilities.KINDLED_VIGOUR)));
+                    new Unlock(10, CompanionAbilities.KINDLED_VIGOUR))),
+
+    MINI_PLAYER("mini_player",
+            new Size(0.4f, 1.2f, 0.6f, 0.0f),
+            new Stats(18.0, 0.30, 4.0, 2.0, 0.0, 0.5),
+            CombatStyle.HYBRID, true,
+            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
+                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SHOOT,
+                    CompanionAnimations.SPECIAL_ATTACK, CompanionAnimations.INTERACT,
+                    CompanionAnimations.HURT, CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
+            new SoundSet(SoundEvents.PLAYER_BREATH, SoundEvents.PLAYER_HURT, SoundEvents.PLAYER_DEATH,
+                    SoundEvents.PLAYER_ATTACK_STRONG, SoundEvents.PLAYER_ATTACK_SWEEP, SoundEvents.PLAYER_BURP),
+            List.of(
+                    new Unlock(1, CompanionAbilities.MIRROR_STRIKE),
+                    new Unlock(12, CompanionAbilities.MENDING_PRESENCE)));
+
+    public static final double DEFAULT_FOLLOW_RANGE = 24.0;
 
     private final String name;
     private final Size size;
@@ -78,24 +96,60 @@ public enum CompanionSpecies implements StringRepresentable {
         return this.size.renderScale();
     }
 
+    public double hitboxOffset() {
+        return this.size.hitboxOffset();
+    }
+
+    public Stats defaults() {
+        return this.stats;
+    }
+
     public double baseHealth() {
-        return this.stats.health();
+        return KindredConfig.speciesStat(this, SpeciesStat.HEALTH, this.stats.health());
     }
 
     public double moveSpeed() {
-        return this.stats.moveSpeed();
+        return KindredConfig.speciesStat(this, SpeciesStat.MOVE_SPEED, this.stats.moveSpeed());
     }
 
     public double attackDamage() {
-        return this.stats.attackDamage();
+        return KindredConfig.speciesStat(this, SpeciesStat.ATTACK_DAMAGE, this.stats.attackDamage());
     }
 
     public double armour() {
-        return this.stats.armour();
+        return KindredConfig.speciesStat(this, SpeciesStat.ARMOUR, this.stats.armour());
     }
 
     public double knockbackResistance() {
-        return this.stats.knockbackResistance();
+        return KindredConfig.speciesStat(this, SpeciesStat.KNOCKBACK_RESISTANCE, this.stats.knockbackResistance());
+    }
+
+    public double followRange() {
+        return KindredConfig.speciesStat(this, SpeciesStat.FOLLOW_RANGE, DEFAULT_FOLLOW_RANGE);
+    }
+
+    public double growthMultiplier() {
+        return KindredConfig.speciesStat(this, SpeciesStat.GROWTH, this.stats.growth());
+    }
+
+    public boolean usesPlayerSkin() {
+        return this == MINI_PLAYER;
+    }
+
+    public boolean carriesWeapons() {
+        return this == MINI_PLAYER;
+    }
+
+    public List<String> headBones() {
+        return switch (this) {
+            case TREX -> List.of("neck_upper", "head_main");
+            case MINI_PLAYER -> List.of("head");
+            case EMBERFOX -> List.of();
+        };
+    }
+
+    public float maxHeadYaw() {
+        return 30.0f;
     }
 
     public CombatStyle combatStyle() {
@@ -138,11 +192,11 @@ public enum CompanionSpecies implements StringRepresentable {
         return Optional.empty();
     }
 
-    public record Size(float width, float height, float renderScale) {
+    public record Size(float width, float height, float renderScale, double hitboxOffset) {
     }
 
     public record Stats(double health, double moveSpeed, double attackDamage,
-                        double armour, double knockbackResistance) {
+                        double armour, double knockbackResistance, double growth) {
     }
 
     public record Unlock(int level, CompanionAbility ability) {
@@ -154,6 +208,7 @@ public enum CompanionSpecies implements StringRepresentable {
 
     public enum CombatStyle {
         MELEE,
-        RANGED
+        RANGED,
+        HYBRID
     }
 }
