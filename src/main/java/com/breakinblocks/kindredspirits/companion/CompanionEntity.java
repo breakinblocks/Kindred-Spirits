@@ -708,6 +708,15 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         return false;
     }
 
+    public void faceInstantly(Entity target) {
+        float yaw = (float) (Mth.atan2(target.getZ() - this.getZ(), target.getX() - this.getX())
+                * Mth.RAD_TO_DEG) - 90.0f;
+
+        this.setYRot(yaw);
+        this.yBodyRot = yaw;
+        this.setYHeadRot(yaw);
+    }
+
     public void tryRangedAttack(LivingEntity target) {
         if (this.bowCooldown > 0 || !this.species.carriesWeapons() || !this.isBonded()) {
             return;

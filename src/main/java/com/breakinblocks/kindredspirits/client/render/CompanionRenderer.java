@@ -4,7 +4,6 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
-import com.geckolib.constant.DataTickets;
 import com.geckolib.model.DefaultedEntityGeoModel;
 import com.geckolib.model.GeoModel;
 import com.geckolib.renderer.GeoEntityRenderer;
@@ -36,16 +35,6 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
     }
 
     @Override
-    public void addRenderData(CompanionEntity entity, Void relatedObject,
-                              LivingEntityRenderState renderState, float partialTick) {
-        super.addRenderData(entity, relatedObject, renderState, partialTick);
-
-        if (!this.species.headBones().isEmpty()) {
-            renderState.addGeckolibData(DataTickets.ENTITY_BODY_YAW, renderState.bodyRot);
-        }
-    }
-
-    @Override
     public void adjustModelBonesForRender(RenderPassInfo<LivingEntityRenderState> renderPass,
                                           BoneSnapshots boneSnapshots) {
         super.adjustModelBonesForRender(renderPass, boneSnapshots);
@@ -57,8 +46,7 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
 
         LivingEntityRenderState state = renderPass.renderState();
         float limit = this.species.maxHeadYaw();
-        float yaw = Mth.clamp(Mth.wrapDegrees(state.yRot - state.bodyRot), -limit, limit)
-                * Mth.DEG_TO_RAD / headBones.size();
+        float yaw = Mth.clamp(state.yRot, -limit, limit) * Mth.DEG_TO_RAD / headBones.size();
         float pitch = Mth.clamp(state.xRot, -limit, limit) * Mth.DEG_TO_RAD / headBones.size();
 
         for (String bone : headBones) {

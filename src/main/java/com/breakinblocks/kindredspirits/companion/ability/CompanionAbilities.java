@@ -105,6 +105,7 @@ public final class CompanionAbilities {
             }
 
             companion.setAbilityCooldown(this.id, COOLDOWN_TICKS);
+            companion.faceInstantly(target);
             companion.playCompanionAnim(CompanionAnimations.JUMP_ATTACK);
             companion.playSound(companion.species().sounds().specialAttack(), 1.0f, 1.0f);
 
