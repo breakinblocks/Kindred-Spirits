@@ -21,7 +21,5 @@ public class KindredJeiPlugin implements IModPlugin {
     public void registerRecipes(IRecipeRegistration registration) {
         registration.addIngredientInfo(KindredItems.KINDRED_CHARM.get(),
                 Component.translatable("jei.kindredspirits.kindred_charm"));
-        registration.addIngredientInfo(KindredItems.SPIRIT_TREAT.get(),
-                Component.translatable("jei.kindredspirits.spirit_treat"));
     }
 }

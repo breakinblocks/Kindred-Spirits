@@ -35,6 +35,10 @@ public enum CompanionAggression implements StringRepresentable {
         return this == AGGRESSIVE;
     }
 
+    public boolean huntsMonsters() {
+        return this == AGGRESSIVE;
+    }
+
     public CompanionAggression next() {
         return values()[(this.ordinal() + 1) % values().length];
     }

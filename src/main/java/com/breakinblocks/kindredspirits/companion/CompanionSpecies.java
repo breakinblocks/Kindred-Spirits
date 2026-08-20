@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 
 public enum CompanionSpecies implements StringRepresentable {
-    EMBERFOX("emberfox", 0.7f, 0.8f, 1.0f, 14.0, 0.32, 3.0, CombatStyle.RANGED,
+    EMBERFOX("emberfox", 0.7f, 0.8f, 1.0f, 14.0, 0.32, 3.0, CombatStyle.RANGED, true,
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK,
                     CompanionAnimations.SPECIAL_ATTACK, CompanionAnimations.INTERACT),
             new SoundSet(SoundEvents.FOX_AMBIENT, SoundEvents.FOX_HURT, SoundEvents.FOX_DEATH,
@@ -30,13 +30,14 @@ public enum CompanionSpecies implements StringRepresentable {
     private final double moveSpeed;
     private final double attackDamage;
     private final CombatStyle combatStyle;
+    private final boolean huntsDangerousPrey;
     private final Set<String> animations;
     private final SoundSet sounds;
     private final List<Unlock> unlocks;
 
     CompanionSpecies(String name, float width, float height, float renderScale,
                      double baseHealth, double moveSpeed, double attackDamage,
-                     CombatStyle combatStyle, Set<String> animations,
+                     CombatStyle combatStyle, boolean huntsDangerousPrey, Set<String> animations,
                      SoundSet sounds, List<Unlock> unlocks) {
         this.name = name;
         this.width = width;
@@ -46,6 +47,7 @@ public enum CompanionSpecies implements StringRepresentable {
         this.moveSpeed = moveSpeed;
         this.attackDamage = attackDamage;
         this.combatStyle = combatStyle;
+        this.huntsDangerousPrey = huntsDangerousPrey;
         this.animations = animations;
         this.sounds = sounds;
         this.unlocks = unlocks;
@@ -82,6 +84,10 @@ public enum CompanionSpecies implements StringRepresentable {
 
     public CombatStyle combatStyle() {
         return this.combatStyle;
+    }
+
+    public boolean huntsDangerousPrey() {
+        return this.huntsDangerousPrey;
     }
 
     public boolean hasAnimation(String name) {

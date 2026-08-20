@@ -5,7 +5,6 @@
   "entity.kindredspirits.name_with_level": "%s (Lv %s)",
 
   "item.kindredspirits.kindred_charm": "Kindred Charm",
-  "item.kindredspirits.spirit_treat": "Spirit Treat",
   "item.kindredspirits.emberfox_spawn_egg": "Emberfox Spawn Egg",
 
   "ability.kindredspirits.swift_step": "Swift Step",
@@ -83,7 +82,6 @@
   "jade.kindredspirits.level": "Level %s / %s",
 
   "jei.kindredspirits.kindred_charm": "Sneak and use the charm on a tamed spirit to bond with it. Use the charm on its own to open the bond screen, where you can summon or dismiss your companion, give it orders, set how readily it fights, and release the bond. You can only be bonded to one spirit at a time, and every charm you carry answers to that same bond. Only a bonded spirit gains levels, uses abilities and fights alongside you.",
-  "jei.kindredspirits.spirit_treat": "Feed to a wild spirit to tame it, or to your companion to grant experience and raise its bond.",
 
   "key.category.kindredspirits.companion": "Kindred Spirits",
   "key.kindredspirits.cycle_command": "Cycle Companion Orders"

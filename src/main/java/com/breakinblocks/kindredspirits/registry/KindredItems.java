@@ -17,9 +17,6 @@ public final class KindredItems {
     public static final DeferredItem<KindredCharmItem> KINDRED_CHARM =
             ITEMS.registerItem("kindred_charm", props -> new KindredCharmItem(props.stacksTo(1)));
 
-    public static final DeferredItem<net.minecraft.world.item.Item> SPIRIT_TREAT =
-            ITEMS.registerSimpleItem("spirit_treat");
-
     private static final Map<CompanionSpecies, DeferredItem<SpawnEggItem>> SPAWN_EGGS =
             new EnumMap<>(CompanionSpecies.class);
 

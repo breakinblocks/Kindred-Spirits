@@ -253,6 +253,8 @@ public class KindredCharmItem extends Item {
         companion.restoreProgress(snapshot.level(),
                 reviving ? penalisedExperience(snapshot) : snapshot.experience(),
                 snapshot.bond());
+        companion.setCommand(snapshot.commandValue());
+        companion.setAggression(snapshot.aggressionValue());
         companion.setBonded(true);
 
         if (!level.tryAddFreshEntityWithPassengers(companion)) {
