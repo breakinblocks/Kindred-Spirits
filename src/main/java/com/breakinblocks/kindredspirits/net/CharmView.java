@@ -119,6 +119,10 @@ public record CharmView(boolean bound, String species, Optional<String> name,
         return this.resolveSpecies().map(CompanionSpecies::usesPlayerSkin).orElse(false);
     }
 
+    public static int cooldownSeconds(int ticks) {
+        return Math.ceilDiv(ticks, 20);
+    }
+
     public Optional<CompanionSpecies> resolveSpecies() {
         return CompanionSpecies.byName(this.species);
     }
@@ -156,12 +160,12 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                 snapshot.command(),
                 snapshot.aggression(),
                 bond.stored(),
-                (int) Math.max(0, (bond.reviveReadyAt() - gameTime) / 20),
+                bond.reviveSecondsLeft(gameTime),
                 live != null,
                 snapshot.skin().orElse(""),
                 record.companionsBonded(), record.highestLevelReached(), record.highestStars(),
                 active.map(ability -> ability.id().getPath()).orElse(""),
-                active.map(ability -> Math.ceilDiv(live.abilityCooldownTicks(ability.id()), 20)).orElse(0),
+                active.map(ability -> cooldownSeconds(live.abilityCooldownTicks(ability.id()))).orElse(0),
                 snapshot.equipment(),
                 live != null ? CompanionStats.of(live)
                         : snapshot.resolveSpecies().map(species -> CompanionStats.of(species, snapshot))
@@ -170,7 +174,7 @@ public record CharmView(boolean bound, String species, Optional<String> name,
     }
 
     public boolean isDisabled(CompanionAbility ability) {
-        return this.disabledAbilities.contains(ability.id().getPath());
+        return CompanionSnapshot.isDisabled(this.disabledAbilities, ability);
     }
 
     public Optional<CompanionAbility> resolveActiveAbility() {

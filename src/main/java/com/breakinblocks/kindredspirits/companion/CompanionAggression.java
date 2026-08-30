@@ -40,20 +40,14 @@ public enum CompanionAggression implements StringRepresentable {
     }
 
     public CompanionAggression next() {
-        return values()[(this.ordinal() + 1) % values().length];
+        return EnumLookup.next(values(), this);
     }
 
     public static CompanionAggression byOrdinal(int ordinal) {
-        CompanionAggression[] values = values();
-        return values[Math.floorMod(ordinal, values.length)];
+        return EnumLookup.byOrdinal(values(), ordinal);
     }
 
     public static CompanionAggression byName(String name) {
-        for (CompanionAggression value : values()) {
-            if (value.name.equals(name)) {
-                return value;
-            }
-        }
-        return NEUTRAL;
+        return EnumLookup.byName(values(), name).orElse(NEUTRAL);
     }
 }

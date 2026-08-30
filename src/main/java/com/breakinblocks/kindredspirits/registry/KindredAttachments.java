@@ -84,6 +84,14 @@ public final class KindredAttachments {
             return this.companion.isPresent() && this.snapshot.isPresent();
         }
 
+        public boolean isBoundTo(UUID id) {
+            return this.isBound() && this.companion.get().equals(id);
+        }
+
+        public int reviveSecondsLeft(long gameTime) {
+            return (int) Math.max(0, Math.ceilDiv(this.reviveReadyAt - gameTime, 20));
+        }
+
         public CompanionBond withSnapshot(UUID companion, CompanionSnapshot snapshot) {
             return new CompanionBond(Optional.of(companion), Optional.of(snapshot),
                     this.stored, this.reviveReadyAt, this.lastDimension, this.lastPos);

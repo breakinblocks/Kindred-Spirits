@@ -67,7 +67,7 @@ public final class CompanionProgressEvents {
     }
 
     public static Optional<CompanionEntity> bondedCompanionNear(ServerPlayer player, double range) {
-        return CompanionEntity.nearestOwned(player, range).filter(CompanionEntity::isBonded);
+        return CompanionEntity.bondedNear(player, range);
     }
 
     public static boolean isAfk(ServerPlayer player) {

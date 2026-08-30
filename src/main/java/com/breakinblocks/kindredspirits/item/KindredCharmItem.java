@@ -1,5 +1,6 @@
 package com.breakinblocks.kindredspirits.item;
 
+import com.breakinblocks.kindredspirits.KindredMessages;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionAggression;
 import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 public class KindredCharmItem extends Item {
@@ -81,14 +83,13 @@ public class KindredCharmItem extends Item {
         CompanionBond bond = KindredAttachments.bond(player);
 
         if (bond.isBound()) {
-            if (bond.companion().get().equals(companion.getUUID())) {
+            if (bond.isBoundTo(companion.getUUID())) {
                 release(player, bond, companion);
                 KindredNetworking.sendCharmView(player, false);
                 return;
             }
 
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_already_bonded",
-                    bond.snapshot().orElseThrow().displayName()));
+            KindredMessages.send(player, "charm_already_bonded", bond.snapshot().orElseThrow().displayName());
             return;
         }
 
@@ -96,7 +97,7 @@ public class KindredCharmItem extends Item {
         KindredAttachments.modify(player, record -> record.withBonded(record.companionsBonded() + 1));
         companion.setBonded(true);
 
-        player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_bound", companion.getDisplayName()));
+        KindredMessages.send(player, "charm_bound", companion.getDisplayName());
         KindredNetworking.sendCharmView(player, false);
     }
 
@@ -118,7 +119,7 @@ public class KindredCharmItem extends Item {
 
         if (!bond.isBound()) {
             if (action != KindredNetworking.CharmActionPayload.Action.REFRESH) {
-                player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_empty"));
+                KindredMessages.send(player, "charm_empty");
             }
             KindredNetworking.sendCharmView(player, false);
             return;
@@ -131,20 +132,12 @@ public class KindredCharmItem extends Item {
             case DISMISS -> dismiss(player, bond, live);
             case RECALL -> recall(player, level, bond, live);
             case RELEASE -> release(player, bond, live);
-            case SET_COMMAND -> {
-                if (live != null) {
-                    live.setCommand(CompanionCommand.byOrdinal(value));
-                } else {
-                    updateSnapshot(player, snap -> snap.withCommand(CompanionCommand.byOrdinal(value).ordinal()));
-                }
-            }
-            case SET_AGGRESSION -> {
-                if (live != null) {
-                    live.setAggression(CompanionAggression.byOrdinal(value));
-                } else {
-                    updateSnapshot(player, snap -> snap.withAggression(CompanionAggression.byOrdinal(value).ordinal()));
-                }
-            }
+            case SET_COMMAND -> apply(player, live,
+                    entity -> entity.setCommand(CompanionCommand.byOrdinal(value)),
+                    snap -> snap.withCommand(CompanionCommand.byOrdinal(value).ordinal()));
+            case SET_AGGRESSION -> apply(player, live,
+                    entity -> entity.setAggression(CompanionAggression.byOrdinal(value)),
+                    snap -> snap.withAggression(CompanionAggression.byOrdinal(value).ordinal()));
             case PRESTIGE -> prestige(player, live);
             case USE_ABILITY -> useAbility(player, bond, live);
             case UNEQUIP -> unequip(player, live);
@@ -162,15 +155,15 @@ public class KindredCharmItem extends Item {
         if (missingLive(player, bond, live)) {
             return false;
         }
-        if (live.activeAbility().isEmpty()) {
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.no_active_ability",
-                    live.getDisplayName()));
+        Optional<CompanionAbility> active = live.activeAbility();
+        if (active.isEmpty()) {
+            KindredMessages.send(player, "no_active_ability", live.getDisplayName());
             return false;
         }
-        if (!live.isAbilityReady(live.activeAbility().get().id())) {
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.ability_cooldown",
-                    live.activeAbility().get().displayName(),
-                    Math.ceilDiv(live.abilityCooldownTicks(live.activeAbility().get().id()), 20)));
+        CompanionAbility ability = active.get();
+        if (!live.isAbilityReady(ability.id())) {
+            KindredMessages.send(player, "ability_cooldown", ability.displayName(),
+                    CharmView.cooldownSeconds(live.abilityCooldownTicks(ability.id())));
             return false;
         }
         return live.useActiveAbility(player);
@@ -182,13 +175,7 @@ public class KindredCharmItem extends Item {
             return;
         }
 
-        if (live != null) {
-            live.setAbilityEnabled(ability, live.isAbilityDisabled(ability));
-            KindredAttachments.modifyBond(player, current -> snapshot(current, live));
-            return;
-        }
-
-        updateSnapshot(player, snap -> {
+        apply(player, live, entity -> entity.setAbilityEnabled(ability, entity.isAbilityDisabled(ability)), snap -> {
             List<String> names = new ArrayList<>(snap.disabledAbilities());
             if (!names.remove(text)) {
                 names.add(text);
@@ -198,14 +185,11 @@ public class KindredCharmItem extends Item {
     }
 
     private static void unequip(ServerPlayer player, @Nullable CompanionEntity live) {
-        ItemStack taken;
-        if (live != null) {
-            taken = live.takeEquipment();
-            KindredAttachments.modifyBond(player, current -> snapshot(current, live));
-        } else {
-            taken = KindredAttachments.bond(player).snapshot().orElseThrow().equipment();
-            updateSnapshot(player, snap -> snap.withEquipment(ItemStack.EMPTY));
-        }
+        ItemStack taken = live != null
+                ? live.takeEquipment()
+                : KindredAttachments.bond(player).snapshot().orElseThrow().equipment();
+        apply(player, live, entity -> {
+        }, snap -> snap.withEquipment(ItemStack.EMPTY));
 
         if (!taken.isEmpty()) {
             player.getInventory().placeItemBackInInventory(taken);
@@ -215,7 +199,7 @@ public class KindredCharmItem extends Item {
     private static void prestige(ServerPlayer player, @Nullable CompanionEntity live) {
         if (live != null) {
             if (live.prestige()) {
-                KindredAttachments.modifyBond(player, current -> snapshot(current, live));
+                sync(player, live);
             }
             return;
         }
@@ -226,8 +210,7 @@ public class KindredCharmItem extends Item {
         if (prestiged != current) {
             updateSnapshot(player, snap -> prestiged);
             KindredAttachments.modify(player, record -> record.withHighestStars(prestiged.stars()));
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.prestige",
-                    prestiged.displayName(), prestiged.stars()));
+            KindredMessages.send(player, "prestige", prestiged.displayName(), prestiged.stars());
         }
     }
 
@@ -237,63 +220,68 @@ public class KindredCharmItem extends Item {
                         change.apply(current.snapshot().orElseThrow())));
     }
 
+    private static void sync(ServerPlayer player, CompanionEntity live) {
+        KindredAttachments.modifyBond(player, current -> snapshot(current, live));
+    }
+
+    private static void apply(ServerPlayer player, @Nullable CompanionEntity live,
+                              Consumer<CompanionEntity> onLive, UnaryOperator<CompanionSnapshot> onResting) {
+        if (live != null) {
+            onLive.accept(live);
+            sync(player, live);
+        } else {
+            updateSnapshot(player, onResting);
+        }
+    }
+
     private static void rename(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live,
                                String text, boolean announce) {
         Optional<String> name = sanitiseName(text);
 
-        if (live != null) {
-            live.setCustomName(name.map(Component::literal).orElse(null));
-            KindredAttachments.modifyBond(player, current -> snapshot(current, live));
-        } else {
-            updateSnapshot(player, snap -> snap.withName(name));
-        }
+        apply(player, live, entity -> entity.setCustomName(name.map(Component::literal).orElse(null)),
+                snap -> snap.withName(name));
 
         if (!announce) {
             return;
         }
 
-        player.sendSystemMessage(name
-                .map(value -> Component.translatable("message.kindredspirits.charm_renamed", value))
-                .orElseGet(() -> Component.translatable("message.kindredspirits.charm_name_cleared")));
+        name.ifPresentOrElse(value -> KindredMessages.send(player, "charm_renamed", value),
+                () -> KindredMessages.send(player, "charm_name_cleared"));
     }
 
     private static void setSkin(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live,
                                 String text, boolean announce) {
-        CompanionSnapshot current = bond.snapshot().orElseThrow();
         boolean wearsSkin = live != null
                 ? live.species().usesPlayerSkin()
-                : current.resolveSpecies().map(CompanionSpecies::usesPlayerSkin).orElse(false);
+                : bond.snapshot().orElseThrow().usesPlayerSkin();
 
         if (!wearsSkin) {
             return;
         }
 
         if (!KindredConfig.COMMON.allowSkinChoice.get()) {
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_skin_disabled"));
+            KindredMessages.send(player, "charm_skin_disabled");
             return;
         }
 
         String cleaned = text.trim();
         if (!cleaned.isEmpty() && !StringUtil.isValidPlayerName(cleaned)) {
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_skin_invalid", cleaned));
+            KindredMessages.send(player, "charm_skin_invalid", cleaned);
             return;
         }
 
-        if (live != null) {
-            live.setSkinName(cleaned);
-            KindredAttachments.modifyBond(player, bondState -> snapshot(bondState, live));
-        } else {
-            updateSnapshot(player, snap ->
-                    snap.withSkin(cleaned.isEmpty() ? Optional.empty() : Optional.of(cleaned)));
-        }
+        apply(player, live, entity -> entity.setSkinName(cleaned),
+                snap -> snap.withSkin(CompanionSnapshot.nonEmpty(cleaned)));
 
         if (!announce) {
             return;
         }
 
-        player.sendSystemMessage(cleaned.isEmpty()
-                ? Component.translatable("message.kindredspirits.charm_skin_cleared")
-                : Component.translatable("message.kindredspirits.charm_skin_set", cleaned));
+        if (cleaned.isEmpty()) {
+            KindredMessages.send(player, "charm_skin_cleared");
+        } else {
+            KindredMessages.send(player, "charm_skin_set", cleaned);
+        }
     }
 
     private static Optional<String> sanitiseName(String text) {
@@ -303,7 +291,7 @@ public class KindredCharmItem extends Item {
             cleaned = cleaned.substring(0, KindredNetworking.CharmActionPayload.MAX_NAME_LENGTH).trim();
         }
 
-        return cleaned.isEmpty() ? Optional.empty() : Optional.of(cleaned);
+        return CompanionSnapshot.nonEmpty(cleaned);
     }
 
     private static void release(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live) {
@@ -318,7 +306,7 @@ public class KindredCharmItem extends Item {
         }
 
         releaseBond(player);
-        player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_released", name));
+        KindredMessages.send(player, "charm_released", name);
     }
 
     private static boolean missingLive(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live) {
@@ -326,9 +314,7 @@ public class KindredCharmItem extends Item {
             return false;
         }
 
-        player.sendSystemMessage(Component.translatable(bond.stored()
-                ? "message.kindredspirits.charm_already_resting"
-                : "message.kindredspirits.charm_unreachable"));
+        KindredMessages.send(player, bond.stored() ? "charm_already_resting" : "charm_unreachable");
         return true;
     }
 
@@ -340,7 +326,7 @@ public class KindredCharmItem extends Item {
         live.teleportTo(level, player.getX(), player.getY(), player.getZ(),
                 Set.of(), player.getYRot(), 0.0f, false);
         KindredAttachments.modifyBond(player, current -> snapshot(current, live).withStored(false));
-        player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_recalled", live.getDisplayName()));
+        KindredMessages.send(player, "charm_recalled", live.getDisplayName());
     }
 
     private static void dismiss(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live) {
@@ -351,19 +337,18 @@ public class KindredCharmItem extends Item {
         Component name = live.getDisplayName();
         KindredAttachments.modifyBond(player, current -> snapshot(current, live).withStored(true));
         live.discard();
-        player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_dismissed", name));
+        KindredMessages.send(player, "charm_dismissed", name);
     }
 
     private static void summon(ServerPlayer player, ServerLevel level, CompanionBond bond) {
         if (!bond.stored()) {
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_unreachable"));
+            KindredMessages.send(player, "charm_unreachable");
             return;
         }
 
-        long remaining = bond.reviveReadyAt() - level.getGameTime();
-        if (remaining > 0) {
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_recovering",
-                    Math.max(1, remaining / 20)));
+        int reviveSeconds = bond.reviveSecondsLeft(level.getGameTime());
+        if (reviveSeconds > 0) {
+            KindredMessages.send(player, "charm_recovering", reviveSeconds);
             return;
         }
 
@@ -371,13 +356,13 @@ public class KindredCharmItem extends Item {
         Optional<CompanionSpecies> species = snapshot.resolveSpecies();
 
         if (species.isEmpty()) {
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_missing"));
+            KindredMessages.send(player, "charm_missing");
             return;
         }
 
         CompanionEntity companion = KindredEntities.type(species.get()).create(level, EntitySpawnReason.COMMAND);
         if (companion == null) {
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_missing"));
+            KindredMessages.send(player, "charm_missing");
             return;
         }
 
@@ -398,16 +383,14 @@ public class KindredCharmItem extends Item {
         companion.setBonded(true);
 
         if (!level.tryAddFreshEntityWithPassengers(companion)) {
-            player.sendSystemMessage(Component.translatable("message.kindredspirits.charm_missing"));
+            KindredMessages.send(player, "charm_missing");
             return;
         }
 
         KindredAttachments.modifyBond(player, current ->
                 snapshot(current, companion).withStored(false).withReviveReadyAt(0L));
 
-        player.sendSystemMessage(Component.translatable(
-                reviving ? "message.kindredspirits.charm_revived" : "message.kindredspirits.charm_summoned",
-                companion.getDisplayName()));
+        KindredMessages.send(player, reviving ? "charm_revived" : "charm_summoned", companion.getDisplayName());
     }
 
     private static int penalisedExperience(CompanionSnapshot snapshot) {
@@ -420,8 +403,7 @@ public class KindredCharmItem extends Item {
             return;
         }
 
-        CompanionBond bond = KindredAttachments.bond(owner);
-        if (!bond.isBound() || !bond.companion().get().equals(companion.getUUID())) {
+        if (!KindredAttachments.bond(owner).isBoundTo(companion.getUUID())) {
             return;
         }
 
@@ -431,8 +413,8 @@ public class KindredCharmItem extends Item {
         KindredAttachments.modifyBond(owner, current ->
                 snapshot(current, companion).withStored(true).withReviveReadyAt(readyAt));
 
-        owner.sendSystemMessage(Component.translatable("message.kindredspirits.charm_companion_lost",
-                companion.getDisplayName(), Math.max(1, cooldownTicks / 20)));
+        KindredMessages.send(owner, "charm_companion_lost", companion.getDisplayName(),
+                Math.max(1, cooldownTicks / 20));
     }
 
     public static CompanionBond snapshot(CompanionBond bond, CompanionEntity companion) {

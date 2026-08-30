@@ -8,8 +8,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeMap;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 import java.util.List;
@@ -44,11 +44,7 @@ public record CompanionStats(List<Float> base, List<Float> modified,
         int level = CompanionLevels.clampLevel(snapshot.level());
         int stars = CompanionLevels.clampStars(snapshot.stars());
 
-        setBase(attributes, Attributes.MAX_HEALTH, CompanionLevels.healthAt(species, level, stars));
-        setBase(attributes, Attributes.ATTACK_DAMAGE, CompanionLevels.attackDamageAt(species, level, stars));
-        setBase(attributes, Attributes.ARMOR, CompanionLevels.armourAt(species, level, stars));
-        setBase(attributes, Attributes.MOVEMENT_SPEED, CompanionLevels.speedAt(species, level, stars));
-
+        CompanionLevels.applyBaseStats(attributes, species, level, stars);
         apply(attributes, CompanionLevels.starBonusesAt(stars));
         for (CompanionAbility ability : snapshot.activeAbilities(species)) {
             apply(attributes, ability.attributeBonuses());
@@ -62,8 +58,8 @@ public record CompanionStats(List<Float> base, List<Float> modified,
 
     private static CompanionStats build(CompanionSpecies species, int bondLevel,
                                         ToDoubleFunction<Holder<Attribute>> value) {
-        List<Float> base = List.of((float) species.baseHealth(), (float) species.attackDamage(),
-                (float) species.armour(), (float) species.moveSpeed(), (float) species.knockbackResistance(), 0f);
+        AttributeSupplier defaults = CompanionEntity.createCompanionAttributes(species).build();
+        List<Float> base = ATTRIBUTES.stream().map(attribute -> (float) defaults.getBaseValue(attribute)).toList();
         List<Float> modified = ATTRIBUTES.stream().map(attribute -> (float) value.applyAsDouble(attribute)).toList();
 
         return new CompanionStats(base, modified,
@@ -73,19 +69,7 @@ public record CompanionStats(List<Float> base, List<Float> modified,
                 CompanionBondMath.reviveCooldownTicks(bondLevel) / 20);
     }
 
-    private static void setBase(AttributeMap attributes, Holder<Attribute> attribute, double value) {
-        AttributeInstance instance = attributes.getInstance(attribute);
-        if (instance != null) {
-            instance.setBaseValue(value);
-        }
-    }
-
     private static void apply(AttributeMap attributes, List<AttributeBonus> bonuses) {
-        for (AttributeBonus bonus : bonuses) {
-            AttributeInstance instance = attributes.getInstance(bonus.attribute());
-            if (instance != null) {
-                instance.addOrReplacePermanentModifier(bonus.modifier());
-            }
-        }
+        CompanionLevels.applyBonuses(attributes, bonuses, bonuses, true);
     }
 }

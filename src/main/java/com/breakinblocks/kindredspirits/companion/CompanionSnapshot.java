@@ -75,7 +75,7 @@ public record CompanionSnapshot(String species, int level, int experience, int b
                 Optional.ofNullable(companion.getCustomName()).map(Component::getString),
                 companion.getCommand().ordinal(),
                 companion.getAggression().ordinal(),
-                companion.getSkinName().isEmpty() ? Optional.empty() : Optional.of(companion.getSkinName()),
+                nonEmpty(companion.getSkinName()),
                 companion.equipment().copy(),
                 companion.disabledAbilityNames());
     }
@@ -129,8 +129,16 @@ public record CompanionSnapshot(String species, int level, int experience, int b
                 disabledAbilities);
     }
 
+    public static Optional<String> nonEmpty(String value) {
+        return value.isEmpty() ? Optional.empty() : Optional.of(value);
+    }
+
+    public static boolean isDisabled(List<String> disabledAbilities, CompanionAbility ability) {
+        return disabledAbilities.contains(ability.id().getPath());
+    }
+
     public boolean isDisabled(CompanionAbility ability) {
-        return this.disabledAbilities.contains(ability.id().getPath());
+        return isDisabled(this.disabledAbilities, ability);
     }
 
     public List<CompanionAbility> activeAbilities(CompanionSpecies species) {
@@ -150,6 +158,10 @@ public record CompanionSnapshot(String species, int level, int experience, int b
 
     public Optional<CompanionSpecies> resolveSpecies() {
         return CompanionSpecies.byName(this.species);
+    }
+
+    public boolean usesPlayerSkin() {
+        return this.resolveSpecies().map(CompanionSpecies::usesPlayerSkin).orElse(false);
     }
 
     public Component displayName() {

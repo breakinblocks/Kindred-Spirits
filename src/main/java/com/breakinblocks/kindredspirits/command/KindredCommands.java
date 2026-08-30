@@ -3,6 +3,7 @@ package com.breakinblocks.kindredspirits.command;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
+import com.breakinblocks.kindredspirits.companion.CompanionProgressEvents;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
@@ -22,7 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.Optional;
+import java.util.function.ToIntBiFunction;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
@@ -81,57 +83,57 @@ public final class KindredCommands {
         return cleared;
     }
 
-    private static int releaseBond(CommandSourceStack source) {
+    private static int withPlayer(CommandSourceStack source, ToIntFunction<ServerPlayer> body) {
         ServerPlayer player = source.getPlayer();
         if (player == null) {
             source.sendFailure(Component.translatable("command.kindredspirits.player_only"));
             return 0;
         }
+        return body.applyAsInt(player);
+    }
 
-        if (!KindredCharmItem.releaseFully(player)) {
-            source.sendFailure(Component.translatable("message.kindredspirits.charm_empty"));
-            return 0;
-        }
+    private static int withCompanion(CommandSourceStack source, ToIntBiFunction<ServerPlayer, CompanionEntity> body) {
+        return withPlayer(source, player -> CompanionEntity.nearestOwned(player, SEARCH_RANGE)
+                .map(companion -> body.applyAsInt(player, companion))
+                .orElseGet(() -> {
+                    source.sendFailure(Component.translatable("command.kindredspirits.no_companion"));
+                    return 0;
+                }));
+    }
 
-        return 1;
+    private static int releaseBond(CommandSourceStack source) {
+        return withPlayer(source, player -> {
+            if (!KindredCharmItem.releaseFully(player)) {
+                source.sendFailure(Component.translatable("message.kindredspirits.charm_empty"));
+                return 0;
+            }
+            return 1;
+        });
     }
 
     private static int useAbility(CommandSourceStack source) {
-        ServerPlayer player = source.getPlayer();
-        if (player == null) {
-            source.sendFailure(Component.translatable("command.kindredspirits.player_only"));
-            return 0;
-        }
+        return withPlayer(source, player -> {
+            CompanionBond bond = KindredAttachments.bond(player);
+            if (!bond.isBound()) {
+                source.sendFailure(Component.translatable("message.kindredspirits.charm_empty"));
+                return 0;
+            }
 
-        CompanionBond bond = KindredAttachments.bond(player);
-        if (!bond.isBound()) {
-            source.sendFailure(Component.translatable("message.kindredspirits.charm_empty"));
-            return 0;
-        }
-
-        Optional<CompanionEntity> nearest = CompanionEntity.nearestOwned(player, SEARCH_RANGE)
-                .filter(CompanionEntity::isBonded);
-        return KindredCharmItem.useAbility(player, bond, nearest.orElse(null)) ? 1 : 0;
+            CompanionEntity nearest = CompanionProgressEvents.bondedCompanionNear(player, SEARCH_RANGE).orElse(null);
+            return KindredCharmItem.useAbility(player, bond, nearest) ? 1 : 0;
+        });
     }
 
     private static int reportCompanion(CommandSourceStack source) {
-        ServerPlayer player = source.getPlayer();
-        if (player == null) {
-            source.sendFailure(Component.translatable("command.kindredspirits.player_only"));
-            return 0;
-        }
+        return withCompanion(source, (player, companion) -> reportCompanion(source, companion));
+    }
 
-        Optional<CompanionEntity> nearest = CompanionEntity.nearestOwned(player, SEARCH_RANGE);
-        if (nearest.isEmpty()) {
-            source.sendFailure(Component.translatable("command.kindredspirits.no_companion"));
-            return 0;
-        }
-
-        CompanionEntity companion = nearest.get();
+    private static int reportCompanion(CommandSourceStack source, CompanionEntity companion) {
         List<CompanionAbility> unlocked = companion.unlockedAbilities();
         String abilities = companion.species().unlocks().stream()
                 .map(unlock -> !unlocked.contains(unlock.ability())
-                        ? unlock.ability().id().getPath() + " (" + unlock.requirement().getString() + ")"
+                        ? unlock.label(Component.literal(unlock.ability().id().getPath()),
+                                companion.getLevel(), companion.getBondLevel()).getString()
                         : companion.isAbilityDisabled(unlock.ability())
                         ? unlock.ability().id().getPath() + " ("
                                 + Component.translatable("command.kindredspirits.ability_off").getString() + ")"
@@ -169,23 +171,12 @@ public final class KindredCommands {
 
     private static int grant(CommandSourceStack source, int amount, BiConsumer<CompanionEntity, Integer> apply,
                              String key, Function<CompanionEntity, Integer> result) {
-        ServerPlayer player = source.getPlayer();
-        if (player == null) {
-            source.sendFailure(Component.translatable("command.kindredspirits.player_only"));
-            return 0;
-        }
-
-        Optional<CompanionEntity> nearest = CompanionEntity.nearestOwned(player, SEARCH_RANGE);
-        if (nearest.isEmpty()) {
-            source.sendFailure(Component.translatable("command.kindredspirits.no_companion"));
-            return 0;
-        }
-
-        CompanionEntity companion = nearest.get();
-        apply.accept(companion, amount);
-        source.sendSuccess(() -> Component.translatable(key,
-                amount, companion.getDisplayName(), result.apply(companion)), true);
-        return amount;
+        return withCompanion(source, (player, companion) -> {
+            apply.accept(companion, amount);
+            source.sendSuccess(() -> Component.translatable(key,
+                    amount, companion.getDisplayName(), result.apply(companion)), true);
+            return amount;
+        });
     }
 
     private KindredCommands() {

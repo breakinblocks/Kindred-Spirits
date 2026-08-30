@@ -50,18 +50,16 @@ public final class KindredCharmTooltip {
         snapshot.resolveSpecies().ifPresent(species -> {
             for (CompanionSpecies.Unlock unlock : species.unlocks()) {
                 boolean unlocked = unlock.isMet(snapshot.level(), snapshot.bondLevel());
-                event.getToolTip().add(unlocked
-                        ? Component.literal("  ").append(unlock.ability().displayName()).withStyle(ChatFormatting.GREEN)
-                        : Component.literal("  ").append(unlock.ability().displayName())
-                                .append(" (").append(unlock.requirement()).append(")")
-                                .withStyle(ChatFormatting.DARK_GRAY));
+                event.getToolTip().add(Component.literal("  ")
+                        .append(unlock.label(unlock.ability().displayName(), snapshot.level(), snapshot.bondLevel()))
+                        .withStyle(unlocked ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
             }
         });
 
-        long gameTime = event.getEntity().level().getGameTime();
-        if (bond.reviveReadyAt() > gameTime) {
+        int reviveSeconds = bond.reviveSecondsLeft(event.getEntity().level().getGameTime());
+        if (reviveSeconds > 0) {
             event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_recovering",
-                    Math.max(1, (bond.reviveReadyAt() - gameTime) / 20)).withStyle(ChatFormatting.RED));
+                    reviveSeconds).withStyle(ChatFormatting.RED));
         } else {
             event.getToolTip().add(Component.translatable(bond.stored()
                     ? "tooltip.kindredspirits.charm_resting"

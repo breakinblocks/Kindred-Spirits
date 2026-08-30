@@ -272,12 +272,7 @@ public enum CompanionSpecies implements StringRepresentable {
     }
 
     public static Optional<CompanionSpecies> byName(String name) {
-        for (CompanionSpecies species : values()) {
-            if (species.name.equals(name)) {
-                return Optional.of(species);
-            }
-        }
-        return Optional.empty();
+        return EnumLookup.byName(values(), name);
     }
 
     public record Size(float width, float height, float renderScale, double hitboxOffset) {
@@ -334,6 +329,11 @@ public enum CompanionSpecies implements StringRepresentable {
 
         public Component requirement() {
             return Component.translatable(this.gate.key, this.required);
+        }
+
+        public Component label(Component name, int level, int bondLevel) {
+            return this.isMet(level, bondLevel) ? name
+                    : name.copy().append(" (").append(this.requirement()).append(")");
         }
 
         public enum Gate {

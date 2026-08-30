@@ -15,6 +15,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
@@ -32,7 +33,7 @@ public final class KindredSpiritsClient {
         event.enqueueWork(() -> KindredSpirits.LOGGER.debug("Kindred Spirits client setup complete"));
     }
 
-    private static void registerScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
+    private static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(KindredMenus.COMPANION_STORAGE.get(), KindredStorageScreen::new);
     }
 

@@ -4,9 +4,12 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import net.minecraft.core.Holder;
 import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
+import java.util.Collection;
 import java.util.List;
 
 public final class CompanionLevels {
@@ -76,6 +79,42 @@ public final class CompanionLevels {
 
     public static double speedAt(CompanionSpecies species, int level, int stars) {
         return statAt(species.moveSpeed(), KindredConfig.COMMON.speedPerLevel.get(), species, level, stars);
+    }
+
+    public static void applyBaseStats(AttributeMap attributes, CompanionSpecies species, int level, int stars) {
+        setBase(attributes, Attributes.MAX_HEALTH, healthAt(species, level, stars));
+        setBase(attributes, Attributes.ATTACK_DAMAGE, attackDamageAt(species, level, stars));
+        setBase(attributes, Attributes.ARMOR, armourAt(species, level, stars));
+        setBase(attributes, Attributes.MOVEMENT_SPEED, speedAt(species, level, stars));
+    }
+
+    private static void setBase(AttributeMap attributes, Holder<Attribute> attribute, double value) {
+        AttributeInstance instance = attributes.getInstance(attribute);
+        if (instance != null) {
+            instance.setBaseValue(value);
+        }
+    }
+
+    public static void applyBonuses(AttributeMap attributes, Collection<AttributeBonus> all,
+                                    Collection<AttributeBonus> active, boolean permanent) {
+        for (AttributeBonus bonus : all) {
+            AttributeInstance instance = attributes.getInstance(bonus.attribute());
+            if (instance != null) {
+                instance.removeModifier(bonus.modifier().id());
+            }
+        }
+
+        for (AttributeBonus bonus : active) {
+            AttributeInstance instance = attributes.getInstance(bonus.attribute());
+            if (instance == null) {
+                continue;
+            }
+            if (permanent) {
+                instance.addOrReplacePermanentModifier(bonus.modifier());
+            } else {
+                instance.addTransientModifier(bonus.modifier());
+            }
+        }
     }
 
     public static List<AttributeBonus> starBonuses() {

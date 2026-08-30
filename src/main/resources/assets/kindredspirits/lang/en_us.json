@@ -111,8 +111,6 @@
   "screen.kindredspirits.prestige": "Prestige",
   "screen.kindredspirits.ability_cooldown": "%s (%ss)",
   "screen.kindredspirits.health": "Health %s / %s",
-  "screen.kindredspirits.attack": "Attack %s",
-  "screen.kindredspirits.armour": "Armour %s",
   "screen.kindredspirits.name": "Companion name",
   "screen.kindredspirits.skin": "Player skin",
   "screen.kindredspirits.skin_hint": "Your skin",

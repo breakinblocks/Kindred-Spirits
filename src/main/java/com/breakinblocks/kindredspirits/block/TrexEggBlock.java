@@ -2,6 +2,7 @@ package com.breakinblocks.kindredspirits.block;
 
 import com.breakinblocks.kindredspirits.companion.CompanionSpawns;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
+import com.breakinblocks.kindredspirits.util.BlockPosUtil;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -92,8 +93,7 @@ public class TrexEggBlock extends Block {
     }
 
     public static boolean isWarm(BlockGetter level, BlockPos pos) {
-        for (BlockPos check : BlockPos.betweenClosed(pos.offset(-WARM_RADIUS, -WARM_RADIUS, -WARM_RADIUS),
-                pos.offset(WARM_RADIUS, WARM_RADIUS, WARM_RADIUS))) {
+        for (BlockPos check : BlockPosUtil.cube(pos, WARM_RADIUS)) {
             BlockState state = level.getBlockState(check);
             if (state.is(BlockTags.CAMPFIRES) || state.getBlock() instanceof BaseTorchBlock) {
                 return true;

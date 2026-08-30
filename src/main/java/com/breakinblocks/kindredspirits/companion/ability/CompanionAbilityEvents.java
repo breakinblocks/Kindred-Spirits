@@ -2,8 +2,6 @@ package com.breakinblocks.kindredspirits.companion.ability;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
-import com.breakinblocks.kindredspirits.companion.CompanionProgressEvents;
-import com.breakinblocks.kindredspirits.config.KindredConfig;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -40,17 +38,13 @@ public final class CompanionAbilityEvents {
     }
 
     private static Optional<CompanionEntity> companionWith(ServerPlayer owner, CompanionAbility ability) {
-        if (!KindredConfig.COMMON.abilitiesEnabled.get()) {
-            return Optional.empty();
-        }
-        return CompanionProgressEvents.bondedCompanionNear(owner, ABILITY_RANGE)
-                .filter(companion -> companion.hasAbility(ability));
+        return CompanionEntity.bondedWithAbility(owner, ABILITY_RANGE, ability);
     }
 
     @SubscribeEvent
     public static void onSpawnPositionCheck(MobSpawnEvent.PositionCheck event) {
         if (event.getSpawnType() != EntitySpawnReason.NATURAL || !(event.getEntity() instanceof Enemy)
-                || !KindredConfig.COMMON.abilitiesEnabled.get()) {
+                || !CompanionAbilities.enabled()) {
             return;
         }
 
@@ -73,7 +67,7 @@ public final class CompanionAbilityEvents {
     public static void onCompanionDamage(LivingDamageEvent.Post event) {
         if (!(event.getSource().getEntity() instanceof CompanionEntity companion)
                 || !companion.hasAbility(CompanionAbilities.DRAGONFIRE)
-                || !KindredConfig.COMMON.abilitiesEnabled.get()
+                || !CompanionAbilities.enabled()
                 || event.getHealthDamage() <= 0.0f) {
             return;
         }
@@ -82,8 +76,7 @@ public final class CompanionAbilityEvents {
         if (target.isAlive() && companion.getRandom().nextDouble() < DRAGONFIRE_CHANCE) {
             target.igniteForSeconds(target.getRemainingFireTicks() / 20.0f + DRAGONFIRE_SECONDS);
             if (target.level() instanceof ServerLevel level) {
-                level.sendParticles(ParticleTypes.FLAME, target.getX(), target.getY(0.5), target.getZ(),
-                        8, 0.3, 0.3, 0.3, 0.02);
+                CompanionAbilities.hitParticles(level, target, ParticleTypes.FLAME, 8, 0.5, 0.3, 0.02);
             }
         }
     }
