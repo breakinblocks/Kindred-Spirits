@@ -1,9 +1,12 @@
 package com.breakinblocks.kindredspirits.companion;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
+import com.breakinblocks.kindredspirits.item.KindredEquipmentItem;
+import com.breakinblocks.kindredspirits.registry.KindredItems;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.menu.KindredStorageMenu;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
@@ -19,7 +22,12 @@ import com.geckolib.animation.state.AnimationTest;
 import com.geckolib.util.GeckoLibUtil;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.Identifier;
@@ -64,8 +72,12 @@ import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball;
 import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -78,7 +90,10 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -89,6 +104,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final EntityDataAccessor<Integer> DATA_EXPERIENCE =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_BOND =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_BOND_LEVEL =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_STARS =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Byte> DATA_COMMAND =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BYTE);
@@ -123,6 +142,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final int LEAP_IMPACT_TIMEOUT = 40;
     private static final int SHOCKWAVE_TICKS = 8;
     private static final int EQUIPMENT_INTERVAL = 20;
+    private static final int PROGRESS_INTERVAL = 20;
+    private static final int FEED_HEARTS = 7;
     private static final int BOW_INTERVAL = 35;
     private static final double MELEE_SWITCH_RANGE = 3.0;
     private static final double BOW_SWITCH_RANGE = 6.0;
@@ -141,6 +162,15 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             KindredSpirits.id("running"),
             0.2, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
     private static final double SHOCKWAVE_MAX_RADIUS = 4.0;
+    private static final int METEOR_TIMEOUT = 100;
+    private static final int METEOR_HEIGHT = 12;
+    private static final float METEOR_DAMAGE = 8.0f;
+    private static final double METEOR_RADIUS = 2.0;
+    private static final int METEOR_FIRE_TICKS = 20;
+    private static final int TABLET_WANDER_INTERVAL = 2400;
+    private static final int TABLET_WANDER_TICKS = 600;
+    private static final float TABLET_WANDER_CHANCE = 0.25f;
+    private static final Identifier METEOR_FIRE = KindredSpirits.id("meteor_fire");
 
     private final CompanionSpecies species;
     private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
@@ -156,7 +186,14 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private long sitVariantUntil;
     private int bowCooldown;
     private List<CompanionAbility> cachedAbilities = List.of();
+    private CompanionProgress progress = new CompanionProgress();
+    private CompanionLights lights = new CompanionLights();
     private int cachedAbilityLevel = -1;
+    private int cachedAbilityBond = -1;
+    private ItemStack equipment = ItemStack.EMPTY;
+    private final List<Meteor> meteors = new ArrayList<>();
+    private @Nullable CompanionCommand tabletWanderRestore;
+    private long tabletWanderUntil;
 
     public CompanionEntity(EntityType<? extends CompanionEntity> type, Level level, CompanionSpecies species) {
         super(type, level);
@@ -186,7 +223,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                 .add(Attributes.ATTACK_DAMAGE, species.attackDamage())
                 .add(Attributes.ARMOR, species.armour())
                 .add(Attributes.KNOCKBACK_RESISTANCE, species.knockbackResistance())
-                .add(Attributes.FOLLOW_RANGE, species.followRange());
+                .add(Attributes.FOLLOW_RANGE, species.followRange())
+                .add(Attributes.ENTITY_INTERACTION_RANGE, 0.0);
     }
 
     public CompanionSpecies species() {
@@ -293,6 +331,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         entityData.define(DATA_LEVEL, CompanionLevels.MIN_LEVEL);
         entityData.define(DATA_EXPERIENCE, 0);
         entityData.define(DATA_BOND, 0);
+        entityData.define(DATA_BOND_LEVEL, 0);
+        entityData.define(DATA_STARS, 0);
         entityData.define(DATA_COMMAND, (byte) CompanionCommand.FOLLOW.ordinal());
         entityData.define(DATA_AGGRESSION, (byte) CompanionAggression.NEUTRAL.ordinal());
         entityData.define(DATA_BONDED, false);
@@ -304,11 +344,19 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         super.addAdditionalSaveData(output);
         output.putInt("Level", this.getLevel());
         output.putInt("Experience", this.getExperience());
-        output.putInt("Bond", this.getBond());
+        output.putInt("BondPoints", this.getBondPoints());
+        output.putInt("Stars", this.getStars());
+        output.store("Progress", CompanionProgress.CODEC, this.progress);
+        if (!this.lights.isEmpty()) {
+            output.store("Lights", CompanionLights.CODEC, this.lights);
+        }
         output.putString("Command", this.getCommand().getSerializedName());
         output.putString("Aggression", this.getAggression().getSerializedName());
         output.putBoolean("PlayedSpawnAnimation", this.playedSpawnAnimation);
         output.putString("Skin", this.getSkinName());
+        if (!this.equipment.isEmpty()) {
+            output.store("Equipment", ItemStack.CODEC, this.equipment);
+        }
     }
 
     @Override
@@ -316,9 +364,14 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         super.readAdditionalSaveData(input);
         this.entityData.set(DATA_LEVEL, Math.max(CompanionLevels.MIN_LEVEL, input.getIntOr("Level", CompanionLevels.MIN_LEVEL)));
         this.entityData.set(DATA_EXPERIENCE, input.getIntOr("Experience", 0));
-        this.entityData.set(DATA_BOND, input.getIntOr("Bond", 0));
+        this.setBondPoints(input.read("BondPoints", Codec.INT)
+                .orElseGet(() -> CompanionBondMath.migrateLegacy(input.getIntOr("Bond", 0))));
+        this.entityData.set(DATA_STARS, CompanionLevels.clampStars(input.getIntOr("Stars", 0)));
+        this.progress = input.read("Progress", CompanionProgress.CODEC).orElseGet(CompanionProgress::new);
+        this.lights = input.read("Lights", CompanionLights.CODEC).orElseGet(CompanionLights::new);
         this.playedSpawnAnimation = input.getBooleanOr("PlayedSpawnAnimation", true);
         this.entityData.set(DATA_SKIN, input.getStringOr("Skin", ""));
+        this.equipment = input.read("Equipment", ItemStack.CODEC).orElse(ItemStack.EMPTY);
         this.entityData.set(DATA_AGGRESSION, (byte) CompanionAggression
                 .byName(input.getStringOr("Aggression", CompanionAggression.NEUTRAL.getSerializedName())).ordinal());
 
@@ -336,8 +389,68 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         return this.entityData.get(DATA_EXPERIENCE);
     }
 
-    public int getBond() {
+    public int getBondPoints() {
         return this.entityData.get(DATA_BOND);
+    }
+
+    public int getBondLevel() {
+        return this.entityData.get(DATA_BOND_LEVEL);
+    }
+
+    public int getStars() {
+        return this.entityData.get(DATA_STARS);
+    }
+
+    public CompanionProgress progress() {
+        return this.progress;
+    }
+
+    public void setBondPoints(int points) {
+        int clamped = CompanionBondMath.clampPoints(points);
+        this.entityData.set(DATA_BOND, clamped);
+        this.entityData.set(DATA_BOND_LEVEL, CompanionBondMath.levelFromPoints(clamped));
+    }
+
+    public void addBondPoints(int amount) {
+        int before = this.getBondLevel();
+        this.setBondPoints(this.getBondPoints() + amount);
+        int after = this.getBondLevel();
+
+        if (after > before && !this.level().isClientSide() && this.getOwner() instanceof ServerPlayer owner) {
+            owner.sendSystemMessage(Component.translatable("message.kindredspirits.bond_up",
+                    this.getDisplayName(), after));
+            this.burst(ParticleTypes.HEART, FEED_HEARTS);
+        }
+    }
+
+    public double bondRateMultiplier() {
+        return CompanionBondMath.rateMultiplier(this.getBondLevel());
+    }
+
+    public int bondTier() {
+        return CompanionBondMath.tier(this.getBondLevel());
+    }
+
+    public int scaledInterval(CompanionAbility ability) {
+        if (!ability.scalesWithBond()) {
+            return ability.intervalTicks();
+        }
+        return (int) Math.max(1L, Math.round(ability.intervalTicks() * this.bondRateMultiplier()));
+    }
+
+    public double scaledChance(double chance) {
+        return Math.min(1.0, chance / this.bondRateMultiplier());
+    }
+
+    public CompanionLights lights() {
+        return this.lights;
+    }
+
+    public void burst(ParticleOptions particle, int count) {
+        if (this.level() instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(particle,
+                    this.getX(), this.getY() + this.getBbHeight(), this.getZ(), count, 0.4, 0.4, 0.4, 0.02);
+        }
     }
 
     public CompanionCommand getCommand() {
@@ -373,10 +486,6 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
     }
 
-    public void addBond(int amount) {
-        this.entityData.set(DATA_BOND, Math.clamp(this.getBond() + amount, 0, CompanionLevels.bondCap()));
-    }
-
     public String getSkinName() {
         return this.entityData.get(DATA_SKIN);
     }
@@ -386,7 +495,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public void openStorage(ServerPlayer player) {
-        int accessible = CompanionLevels.storageSlots(this.species, this.getBond());
+        int accessible = CompanionLevels.storageSlots(this.species, this.getBondLevel());
         SimpleContainer storage = KindredAttachments.storageContainer(player);
 
         int highestFilled = -1;
@@ -411,10 +520,25 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     public List<CompanionAbility> unlockedAbilities() {
         int level = this.getLevel();
+        int bondLevel = this.getBondLevel();
 
-        if (level != this.cachedAbilityLevel) {
-            this.cachedAbilities = this.species.abilitiesAt(level);
+        if (level != this.cachedAbilityLevel || bondLevel != this.cachedAbilityBond) {
+            List<CompanionAbility> previous = this.cachedAbilities;
+            boolean announce = this.cachedAbilityLevel >= 0;
+            this.cachedAbilities = this.species.abilitiesAt(level, bondLevel);
             this.cachedAbilityLevel = level;
+            this.cachedAbilityBond = bondLevel;
+            this.applyAbilityBonuses();
+
+            if (announce && !this.level().isClientSide() && this.isBonded()
+                    && this.getOwner() instanceof ServerPlayer owner) {
+                for (CompanionAbility ability : this.cachedAbilities) {
+                    if (!previous.contains(ability)) {
+                        owner.sendSystemMessage(Component.translatable("message.kindredspirits.ability_unlocked",
+                                this.getDisplayName(), ability.displayName()));
+                    }
+                }
+            }
         }
 
         return this.cachedAbilities;
@@ -424,8 +548,144 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         return this.unlockedAbilities().contains(ability);
     }
 
+    private void applyAbilityBonuses() {
+        this.applyBonuses(
+                CompanionAbilities.all().values().stream().flatMap(ability -> ability.attributeBonuses().stream()).toList(),
+                this.cachedAbilities.stream().flatMap(ability -> ability.attributeBonuses().stream()).toList(),
+                false);
+    }
+
+    private void applyEquipmentBonuses() {
+        this.applyBonuses(
+                KindredItems.equipment().stream().flatMap(item -> item.get().bonuses().stream()).toList(),
+                this.equipment.getItem() instanceof KindredEquipmentItem item ? item.bonuses() : List.of(),
+                false);
+    }
+
+    private void applyBonuses(Collection<CompanionLevels.AttributeBonus> all,
+                              Collection<CompanionLevels.AttributeBonus> active, boolean permanent) {
+        for (CompanionLevels.AttributeBonus bonus : all) {
+            AttributeInstance instance = this.getAttribute(bonus.attribute());
+            if (instance != null) {
+                instance.removeModifier(bonus.modifier().id());
+            }
+        }
+
+        for (CompanionLevels.AttributeBonus bonus : active) {
+            AttributeInstance instance = this.getAttribute(bonus.attribute());
+            if (instance == null) {
+                continue;
+            }
+            if (permanent) {
+                instance.addOrReplacePermanentModifier(bonus.modifier());
+            } else {
+                instance.addTransientModifier(bonus.modifier());
+            }
+        }
+    }
+
+    public ItemStack equipment() {
+        return this.equipment;
+    }
+
+    public boolean hasEquipment(Item item) {
+        return this.equipment.is(item);
+    }
+
+    public void setEquipment(ItemStack stack) {
+        this.equipment = stack;
+        this.applyEquipmentBonuses();
+        this.refreshEquipment();
+        if (!this.hasEquipment(KindredItems.DRAGON_TABLET.get())) {
+            this.endTabletWander();
+        }
+    }
+
+    private void tryEquip(Player player, ItemStack stack) {
+        ItemStack previous = this.equipment;
+        this.setEquipment(stack.copyWithCount(1));
+        stack.consume(1, player);
+        this.playInteractFeedback();
+
+        if (!previous.isEmpty()) {
+            player.getInventory().placeItemBackInInventory(previous);
+        }
+
+        player.sendSystemMessage(Component.translatable("message.kindredspirits.equipped",
+                this.getDisplayName(), this.equipment.getHoverName()));
+    }
+
+    public ItemStack takeEquipment() {
+        ItemStack taken = this.equipment;
+        this.setEquipment(ItemStack.EMPTY);
+        return taken;
+    }
+
+    public void dropEquipment() {
+        ItemStack dropped = this.takeEquipment();
+        if (!dropped.isEmpty() && this.level() instanceof ServerLevel level) {
+            this.spawnAtLocation(level, dropped);
+        }
+    }
+
+    @Override
+    protected AABB getAttackBoundingBox(double horizontalExpansion) {
+        return super.getAttackBoundingBox(horizontalExpansion + this.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE));
+    }
+
+    public Optional<CompanionAbility> activeAbility() {
+        return this.unlockedAbilities().stream().filter(CompanionAbility::isActive).findFirst();
+    }
+
+    public int abilityCooldownTicks(Identifier ability) {
+        return this.abilityCooldowns.getInt(ability);
+    }
+
+    public boolean useActiveAbility(ServerPlayer owner) {
+        if (!this.isBonded() || !this.isOwnedBy(owner) || !KindredConfig.COMMON.abilitiesEnabled.get()) {
+            return false;
+        }
+        return this.activeAbility().map(ability -> ability.activate(this, owner)).orElse(false);
+    }
+
     public int experienceToNextLevel() {
         return CompanionLevels.experienceToNext(this.getLevel());
+    }
+
+    public void gainExperience(int amount) {
+        if (this.level().isClientSide() || amount <= 0 || !this.isBonded()) {
+            return;
+        }
+
+        int scaled = (int) Math.floor(amount * CompanionBondMath.experienceMultiplier(this.getBondLevel()));
+        this.addExperience(this.progress.applyGain(scaled, this.level().getGameTime(), this.ownerChunk()));
+    }
+
+    private @Nullable ChunkPos ownerChunk() {
+        return this.getOwner() instanceof ServerPlayer owner && owner.level() == this.level()
+                ? owner.chunkPosition() : null;
+    }
+
+    public boolean prestige() {
+        if (this.level().isClientSide() || !CompanionLevels.canPrestige(this.getLevel(), this.getStars())) {
+            return false;
+        }
+
+        int stars = this.getStars() + 1;
+        this.entityData.set(DATA_STARS, stars);
+        this.entityData.set(DATA_LEVEL, CompanionLevels.MIN_LEVEL);
+        this.entityData.set(DATA_EXPERIENCE, 0);
+        this.applyLevelScaling(true);
+        this.playSound(SoundEvents.TOTEM_USE, 0.6f, 1.2f);
+        this.burst(ParticleTypes.END_ROD, 24);
+
+        if (this.getOwner() instanceof ServerPlayer owner) {
+            KindredAttachments.modify(owner, record -> record.withHighestStars(stars));
+            owner.sendSystemMessage(Component.translatable("message.kindredspirits.prestige",
+                    this.getDisplayName(), stars));
+        }
+
+        return true;
     }
 
     public void addExperience(int amount) {
@@ -454,10 +714,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             this.applyLevelScaling(true);
             this.playSound(SoundEvents.PLAYER_LEVELUP, 0.7f, 1.4f);
 
-            if (this.level() instanceof ServerLevel serverLevel) {
-                serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER,
-                        this.getX(), this.getY() + this.getBbHeight(), this.getZ(), 12, 0.4, 0.4, 0.4, 0.02);
-            }
+            this.burst(ParticleTypes.HAPPY_VILLAGER, 12);
 
             if (this.getOwner() instanceof ServerPlayer owner) {
                 int reached = level;
@@ -484,29 +741,98 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
     }
 
-    public void restoreProgress(int level, int experience, int bond) {
-        this.entityData.set(DATA_LEVEL, Math.clamp(level, CompanionLevels.MIN_LEVEL, CompanionLevels.maxLevel()));
+    public void restoreProgress(CompanionSnapshot snapshot, int experience) {
+        this.entityData.set(DATA_LEVEL, CompanionLevels.clampLevel(snapshot.level()));
         this.entityData.set(DATA_EXPERIENCE, Math.max(0, experience));
-        this.entityData.set(DATA_BOND, Math.clamp(bond, 0, CompanionLevels.bondCap()));
+        this.entityData.set(DATA_STARS, CompanionLevels.clampStars(snapshot.stars()));
+        this.progress = snapshot.progress().copy();
+        this.setBondPoints(snapshot.bondPoints());
+        this.setEquipment(snapshot.equipment().copy());
         this.applyLevelScaling(true);
     }
 
     public void applyLevelScaling(boolean healToFull) {
         int level = this.getLevel();
+        int stars = this.getStars();
 
-        var maxHealth = this.getAttribute(Attributes.MAX_HEALTH);
-        if (maxHealth != null) {
-            maxHealth.setBaseValue(CompanionLevels.healthAt(this.species, level));
-        }
+        this.setBase(Attributes.MAX_HEALTH, CompanionLevels.healthAt(this.species, level, stars));
+        this.setBase(Attributes.ATTACK_DAMAGE, CompanionLevels.attackDamageAt(this.species, level, stars));
+        this.setBase(Attributes.ARMOR, CompanionLevels.armourAt(this.species, level, stars));
+        this.setBase(Attributes.MOVEMENT_SPEED, CompanionLevels.speedAt(this.species, level, stars));
 
-        var attackDamage = this.getAttribute(Attributes.ATTACK_DAMAGE);
-        if (attackDamage != null) {
-            attackDamage.setBaseValue(CompanionLevels.attackDamageAt(this.species, level));
-        }
+        this.applyBonuses(CompanionLevels.starBonuses(), CompanionLevels.starBonusesAt(stars), true);
+        this.unlockedAbilities();
+        this.applyAbilityBonuses();
+        this.applyEquipmentBonuses();
 
         if (healToFull) {
             this.setHealth(this.getMaxHealth());
         }
+    }
+
+    private void setBase(Holder<Attribute> attribute, double value) {
+        AttributeInstance instance = this.getAttribute(attribute);
+        if (instance != null) {
+            instance.setBaseValue(value);
+        }
+    }
+
+    private void tickProgress() {
+        if (this.tickCount % PROGRESS_INTERVAL != 0 || !this.isAlive()) {
+            return;
+        }
+
+        ServerPlayer owner = this.getOwner() instanceof ServerPlayer serverPlayer ? serverPlayer : null;
+        this.progress.tickSecond(this.level().getGameTime(), this.ownerChunk());
+
+        if (!this.isBonded() || owner == null || owner.level() != this.level()
+                || this.distanceToSqr(owner) > CompanionBondMath.PASSIVE_RANGE * CompanionBondMath.PASSIVE_RANGE
+                || CompanionProgressEvents.isAfk(owner)) {
+            return;
+        }
+
+        this.addBondPoints(CompanionBondMath.PASSIVE_POINTS);
+    }
+
+    public void onDeathProgress() {
+        this.progress.startFeedCooldown(this.level().getGameTime());
+        this.setBondPoints(CompanionBondMath.afterDeath(this.getBondPoints()));
+    }
+
+    private void playInteractFeedback() {
+        this.playCompanionAnim(CompanionAnimations.INTERACT);
+        this.playSound(this.species.sounds().interact().get(), 0.8f, 1.0f);
+    }
+
+    private void tryTame(Player player, ItemStack stack) {
+        stack.consume(1, player);
+        this.playInteractFeedback();
+
+        if (this.random.nextDouble() < KindredConfig.COMMON.tamingChance.get()) {
+            this.tame(player);
+            this.setCommand(CompanionCommand.FOLLOW);
+            this.burst(ParticleTypes.HEART, FEED_HEARTS);
+            this.level().broadcastEntityEvent(this, (byte) 7);
+        } else {
+            this.level().broadcastEntityEvent(this, (byte) 6);
+        }
+    }
+
+    private boolean feedForBond(Player player, ItemStack stack) {
+        long gameTime = this.level().getGameTime();
+        this.playInteractFeedback();
+
+        if (!this.progress.canFeed(gameTime)) {
+            player.sendSystemMessage(Component.translatable("message.kindredspirits.bond_feed_wait",
+                    this.getDisplayName(), this.progress.feedSecondsLeft(gameTime)));
+            return false;
+        }
+
+        stack.consume(1, player);
+        this.progress.startFeedCooldown(gameTime);
+        this.addBondPoints(CompanionBondMath.feedPoints(this.getBondPoints()));
+        this.burst(ParticleTypes.HEART, FEED_HEARTS);
+        return true;
     }
 
     @Override
@@ -543,6 +869,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.tickAbilityCooldowns();
         this.tickLeapImpact();
         this.tickShockwave();
+        this.tickMeteors();
+        this.tickTabletWander();
+        this.tickProgress();
 
         if (!this.isBonded() || !KindredConfig.COMMON.abilitiesEnabled.get()) {
             return;
@@ -550,7 +879,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
         ServerPlayer owner = this.getOwner() instanceof ServerPlayer serverPlayer ? serverPlayer : null;
         for (CompanionAbility ability : this.unlockedAbilities()) {
-            if (this.tickCount % ability.intervalTicks() == 0) {
+            if (this.tickCount % this.scaledInterval(ability) == 0) {
                 ability.serverTick(this, owner);
             }
         }
@@ -590,13 +919,26 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                 if (!this.level().isClientSide()) {
                     stack.consume(1, player);
                     this.heal((float) (double) KindredConfig.COMMON.healingPerItem.get());
-                    this.playCompanionAnim(CompanionAnimations.INTERACT);
-                    this.playSound(this.species.sounds().interact().get(), 0.8f, 1.0f);
+                    this.playInteractFeedback();
 
                     if (this.level() instanceof ServerLevel serverLevel) {
                         serverLevel.sendParticles(ParticleTypes.HEART,
                                 this.getX(), this.getY() + this.getBbHeight(), this.getZ(), 5, 0.3, 0.3, 0.3, 0.0);
                     }
+                }
+                return InteractionResult.SUCCESS;
+            }
+
+            if (stack.is(this.species.equipmentTag())) {
+                if (!this.level().isClientSide()) {
+                    this.tryEquip(player, stack);
+                }
+                return InteractionResult.SUCCESS;
+            }
+
+            if (this.isBonded() && stack.is(this.species.tamingTag())) {
+                if (!this.level().isClientSide()) {
+                    this.feedForBond(player, stack);
                 }
                 return InteractionResult.SUCCESS;
             }
@@ -615,25 +957,15 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             if (this.isFood(stack)) {
                 if (!this.level().isClientSide()) {
                     stack.consume(1, player);
-                    this.addExperience(KindredConfig.COMMON.experiencePerFeed.get());
-                    this.addBond(1);
+                    this.gainExperience(KindredConfig.COMMON.experiencePerFeed.get());
                     this.heal(2.0f);
-                    this.playCompanionAnim(CompanionAnimations.INTERACT);
-                    this.playSound(this.species.sounds().interact().get(), 0.8f, 1.0f);
+                    this.playInteractFeedback();
                 }
                 return InteractionResult.SUCCESS;
             }
-        } else if (!this.isTame() && this.isFood(stack)) {
+        } else if (!this.isTame() && stack.is(this.species.tamingTag())) {
             if (!this.level().isClientSide()) {
-                stack.consume(1, player);
-
-                if (this.random.nextInt(3) == 0) {
-                    this.tame(player);
-                    this.setCommand(CompanionCommand.FOLLOW);
-                    this.level().broadcastEntityEvent(this, (byte) 7);
-                } else {
-                    this.level().broadcastEntityEvent(this, (byte) 6);
-                }
+                this.tryTame(player, stack);
             }
             return InteractionResult.SUCCESS;
         }
@@ -643,7 +975,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     @Override
     public boolean isFood(ItemStack stack) {
-        return stack.is(KindredTags.COMPANION_FOOD);
+        return stack.is(KindredTags.COMPANION_FOOD) || stack.is(this.species.tamingTag());
     }
 
     @Override
@@ -762,6 +1094,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     private void refreshEquipment() {
+        this.equip(EquipmentSlot.CHEST, this.equipment.is(ItemTags.CHEST_ARMOR) ? this.equipment.copy() : ItemStack.EMPTY);
+
         if (!this.species.carriesWeapons()) {
             return;
         }
@@ -842,7 +1176,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.bowCooldown = BOW_INTERVAL;
         this.playCompanionAnim(CompanionAnimations.SHOOT);
         this.performRangedAttack(target,
-                (float) (CompanionLevels.attackDamageAt(this.species, this.getLevel()) / BOW_POWER_DIVISOR));
+                (float) (CompanionLevels.attackDamageAt(this.species, this.getLevel(), this.getStars()) / BOW_POWER_DIVISOR));
     }
 
     @Override
@@ -921,8 +1255,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             victim.knockback(impact.knockback, this.getX() - victim.getX(), this.getZ() - victim.getZ());
         }
 
-        this.shockwaveOrigin = this.position();
-        this.shockwaveTicks = SHOCKWAVE_TICKS;
+        this.startShockwave();
 
         BlockState ground = level.getBlockState(this.blockPosition().below());
         if (!ground.isAir()) {
@@ -931,6 +1264,97 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
 
         this.playSound(SoundEvents.GENERIC_EXPLODE.value(), 0.5f, 1.6f);
+    }
+
+    public void callMeteor(LivingEntity target) {
+        if (!(this.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        LargeFireball fireball = new LargeFireball(level, this, new Vec3(0.0, -1.0, 0.0), 0);
+        fireball.setPos(target.getX(), target.getY() + METEOR_HEIGHT, target.getZ());
+        fireball.setDeltaMovement(0.0, -0.6, 0.0);
+        level.addFreshEntity(fireball);
+        this.meteors.add(new Meteor(fireball, METEOR_TIMEOUT));
+    }
+
+    private void tickMeteors() {
+        if (!(this.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        this.lights.sweep(level, METEOR_FIRE, this.position(), METEOR_FIRE_TICKS, Double.MAX_VALUE);
+
+        for (Iterator<Meteor> iterator = this.meteors.iterator(); iterator.hasNext(); ) {
+            Meteor meteor = iterator.next();
+            Vec3 at = meteor.fireball.position();
+
+            if (meteor.fireball.isRemoved()) {
+                iterator.remove();
+                this.meteorImpact(level, at);
+            } else if (--meteor.remaining <= 0) {
+                iterator.remove();
+                meteor.fireball.discard();
+            }
+        }
+    }
+
+    private void meteorImpact(ServerLevel level, Vec3 at) {
+        DamageSource source = this.damageSources().indirectMagic(this, this);
+
+        for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
+                AABB.ofSize(at, METEOR_RADIUS * 2, METEOR_RADIUS * 2, METEOR_RADIUS * 2),
+                entity -> entity.isAlive() && entity != this && entity instanceof Enemy)) {
+            victim.hurtServer(level, source, METEOR_DAMAGE);
+        }
+
+        BlockPos center = BlockPos.containing(at);
+        for (BlockPos pos : BlockPos.betweenClosed(center.offset(-1, -1, -1), center.offset(1, 1, 1))) {
+            if (level.getBlockState(pos).isAir() && level.getBlockState(pos.below()).isSolid()) {
+                this.lights.place(level, METEOR_FIRE, pos.immutable(), Blocks.FIRE.defaultBlockState(), 9);
+            }
+        }
+
+        level.sendParticles(ParticleTypes.LAVA, at.x, at.y, at.z, 16, 0.6, 0.3, 0.6, 0.05);
+        level.sendParticles(ParticleTypes.FLAME, at.x, at.y, at.z, 24, 0.8, 0.4, 0.8, 0.05);
+        this.playSound(SoundEvents.GENERIC_EXPLODE.value(), 0.7f, 1.3f);
+    }
+
+    private void tickTabletWander() {
+        if (this.tabletWanderRestore != null) {
+            if (this.level().getGameTime() >= this.tabletWanderUntil) {
+                this.endTabletWander();
+            }
+            return;
+        }
+
+        if (this.tickCount % TABLET_WANDER_INTERVAL != 0 || !this.isBonded()
+                || !this.hasEquipment(KindredItems.DRAGON_TABLET.get())
+                || this.getCommand() == CompanionCommand.WANDER
+                || this.random.nextFloat() >= TABLET_WANDER_CHANCE) {
+            return;
+        }
+
+        this.tabletWanderRestore = this.getCommand();
+        this.tabletWanderUntil = this.level().getGameTime() + TABLET_WANDER_TICKS;
+        this.setCommand(CompanionCommand.WANDER);
+    }
+
+    private void endTabletWander() {
+        if (this.tabletWanderRestore == null) {
+            return;
+        }
+
+        CompanionCommand restore = this.tabletWanderRestore;
+        this.tabletWanderRestore = null;
+        if (this.getCommand() == CompanionCommand.WANDER) {
+            this.setCommand(restore);
+        }
+    }
+
+    public void startShockwave() {
+        this.shockwaveOrigin = this.position();
+        this.shockwaveTicks = SHOCKWAVE_TICKS;
     }
 
     private void tickShockwave() {
@@ -957,6 +1381,16 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
             level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state),
                     x, this.shockwaveOrigin.y + 0.1, z, 2, 0.04, 0.02, 0.04, lift);
+        }
+    }
+
+    private static final class Meteor {
+        private final LargeFireball fireball;
+        private int remaining;
+
+        private Meteor(LargeFireball fireball, int remaining) {
+            this.fireball = fireball;
+            this.remaining = remaining;
         }
     }
 
@@ -1005,9 +1439,21 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     @Override
+    public void remove(RemovalReason reason) {
+        if (reason.shouldDestroy() && this.level() instanceof ServerLevel serverLevel) {
+            this.lights.clear(serverLevel);
+        }
+        super.remove(reason);
+    }
+
+    @Override
     public void die(DamageSource source) {
         if (!this.level().isClientSide()) {
+            this.onDeathProgress();
             KindredCharmItem.onCompanionDied(this);
+            if (!this.isBonded()) {
+                this.dropEquipment();
+            }
         }
         super.die(source);
     }

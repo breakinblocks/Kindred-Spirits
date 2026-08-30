@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "kindredspirits:trex_egg"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "kindredspirits:blocks/trex_egg"
+}

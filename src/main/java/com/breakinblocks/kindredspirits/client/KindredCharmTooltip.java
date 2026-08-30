@@ -1,8 +1,11 @@
 package com.breakinblocks.kindredspirits.client;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
 import com.breakinblocks.kindredspirits.companion.CompanionLevels;
+import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.companion.CompanionSnapshot;
+import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
@@ -37,8 +40,23 @@ public final class KindredCharmTooltip {
         event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_level",
                 snapshot.level(), CompanionLevels.experienceToNext(snapshot.level()))
                 .withStyle(ChatFormatting.GRAY));
+        if (snapshot.stars() > 0) {
+            event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_stars",
+                    CharmView.starText(snapshot.stars())).withStyle(ChatFormatting.YELLOW));
+        }
         event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_bond",
-                snapshot.bond()).withStyle(ChatFormatting.GRAY));
+                snapshot.bondLevel(), CompanionBondMath.maxLevel()).withStyle(ChatFormatting.GRAY));
+
+        snapshot.resolveSpecies().ifPresent(species -> {
+            for (CompanionSpecies.Unlock unlock : species.unlocks()) {
+                boolean unlocked = unlock.isMet(snapshot.level(), snapshot.bondLevel());
+                event.getToolTip().add(unlocked
+                        ? Component.literal("  ").append(unlock.ability().displayName()).withStyle(ChatFormatting.GREEN)
+                        : Component.literal("  ").append(unlock.ability().displayName())
+                                .append(" (").append(unlock.requirement()).append(")")
+                                .withStyle(ChatFormatting.DARK_GRAY));
+            }
+        });
 
         long gameTime = event.getEntity().level().getGameTime();
         if (bond.reviveReadyAt() > gameTime) {

@@ -3,6 +3,9 @@ package com.breakinblocks.kindredspirits.client;
 import com.breakinblocks.kindredspirits.client.screen.KindredCharmScreen;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+
+import java.util.List;
 
 public final class KindredClientHooks {
 
@@ -17,6 +20,10 @@ public final class KindredClientHooks {
         if (open) {
             minecraft.setScreen(new KindredCharmScreen(view));
         }
+    }
+
+    public static void acceptOreReveal(List<BlockPos> ores, int ticks) {
+        OreRevealOverlay.show(ores, ticks);
     }
 
     private KindredClientHooks() {

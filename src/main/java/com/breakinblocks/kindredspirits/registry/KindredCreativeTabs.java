@@ -18,6 +18,8 @@ public final class KindredCreativeTabs {
                     .icon(() -> new ItemStack(KindredItems.KINDRED_CHARM.get()))
                     .displayItems((parameters, output) -> {
                         output.accept(KindredItems.KINDRED_CHARM.get());
+                        output.accept(KindredItems.TREX_EGG.get());
+                        KindredItems.equipment().forEach(item -> output.accept(item.get()));
                         KindredItems.spawnEggs().values().forEach(egg -> output.accept(egg.get()));
                     })
                     .build());

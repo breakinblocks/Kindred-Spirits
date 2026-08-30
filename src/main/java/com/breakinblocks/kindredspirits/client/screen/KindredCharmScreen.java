@@ -13,11 +13,13 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jspecify.annotations.Nullable;
 
@@ -26,7 +28,7 @@ import java.util.List;
 
 public class KindredCharmScreen extends Screen {
     private static final int PANEL_WIDTH = 288;
-    private static final int PANEL_HEIGHT = 236;
+    private static final int PANEL_HEIGHT = 268;
     private static final int PAD = 10;
 
     private static final int CONTENT_Y = 26;
@@ -37,7 +39,11 @@ public class KindredCharmScreen extends Screen {
     private static final int NAME_BOX_Y_WITH_SKIN = 180;
     private static final int SKIN_BOX_Y = 198;
     private static final int NAME_BOX_HEIGHT = 14;
-    private static final int STATE_Y = 218;
+    private static final int STATE_Y = 254;
+    private static final int ABILITY_BUTTON_Y = 216;
+    private static final int EQUIPMENT_Y = 236;
+    private static final int EQUIPMENT_ICON = 16;
+    private static final int UNEQUIP_WIDTH = 14;
 
     private static final int COLUMN_X = PAD + PORTRAIT_WIDTH + 12;
     private static final int COLUMN_WIDTH = PANEL_WIDTH - COLUMN_X - PAD;
@@ -65,6 +71,7 @@ public class KindredCharmScreen extends Screen {
     private static final int COLOUR_HEALTH = 0xFFE0556A;
     private static final int COLOUR_EXPERIENCE = 0xFF7FD46B;
     private static final int COLOUR_BOND = 0xFFD79BE8;
+    private static final int COLOUR_STARS = 0xFFF5C542;
 
     private static final int REFRESH_INTERVAL = 20;
     private static final int MAX_SKIN_LENGTH = 16;
@@ -83,6 +90,9 @@ public class KindredCharmScreen extends Screen {
     private Button commandButton;
     private Button aggressionButton;
     private Button releaseButton;
+    private Button prestigeButton;
+    private Button abilityButton;
+    private Button unequipButton;
 
     public KindredCharmScreen(CharmView view) {
         super(Component.translatable("screen.kindredspirits.charm"));
@@ -161,6 +171,22 @@ public class KindredCharmScreen extends Screen {
                         button -> this.send(Action.RELEASE, 0))
                 .bounds(buttonX, y + BUTTON_SPACING * 4, COLUMN_WIDTH, BUTTON_HEIGHT).build());
 
+        this.prestigeButton = this.addRenderableWidget(Button.builder(
+                        Component.translatable("screen.kindredspirits.prestige").withStyle(ChatFormatting.GOLD),
+                        button -> this.send(Action.PRESTIGE, 0))
+                .bounds(buttonX, y + BUTTON_SPACING * 5, COLUMN_WIDTH, BUTTON_HEIGHT).build());
+
+        this.abilityButton = this.addRenderableWidget(Button.builder(this.abilityLabel(),
+                        button -> this.send(Action.USE_ABILITY, 0))
+                .bounds(this.left + PAD, this.top + ABILITY_BUTTON_Y, PORTRAIT_WIDTH, BUTTON_HEIGHT).build());
+
+        this.unequipButton = this.addRenderableWidget(Button.builder(Component.literal("x"),
+                        button -> this.send(Action.UNEQUIP, 0))
+                .bounds(this.left + PAD + PORTRAIT_WIDTH - UNEQUIP_WIDTH, this.top + EQUIPMENT_Y,
+                        UNEQUIP_WIDTH, EQUIPMENT_ICON).build());
+        this.unequipButton.setTooltip(Tooltip.create(
+                Component.translatable("screen.kindredspirits.unequip")));
+
         EditBox nameBox = new EditBox(this.font, this.left + PAD, this.top + this.nameBoxY(),
                 PORTRAIT_WIDTH, NAME_BOX_HEIGHT, Component.translatable("screen.kindredspirits.name"));
         nameBox.setMaxLength(CharmActionPayload.MAX_NAME_LENGTH);
@@ -181,6 +207,15 @@ public class KindredCharmScreen extends Screen {
         }
 
         this.updateButtonState();
+    }
+
+    private Component abilityLabel() {
+        return this.view.resolveActiveAbility()
+                .map(ability -> this.view.activeCooldownSeconds() > 0
+                        ? Component.translatable("screen.kindredspirits.ability_cooldown",
+                                ability.displayName(), this.view.activeCooldownSeconds())
+                        : ability.displayName())
+                .orElse(Component.empty());
     }
 
     private Component speciesName() {
@@ -205,6 +240,15 @@ public class KindredCharmScreen extends Screen {
         this.aggressionButton.active = bound;
 
         this.releaseButton.active = bound;
+        this.prestigeButton.visible = bound && this.view.canPrestige();
+        this.prestigeButton.active = this.prestigeButton.visible;
+
+        this.abilityButton.setMessage(this.abilityLabel());
+        this.abilityButton.visible = present && this.view.resolveActiveAbility().isPresent();
+        this.abilityButton.active = this.abilityButton.visible && this.view.activeCooldownSeconds() <= 0;
+
+        this.unequipButton.visible = bound && !this.view.equipment().isEmpty();
+        this.unequipButton.active = this.unequipButton.visible;
 
         if (this.nameField != null) {
             this.nameField.box.visible = bound;
@@ -264,6 +308,11 @@ public class KindredCharmScreen extends Screen {
                 graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_highest_level",
                         this.view.highestLevel()), this.left + PAD, this.top + STATE_Y, COLOUR_LABEL);
             }
+            if (this.view.highestStars() > 0) {
+                graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_highest_stars",
+                        CharmView.starText(this.view.highestStars())), this.left + PAD, this.top + STATE_Y + 12,
+                        COLOUR_STARS);
+            }
             return;
         }
 
@@ -290,6 +339,26 @@ public class KindredCharmScreen extends Screen {
                         ? "screen.kindredspirits.state_out"
                         : "screen.kindredspirits.state_resting"),
                 x0, this.top + STATE_Y, COLOUR_LABEL);
+
+        this.renderEquipment(graphics, x0, this.top + EQUIPMENT_Y, mouseX, mouseY);
+    }
+
+    private void renderEquipment(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
+        ItemStack equipment = this.view.equipment();
+
+        if (equipment.isEmpty()) {
+            graphics.text(this.font, Component.translatable("screen.kindredspirits.no_equipment"),
+                    x, y + (EQUIPMENT_ICON - TEXT_HEIGHT) / 2, COLOUR_LABEL);
+            return;
+        }
+
+        graphics.item(equipment, x, y);
+        graphics.text(this.font, equipment.getHoverName(), x + EQUIPMENT_ICON + 4,
+                y + (EQUIPMENT_ICON - TEXT_HEIGHT) / 2, COLOUR_VALUE);
+
+        if (mouseX >= x && mouseX < x + EQUIPMENT_ICON && mouseY >= y && mouseY < y + EQUIPMENT_ICON) {
+            graphics.setTooltipForNextFrame(this.font, equipment, mouseX, mouseY);
+        }
     }
 
     private void renderStats(GuiGraphicsExtractor graphics) {
@@ -297,16 +366,27 @@ public class KindredCharmScreen extends Screen {
 
         graphics.text(this.font, Component.translatable("screen.kindredspirits.level", this.view.level()),
                 x, this.top + LEVEL_Y, COLOUR_VALUE);
+        if (this.view.stars() > 0) {
+            graphics.text(this.font, CharmView.starText(this.view.stars()),
+                    x + COLUMN_WIDTH - this.font.width(CharmView.starText(this.view.stars())),
+                    this.top + LEVEL_Y, COLOUR_STARS);
+        }
 
         this.bar(graphics, x, this.top + EXPERIENCE_BAR_Y, this.view.experience(),
                 this.view.experienceToNext(), COLOUR_EXPERIENCE);
         graphics.text(this.font, Component.literal(this.view.experience() + " / " + this.view.experienceToNext()),
                 x, this.top + EXPERIENCE_BAR_Y + BAR_LABEL_OFFSET, COLOUR_LABEL);
 
-        this.bar(graphics, x, this.top + BOND_BAR_Y, this.view.bond(), this.view.maxBond(), COLOUR_BOND);
-        graphics.text(this.font, Component.translatable("screen.kindredspirits.bond",
-                        this.view.bond(), this.view.maxBond()),
-                x, this.top + BOND_BAR_Y + BAR_LABEL_OFFSET, COLOUR_LABEL);
+        boolean maxBond = this.view.bondLevel() >= this.view.bondMaxLevel();
+        this.bar(graphics, x, this.top + BOND_BAR_Y, maxBond ? 1 : this.view.bondProgress(),
+                maxBond ? 1 : this.view.bondCost(), COLOUR_BOND);
+        Component bondLabel = Component.translatable("screen.kindredspirits.bond",
+                this.view.bondLevel(), this.view.bondMaxLevel());
+        if (this.view.feedSeconds() > 0) {
+            bondLabel = bondLabel.copy().append(Component.translatable("screen.kindredspirits.bond_feed_wait",
+                    formatDuration(this.view.feedSeconds())));
+        }
+        graphics.text(this.font, bondLabel, x, this.top + BOND_BAR_Y + BAR_LABEL_OFFSET, COLOUR_LABEL);
 
         if (!this.view.present()) {
             graphics.text(this.font, Component.translatable("screen.kindredspirits.stats_unavailable"),
@@ -335,6 +415,10 @@ public class KindredCharmScreen extends Screen {
         if (filled > 0) {
             graphics.fill(x, y, x + filled, y + 3, colour);
         }
+    }
+
+    private static String formatDuration(int seconds) {
+        return seconds >= 60 ? (seconds + 59) / 60 + "m" : seconds + "s";
     }
 
     private static String format(float value) {

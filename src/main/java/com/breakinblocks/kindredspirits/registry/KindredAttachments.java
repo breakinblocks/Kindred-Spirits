@@ -28,20 +28,25 @@ public final class KindredAttachments {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, KindredSpirits.MOD_ID);
 
-    public record BondRecord(int companionsBonded, int highestLevelReached) {
-        public static final BondRecord DEFAULT = new BondRecord(0, 0);
+    public record BondRecord(int companionsBonded, int highestLevelReached, int highestStars) {
+        public static final BondRecord DEFAULT = new BondRecord(0, 0, 0);
 
         public static final MapCodec<BondRecord> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                 Codec.INT.optionalFieldOf("companions_bonded", 0).forGetter(BondRecord::companionsBonded),
-                Codec.INT.optionalFieldOf("highest_level_reached", 0).forGetter(BondRecord::highestLevelReached)
+                Codec.INT.optionalFieldOf("highest_level_reached", 0).forGetter(BondRecord::highestLevelReached),
+                Codec.INT.optionalFieldOf("highest_stars", 0).forGetter(BondRecord::highestStars)
         ).apply(instance, BondRecord::new));
 
         public BondRecord withBonded(int bonded) {
-            return new BondRecord(bonded, this.highestLevelReached);
+            return new BondRecord(bonded, this.highestLevelReached, this.highestStars);
         }
 
         public BondRecord withHighestLevel(int level) {
-            return new BondRecord(this.companionsBonded, Math.max(this.highestLevelReached, level));
+            return new BondRecord(this.companionsBonded, Math.max(this.highestLevelReached, level), this.highestStars);
+        }
+
+        public BondRecord withHighestStars(int stars) {
+            return new BondRecord(this.companionsBonded, this.highestLevelReached, Math.max(this.highestStars, stars));
         }
     }
 
@@ -100,6 +105,36 @@ public final class KindredAttachments {
         }
     }
 
+    public static final class PlayerActivity {
+        private double x = Double.NaN;
+        private double y;
+        private double z;
+        private float yaw;
+        private float pitch;
+        private long lastActive;
+
+        public void update(Player player, long gameTime) {
+            boolean moved = this.x != player.getX() || this.y != player.getY() || this.z != player.getZ()
+                    || this.yaw != player.getYRot() || this.pitch != player.getXRot();
+
+            if (moved) {
+                this.x = player.getX();
+                this.y = player.getY();
+                this.z = player.getZ();
+                this.yaw = player.getYRot();
+                this.pitch = player.getXRot();
+                this.lastActive = gameTime;
+            }
+        }
+
+        public boolean isAfk(long gameTime, int afkTicks) {
+            return gameTime - this.lastActive >= afkTicks;
+        }
+    }
+
+    public static final Supplier<AttachmentType<PlayerActivity>> PLAYER_ACTIVITY = ATTACHMENT_TYPES.register(
+            "player_activity", () -> AttachmentType.builder(() -> new PlayerActivity()).build());
+
     public static final Supplier<AttachmentType<ItemContainerContents>> COMPANION_STORAGE =
             ATTACHMENT_TYPES.register("companion_storage", () ->
                     AttachmentType.builder(() -> ItemContainerContents.EMPTY)
@@ -113,6 +148,10 @@ public final class KindredAttachments {
                     .sync((holder, to) -> holder == to, CompanionBond.STREAM_CODEC)
                     .copyOnDeath()
                     .build());
+
+    public static PlayerActivity activity(Player player) {
+        return player.getData(PLAYER_ACTIVITY);
+    }
 
     public static BondRecord get(Player player) {
         return player.getData(BOND_RECORD);

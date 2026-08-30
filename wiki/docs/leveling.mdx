@@ -1,0 +1,61 @@
+---
+title: Leveling
+icon: minecraft:experience_bottle
+related_items: [kindredspirits:kindred_charm]
+---
+
+A bonded spirit levels from 1 to 30. Each level raises its base stats: health,
+attack, armour and speed, with fast-growing species gaining more per level than
+slow ones.
+
+## Where experience comes from
+
+Your spirit learns from you. Whenever you gain experience and your bonded spirit
+is out and within 32 blocks, it receives **half of that amount** as its own. Kill
+things, mine, smelt, breed animals: whatever earns you orbs earns it progress.
+Feeding it also grants a little (4 points per meal).
+
+Higher bond speeds this up, multiplying every gain by up to 1.5x at bond 30.
+
+The first level costs 140 experience and each level after that costs 70 more
+than the last, so the full climb to level 30 is about 32,000 points.
+
+## Saturation
+
+A spirit tires of the same fight. Every point it gains adds one to a saturation
+counter that drains at one per second:
+
+- Below 200 saturation it learns at full rate.
+- From 200 it learns at **half** rate.
+- From 500 it learns at a **tenth** of the rate.
+
+Standing at a mob farm will run into this quickly. Saturation clears completely
+when you move **three chunks** away from where it began, so the answer is simply
+to go somewhere else for a while.
+
+## Rested experience
+
+Time away is not wasted. After five minutes without a gain, your spirit starts
+banking rested experience at one point per second, up to 1,200, and it keeps
+doing so while resting in the charm. While it has any banked, every gain is
+**doubled**, with the bonus drawn from the bank until it runs dry.
+
+## Stat growth
+
+Each level adds a fixed amount to the level 1 stats, scaled by the species'
+growth rate:
+
+- Health: +1 per level
+- Attack: +0.25 per level
+- Armour: +0.1 per level
+- Speed: +0.002 per level
+
+A 1.5x species like the Baby Dragon gains half again as much of each; a 0.5x
+species like the Mini Player gains half. Stars raise these further, see
+[Stars and Prestige](./stars).
+
+## Stat bonuses that are not levels
+
+Some things raise stats on top of growth: stars, certain abilities (Alpha Boost)
+and equipment (Boxing Gloves, Running Shoes). All of them show in the numbers
+on the bond screen.

@@ -1,6 +1,7 @@
 package com.breakinblocks.kindredspirits.command;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
@@ -18,6 +19,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -32,11 +36,18 @@ public final class KindredCommands {
                         .executes(context -> reportCompanion(context.getSource())))
                 .then(Commands.literal("release")
                         .executes(context -> releaseBond(context.getSource())))
+                .then(Commands.literal("smelt")
+                        .executes(context -> useAbility(context.getSource())))
                 .then(Commands.literal("xp")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                                 .executes(context -> grantExperience(context.getSource(),
                                         IntegerArgumentType.getInteger(context, "amount")))))
+                .then(Commands.literal("bond")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .then(Commands.argument("points", IntegerArgumentType.integer(1))
+                                .executes(context -> grantBond(context.getSource(),
+                                        IntegerArgumentType.getInteger(context, "points")))))
                 .then(Commands.literal("resetrevive")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.argument("players", EntityArgument.players())
@@ -85,6 +96,24 @@ public final class KindredCommands {
         return 1;
     }
 
+    private static int useAbility(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.translatable("command.kindredspirits.player_only"));
+            return 0;
+        }
+
+        CompanionBond bond = KindredAttachments.bond(player);
+        if (!bond.isBound()) {
+            source.sendFailure(Component.translatable("message.kindredspirits.charm_empty"));
+            return 0;
+        }
+
+        Optional<CompanionEntity> nearest = CompanionEntity.nearestOwned(player, SEARCH_RANGE)
+                .filter(CompanionEntity::isBonded);
+        return KindredCharmItem.useAbility(player, bond, nearest.orElse(null)) ? 1 : 0;
+    }
+
     private static int reportCompanion(CommandSourceStack source) {
         ServerPlayer player = source.getPlayer();
         if (player == null) {
@@ -99,22 +128,44 @@ public final class KindredCommands {
         }
 
         CompanionEntity companion = nearest.get();
-        String abilities = companion.unlockedAbilities().stream()
-                .map(CompanionAbility::id)
-                .map(id -> id.getPath())
+        List<CompanionAbility> unlocked = companion.unlockedAbilities();
+        String abilities = companion.species().unlocks().stream()
+                .map(unlock -> unlocked.contains(unlock.ability())
+                        ? unlock.ability().id().getPath()
+                        : unlock.ability().id().getPath() + " (" + unlock.requirement().getString() + ")")
                 .collect(Collectors.joining(", "));
 
+        int bondPoints = companion.getBondPoints();
         source.sendSuccess(() -> Component.translatable("command.kindredspirits.info",
                 companion.getDisplayName(),
                 companion.getLevel(),
+                companion.getStars(),
                 companion.getExperience(),
                 companion.experienceToNextLevel(),
-                companion.getBond(),
+                companion.getBondLevel(),
+                CompanionBondMath.pointsIntoLevel(bondPoints),
+                CompanionBondMath.costToNext(bondPoints),
+                companion.progress().saturation(),
+                companion.progress().rested(),
+                companion.equipment().isEmpty()
+                        ? Component.translatable("command.kindredspirits.no_equipment")
+                        : companion.equipment().getHoverName(),
                 abilities.isEmpty() ? "-" : abilities), false);
         return companion.getLevel();
     }
 
     private static int grantExperience(CommandSourceStack source, int amount) {
+        return grant(source, amount, CompanionEntity::addExperience, "command.kindredspirits.xp_granted",
+                CompanionEntity::getLevel);
+    }
+
+    private static int grantBond(CommandSourceStack source, int points) {
+        return grant(source, points, CompanionEntity::addBondPoints, "command.kindredspirits.bond_granted",
+                CompanionEntity::getBondLevel);
+    }
+
+    private static int grant(CommandSourceStack source, int amount, BiConsumer<CompanionEntity, Integer> apply,
+                             String key, Function<CompanionEntity, Integer> result) {
         ServerPlayer player = source.getPlayer();
         if (player == null) {
             source.sendFailure(Component.translatable("command.kindredspirits.player_only"));
@@ -128,9 +179,9 @@ public final class KindredCommands {
         }
 
         CompanionEntity companion = nearest.get();
-        companion.addExperience(amount);
-        source.sendSuccess(() -> Component.translatable("command.kindredspirits.xp_granted",
-                amount, companion.getDisplayName(), companion.getLevel()), true);
+        apply.accept(companion, amount);
+        source.sendSuccess(() -> Component.translatable(key,
+                amount, companion.getDisplayName(), result.apply(companion)), true);
         return amount;
     }
 

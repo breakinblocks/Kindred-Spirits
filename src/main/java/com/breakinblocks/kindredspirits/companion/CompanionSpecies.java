@@ -5,9 +5,14 @@ import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import com.breakinblocks.kindredspirits.config.KindredConfig.SpeciesStat;
+import com.breakinblocks.kindredspirits.KindredSpirits;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.item.Item;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -24,10 +29,13 @@ public enum CompanionSpecies implements StringRepresentable {
             new SoundSet(SoundEvents.FOX_AMBIENT, SoundEvents.FOX_HURT, SoundEvents.FOX_DEATH,
                     SoundEvents.FOX_BITE, SoundEvents.EVOKER_CAST_SPELL, SoundEvents.FOX_SNIFF),
             List.of(
-                    new Unlock(1, CompanionAbilities.SWIFT_STEP),
-                    new Unlock(1, CompanionAbilities.SHADOW_BALL),
-                    new Unlock(8, CompanionAbilities.NIGHT_WARD),
-                    new Unlock(16, CompanionAbilities.KINDLED_VIGOUR))),
+                    Unlock.level(1, CompanionAbilities.SWIFT_STEP),
+                    Unlock.level(1, CompanionAbilities.SHADOW_BALL),
+                    Unlock.level(1, CompanionAbilities.WISPLIGHT),
+                    Unlock.bond(5, CompanionAbilities.NIGHT_LIGHT),
+                    Unlock.level(8, CompanionAbilities.NIGHT_WARD),
+                    Unlock.level(16, CompanionAbilities.KINDLED_VIGOUR),
+                    Unlock.level(30, CompanionAbilities.ONE_WITH_THE_NIGHT))),
 
     TREX("trex",
             new Size(1.2f, 1.7f, 0.6f, 0.5f),
@@ -39,9 +47,12 @@ public enum CompanionSpecies implements StringRepresentable {
             new SoundSet(SoundEvents.RAVAGER_AMBIENT, SoundEvents.RAVAGER_HURT, SoundEvents.RAVAGER_DEATH,
                     SoundEvents.RAVAGER_ATTACK, SoundEvents.RAVAGER_ROAR, SoundEvents.RAVAGER_STEP),
             List.of(
-                    new Unlock(1, CompanionAbilities.SAVAGE_LEAP),
-                    new Unlock(1, CompanionAbilities.CRUSHING_MIGHT),
-                    new Unlock(10, CompanionAbilities.KINDLED_VIGOUR))),
+                    Unlock.level(1, CompanionAbilities.SAVAGE_LEAP),
+                    Unlock.level(1, CompanionAbilities.CRUSHING_MIGHT),
+                    Unlock.level(1, CompanionAbilities.ALPHA),
+                    Unlock.bond(5, CompanionAbilities.ALPHA_BOOST),
+                    Unlock.level(10, CompanionAbilities.KINDLED_VIGOUR),
+                    Unlock.level(30, CompanionAbilities.XRAY_STOMP))),
 
     MINI_PLAYER("mini_player",
             new Size(0.4f, 1.2f, 0.6f, 0.0f),
@@ -54,8 +65,11 @@ public enum CompanionSpecies implements StringRepresentable {
             new SoundSet(SoundEvents.PLAYER_BREATH, SoundEvents.PLAYER_HURT, SoundEvents.PLAYER_DEATH,
                     SoundEvents.PLAYER_ATTACK_STRONG, SoundEvents.PLAYER_ATTACK_SWEEP, SoundEvents.PLAYER_BURP),
             List.of(
-                    new Unlock(1, CompanionAbilities.MIRROR_STRIKE),
-                    new Unlock(12, CompanionAbilities.MENDING_PRESENCE))),
+                    Unlock.level(1, CompanionAbilities.MIRROR_STRIKE),
+                    Unlock.level(1, CompanionAbilities.EAT_THAT),
+                    Unlock.bond(5, CompanionAbilities.HELPING_HAND),
+                    Unlock.level(12, CompanionAbilities.MENDING_PRESENCE),
+                    Unlock.level(30, CompanionAbilities.FRIENDLY_FACE))),
 
     BABY_DRAGON("baby_dragon",
             new Size(0.7f, 1.2f, 0.6f, 0.0f),
@@ -70,8 +84,10 @@ public enum CompanionSpecies implements StringRepresentable {
                     SoundEvents.ENDER_DRAGON_SHOOT, SoundEvents.GENERIC_EAT.value())
                     .withDeath(KindredSounds.BABY_DRAGON_DEATH),
             List.of(
-                    new Unlock(1, CompanionAbilities.DRAGON_BREATH),
-                    new Unlock(6, CompanionAbilities.FORGE_DRAFT)));
+                    Unlock.level(1, CompanionAbilities.DRAGON_BREATH),
+                    Unlock.level(1, CompanionAbilities.FORGE_DRAFT),
+                    Unlock.bond(5, CompanionAbilities.DRAGONFIRE),
+                    Unlock.level(30, CompanionAbilities.KILN_BREATH)));
 
     public static final double DEFAULT_FOLLOW_RANGE = 24.0;
 
@@ -84,6 +100,8 @@ public enum CompanionSpecies implements StringRepresentable {
     private final SoundSet sounds;
     private final List<Unlock> unlocks;
     private List<String> headBones;
+    private TagKey<Item> tamingTag;
+    private TagKey<Item> equipmentTag;
 
     CompanionSpecies(String name, Size size, Stats stats,
                      CombatStyle combatStyle, boolean huntsDangerousPrey, Set<String> animations,
@@ -151,6 +169,26 @@ public enum CompanionSpecies implements StringRepresentable {
         return KindredConfig.speciesStat(this, SpeciesStat.GROWTH, this.stats.growth());
     }
 
+    public TagKey<Item> tamingTag() {
+        if (this.tamingTag == null) {
+            this.tamingTag = this.itemTag("taming");
+        }
+
+        return this.tamingTag;
+    }
+
+    public TagKey<Item> equipmentTag() {
+        if (this.equipmentTag == null) {
+            this.equipmentTag = this.itemTag("equipment");
+        }
+
+        return this.equipmentTag;
+    }
+
+    private TagKey<Item> itemTag(String folder) {
+        return TagKey.create(Registries.ITEM, KindredSpirits.id(folder + "/" + this.name));
+    }
+
     public boolean usesPlayerSkin() {
         return this == MINI_PLAYER;
     }
@@ -206,9 +244,9 @@ public enum CompanionSpecies implements StringRepresentable {
         return this.unlocks;
     }
 
-    public List<CompanionAbility> abilitiesAt(int level) {
+    public List<CompanionAbility> abilitiesAt(int level, int bondLevel) {
         return this.unlocks.stream()
-                .filter(unlock -> level >= unlock.level())
+                .filter(unlock -> unlock.isMet(level, bondLevel))
                 .map(Unlock::ability)
                 .toList();
     }
@@ -233,7 +271,33 @@ public enum CompanionSpecies implements StringRepresentable {
                         double armour, double knockbackResistance, double growth) {
     }
 
-    public record Unlock(int level, CompanionAbility ability) {
+    public record Unlock(Gate gate, int required, CompanionAbility ability) {
+        public static Unlock level(int level, CompanionAbility ability) {
+            return new Unlock(Gate.LEVEL, level, ability);
+        }
+
+        public static Unlock bond(int bondLevel, CompanionAbility ability) {
+            return new Unlock(Gate.BOND, bondLevel, ability);
+        }
+
+        public boolean isMet(int level, int bondLevel) {
+            return (this.gate == Gate.LEVEL ? level : bondLevel) >= this.required;
+        }
+
+        public Component requirement() {
+            return Component.translatable(this.gate.key, this.required);
+        }
+
+        public enum Gate {
+            LEVEL("unlock.kindredspirits.level"),
+            BOND("unlock.kindredspirits.bond");
+
+            private final String key;
+
+            Gate(String key) {
+                this.key = key;
+            }
+        }
     }
 
     public record SoundSet(Supplier<SoundEvent> ambient, Supplier<SoundEvent> hurt,

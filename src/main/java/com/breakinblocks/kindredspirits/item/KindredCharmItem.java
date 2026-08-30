@@ -1,6 +1,7 @@
 package com.breakinblocks.kindredspirits.item;
 
 import com.breakinblocks.kindredspirits.companion.CompanionAggression;
+import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
 import com.breakinblocks.kindredspirits.companion.CompanionCommand;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
@@ -99,11 +100,10 @@ public class KindredCharmItem extends Item {
         BondRecord record = KindredAttachments.get(player);
 
         if (!bond.isBound()) {
-            return CharmView.unbound(record.companionsBonded(), record.highestLevelReached());
+            return CharmView.unbound(record);
         }
 
-        return CharmView.of(bond, findCompanion(player.level().getServer(), bond), player.level().getGameTime(),
-                record.companionsBonded(), record.highestLevelReached());
+        return CharmView.of(bond, findCompanion(player.level().getServer(), bond), player.level().getGameTime(), record);
     }
 
     public static void handleAction(ServerPlayer player, KindredNetworking.CharmActionPayload.Action action,
@@ -140,6 +140,9 @@ public class KindredCharmItem extends Item {
                     updateSnapshot(player, snap -> snap.withAggression(CompanionAggression.byOrdinal(value).ordinal()));
                 }
             }
+            case PRESTIGE -> prestige(player, live);
+            case USE_ABILITY -> useAbility(player, bond, live);
+            case UNEQUIP -> unequip(player, live);
             case SET_NAME -> rename(player, bond, live, text, value == 1);
             case SET_SKIN -> setSkin(player, bond, live, text, value == 1);
             case REFRESH -> {
@@ -147,6 +150,58 @@ public class KindredCharmItem extends Item {
         }
 
         KindredNetworking.sendCharmView(player, false);
+    }
+
+    public static boolean useAbility(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live) {
+        if (missingLive(player, bond, live)) {
+            return false;
+        }
+        if (live.activeAbility().isEmpty()) {
+            player.sendSystemMessage(Component.translatable("message.kindredspirits.no_active_ability",
+                    live.getDisplayName()));
+            return false;
+        }
+        if (!live.isAbilityReady(live.activeAbility().get().id())) {
+            player.sendSystemMessage(Component.translatable("message.kindredspirits.ability_cooldown",
+                    live.activeAbility().get().displayName(),
+                    Math.ceilDiv(live.abilityCooldownTicks(live.activeAbility().get().id()), 20)));
+            return false;
+        }
+        return live.useActiveAbility(player);
+    }
+
+    private static void unequip(ServerPlayer player, @Nullable CompanionEntity live) {
+        ItemStack taken;
+        if (live != null) {
+            taken = live.takeEquipment();
+            KindredAttachments.modifyBond(player, current -> snapshot(current, live));
+        } else {
+            taken = KindredAttachments.bond(player).snapshot().orElseThrow().equipment();
+            updateSnapshot(player, snap -> snap.withEquipment(ItemStack.EMPTY));
+        }
+
+        if (!taken.isEmpty()) {
+            player.getInventory().placeItemBackInInventory(taken);
+        }
+    }
+
+    private static void prestige(ServerPlayer player, @Nullable CompanionEntity live) {
+        if (live != null) {
+            if (live.prestige()) {
+                KindredAttachments.modifyBond(player, current -> snapshot(current, live));
+            }
+            return;
+        }
+
+        CompanionSnapshot current = KindredAttachments.bond(player).snapshot().orElseThrow();
+        CompanionSnapshot prestiged = current.prestiged();
+
+        if (prestiged != current) {
+            updateSnapshot(player, snap -> prestiged);
+            KindredAttachments.modify(player, record -> record.withHighestStars(prestiged.stars()));
+            player.sendSystemMessage(Component.translatable("message.kindredspirits.prestige",
+                    prestiged.displayName(), prestiged.stars()));
+        }
     }
 
     private static void updateSnapshot(ServerPlayer player, UnaryOperator<CompanionSnapshot> change) {
@@ -225,10 +280,14 @@ public class KindredCharmItem extends Item {
     }
 
     private static void release(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live) {
-        Component name = bond.snapshot().orElseThrow().displayName();
+        CompanionSnapshot snapshot = bond.snapshot().orElseThrow();
+        Component name = snapshot.displayName();
 
         if (live != null) {
             live.setBonded(false);
+            live.dropEquipment();
+        } else if (!snapshot.equipment().isEmpty()) {
+            player.getInventory().placeItemBackInInventory(snapshot.equipment().copy());
         }
 
         releaseBond(player);
@@ -306,9 +365,7 @@ public class KindredCharmItem extends Item {
         companion.setSkinName(snapshot.skin().orElse(""));
 
         boolean reviving = bond.reviveReadyAt() > 0;
-        companion.restoreProgress(snapshot.level(),
-                reviving ? penalisedExperience(snapshot) : snapshot.experience(),
-                snapshot.bond());
+        companion.restoreProgress(snapshot, reviving ? penalisedExperience(snapshot) : snapshot.experience());
         companion.setCommand(snapshot.commandValue());
         companion.setAggression(snapshot.aggressionValue());
         companion.setBonded(true);
@@ -341,7 +398,7 @@ public class KindredCharmItem extends Item {
             return;
         }
 
-        int cooldownTicks = KindredConfig.COMMON.reviveCooldownSeconds.get() * 20;
+        int cooldownTicks = CompanionBondMath.reviveCooldownTicks(companion.getBondLevel());
         long readyAt = companion.level().getGameTime() + cooldownTicks;
 
         KindredAttachments.modifyBond(owner, current ->

@@ -1,0 +1,12 @@
+{
+  "getting_started.mdx": { "name": "Getting Started", "icon": null },
+  "kindred_charm.mdx": { "name": "The Kindred Charm", "icon": null },
+  "bond.mdx": { "name": "Bond", "icon": null },
+  "leveling.mdx": { "name": "Leveling", "icon": null },
+  "stars.mdx": { "name": "Stars and Prestige", "icon": null },
+  "storage.mdx": { "name": "Storage", "icon": null },
+  "abilities.mdx": { "name": "Abilities", "icon": null },
+  "equipment.mdx": { "name": "Equipment", "icon": null },
+  "spirits": { "name": "Spirits", "icon": null },
+  "commands.mdx": { "name": "Commands", "icon": null }
+}

@@ -112,6 +112,10 @@ dependencies {
 
     compileOnly "maven.modrinth:jade:${jade_version}"
     localRuntime "maven.modrinth:jade:${jade_version}"
+
+    compileOnly "maven.modrinth:oracle-index:${oracle_index_version}"
+    localRuntime "maven.modrinth:oracle-index:${oracle_index_version}"
+    localRuntime "maven.modrinth:architectury-api:${architectury_version}"
 }
 
 tasks.named('test', Test).configure {
@@ -143,6 +147,10 @@ tasks.named('processResources', ProcessResources).configure {
 
     filesMatching(['META-INF/neoforge.mods.toml']) {
         expand replaceProperties
+    }
+
+    from("$rootDir/wiki") {
+        into "assets/oracle_index/books/${mod_id}"
     }
 }
 

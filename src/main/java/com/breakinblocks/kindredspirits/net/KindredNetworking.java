@@ -4,6 +4,7 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.KindredClientHooks;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -17,6 +18,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+
+import java.util.List;
 
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
@@ -46,6 +49,15 @@ public final class KindredNetworking {
                 CharmActionPayload.TYPE,
                 CharmActionPayload.STREAM_CODEC,
                 CharmActionPayload::handleOnServer);
+
+        registrar.playToClient(
+                OreRevealPayload.TYPE,
+                OreRevealPayload.STREAM_CODEC,
+                OreRevealPayload::handleOnClient);
+    }
+
+    public static void sendOreReveal(ServerPlayer player, List<BlockPos> ores, int ticks) {
+        PacketDistributor.sendToPlayer(player, new OreRevealPayload(ores, ticks));
     }
 
     public static void sendLevelUp(ServerPlayer player, int companionId, int level) {
@@ -112,6 +124,9 @@ public final class KindredNetworking {
             SET_AGGRESSION,
             SET_NAME,
             SET_SKIN,
+            PRESTIGE,
+            USE_ABILITY,
+            UNEQUIP,
             REFRESH
         }
     }
@@ -134,6 +149,24 @@ public final class KindredNetworking {
                             .ifPresent(companion -> companion.cycleCommandBy(player));
                 }
             });
+        }
+    }
+
+    public record OreRevealPayload(List<BlockPos> ores, int ticks) implements CustomPacketPayload {
+        public static final Type<OreRevealPayload> TYPE = new Type<>(KindredSpirits.id("ore_reveal"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, OreRevealPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        BlockPos.STREAM_CODEC.apply(ByteBufCodecs.list()), OreRevealPayload::ores,
+                        ByteBufCodecs.VAR_INT, OreRevealPayload::ticks,
+                        OreRevealPayload::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+
+        public static void handleOnClient(OreRevealPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> KindredClientHooks.acceptOreReveal(payload.ores(), payload.ticks()));
         }
     }
 

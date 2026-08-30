@@ -16,6 +16,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID, value = Dist.CLIENT)
 public final class KindredSpiritsClient {
@@ -40,6 +41,13 @@ public final class KindredSpiritsClient {
             event.registerEntityRenderer(KindredEntities.type(species), context -> species.usesPlayerSkin()
                     ? new MiniPlayerRenderer(context, species)
                     : new CompanionRenderer(context, species));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLevelTick(LevelTickEvent.Post event) {
+        if (event.getLevel().isClientSide()) {
+            OreRevealOverlay.clientTick();
         }
     }
 

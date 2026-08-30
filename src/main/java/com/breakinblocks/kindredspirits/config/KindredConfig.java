@@ -113,9 +113,25 @@ public final class KindredConfig {
         public final ModConfigSpec.IntValue experiencePerFeed;
         public final ModConfigSpec.DoubleValue healingPerItem;
         public final ModConfigSpec.IntValue storageBaseSlots;
-        public final ModConfigSpec.IntValue maxBond;
         public final ModConfigSpec.DoubleValue healthPerLevel;
         public final ModConfigSpec.DoubleValue attackPerLevel;
+        public final ModConfigSpec.DoubleValue armourPerLevel;
+        public final ModConfigSpec.DoubleValue speedPerLevel;
+        public final ModConfigSpec.DoubleValue xpShare;
+        public final ModConfigSpec.IntValue saturationSoftCap;
+        public final ModConfigSpec.IntValue saturationHardCap;
+        public final ModConfigSpec.IntValue saturationResetChunks;
+        public final ModConfigSpec.IntValue restedCap;
+        public final ModConfigSpec.IntValue maxStars;
+        public final ModConfigSpec.DoubleValue starGrowthBonus;
+        public final ModConfigSpec.IntValue bondMaxLevel;
+        public final ModConfigSpec.IntValue bondBaseCost;
+        public final ModConfigSpec.DoubleValue bondGrowth;
+        public final ModConfigSpec.IntValue bondFeedCooldownSeconds;
+        public final ModConfigSpec.DoubleValue bondFeedFraction;
+        public final ModConfigSpec.IntValue bondDeathFloor;
+        public final ModConfigSpec.IntValue afkSeconds;
+        public final ModConfigSpec.DoubleValue tamingChance;
         public final ModConfigSpec.BooleanValue abilitiesEnabled;
         public final ModConfigSpec.IntValue reviveCooldownSeconds;
         public final ModConfigSpec.DoubleValue reviveExperiencePenalty;
@@ -129,7 +145,7 @@ public final class KindredConfig {
                     .defineInRange("max_level", 30, 1, 200);
             baseExperience = builder
                     .comment("Experience needed to go from level 1 to level 2. Each level adds half this again.")
-                    .defineInRange("base_experience", 20, 1, 10000);
+                    .defineInRange("base_experience", 140, 1, 10000);
             experiencePerFeed = builder
                     .comment("Experience granted when a companion is fed.")
                     .defineInRange("experience_per_feed", 4, 0, 1000);
@@ -140,15 +156,72 @@ public final class KindredConfig {
             healingPerItem = builder
                     .comment("Health restored when a companion is given an item from the companion_healing tag.")
                     .defineInRange("healing_per_item", 10.0, 0.0, 1024.0);
-            maxBond = builder
-                    .comment("Highest bond value a companion can reach.")
-                    .defineInRange("max_bond", 100, 1, 1000);
             healthPerLevel = builder
                     .comment("Extra max health added per level, before the species growth multiplier.")
                     .defineInRange("health_per_level", 1.0, 0.0, 20.0);
             attackPerLevel = builder
                     .comment("Extra attack damage added per level, before the species growth multiplier.")
                     .defineInRange("attack_per_level", 0.25, 0.0, 20.0);
+            armourPerLevel = builder
+                    .comment("Extra armour added per level, before the species growth multiplier.")
+                    .defineInRange("armour_per_level", 0.1, 0.0, 5.0);
+            speedPerLevel = builder
+                    .comment("Extra movement speed added per level, before the species growth multiplier.")
+                    .defineInRange("speed_per_level", 0.002, 0.0, 0.1);
+            xpShare = builder
+                    .comment("Share of the experience the owner earns that the bonded companion also receives.")
+                    .defineInRange("xp_share", 0.5, 0.0, 10.0);
+            saturationSoftCap = builder
+                    .comment("Companion experience gained recently before gains drop to half rate.",
+                            "Saturation decays by one point a second.")
+                    .defineInRange("saturation_soft_cap", 200, 0, 100000);
+            saturationHardCap = builder
+                    .comment("Saturation at which gains drop to a tenth. Moving away clears it.")
+                    .defineInRange("saturation_hard_cap", 500, 0, 100000);
+            saturationResetChunks = builder
+                    .comment("Chunks the owner has to move from where saturation started to clear it.")
+                    .defineInRange("saturation_reset_chunks", 3, 1, 64);
+            restedCap = builder
+                    .comment("Most rested experience a companion can store. Rested experience builds after five",
+                            "minutes without a gain and doubles gains until it is spent.")
+                    .defineInRange("rested_cap", 1200, 0, 100000);
+            maxStars = builder
+                    .comment("Stars a companion can earn by prestiging at max level.")
+                    .defineInRange("max_stars", 5, 0, 10);
+            starGrowthBonus = builder
+                    .comment("Extra per-level stat growth for each star, as a fraction.")
+                    .defineInRange("star_growth_bonus", 0.1, 0.0, 5.0);
+            builder.pop();
+
+            builder.push("bond");
+            bondMaxLevel = builder
+                    .comment("Highest bond level a companion can reach.")
+                    .defineInRange("bond_max_level", 30, 1, 100);
+            bondBaseCost = builder
+                    .comment("Bond points needed for bond level 1. A companion earns one point a second",
+                            "while out with an active owner.")
+                    .defineInRange("bond_base_cost", 760, 1, 1000000);
+            bondGrowth = builder
+                    .comment("Multiplier on the point cost of each further bond level.")
+                    .defineInRange("bond_growth", 1.06, 1.0, 3.0);
+            bondFeedCooldownSeconds = builder
+                    .comment("Seconds between feeds of the species' taming item for bond.")
+                    .defineInRange("bond_feed_cooldown_seconds", 600, 0, 86400);
+            bondFeedFraction = builder
+                    .comment("Share of the bond points already earned that one taming item feed grants.")
+                    .defineInRange("bond_feed_fraction", 0.05, 0.0, 1.0);
+            bondDeathFloor = builder
+                    .comment("Bond level above which dying costs the companion a bond level.")
+                    .defineInRange("bond_death_floor", 10, 0, 100);
+            afkSeconds = builder
+                    .comment("Seconds without the owner moving or looking around before bond stops growing.")
+                    .defineInRange("afk_seconds", 120, 1, 86400);
+            builder.pop();
+
+            builder.push("taming");
+            tamingChance = builder
+                    .comment("Chance that one of the species' taming items tames a wild companion.")
+                    .defineInRange("taming_chance", 0.33, 0.0, 1.0);
             builder.pop();
 
             builder.push("abilities");

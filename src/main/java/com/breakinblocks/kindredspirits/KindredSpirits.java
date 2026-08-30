@@ -5,6 +5,7 @@ import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
+import com.breakinblocks.kindredspirits.registry.KindredBlocks;
 import com.breakinblocks.kindredspirits.registry.KindredCreativeTabs;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
@@ -35,6 +36,7 @@ public class KindredSpirits {
     public KindredSpirits(IEventBus modEventBus, ModContainer modContainer, Dist dist) {
         modContainer.registerConfig(ModConfig.Type.STARTUP, KindredConfig.STARTUP_SPEC);
 
+        KindredBlocks.BLOCKS.register(modEventBus);
         KindredEntities.ENTITY_TYPES.register(modEventBus);
         KindredItems.ITEMS.register(modEventBus);
         KindredAttachments.ATTACHMENT_TYPES.register(modEventBus);
