@@ -127,6 +127,7 @@ public final class KindredNetworking {
             PRESTIGE,
             USE_ABILITY,
             UNEQUIP,
+            TOGGLE_ABILITY,
             REFRESH
         }
     }

@@ -130,9 +130,12 @@ public final class KindredCommands {
         CompanionEntity companion = nearest.get();
         List<CompanionAbility> unlocked = companion.unlockedAbilities();
         String abilities = companion.species().unlocks().stream()
-                .map(unlock -> unlocked.contains(unlock.ability())
-                        ? unlock.ability().id().getPath()
-                        : unlock.ability().id().getPath() + " (" + unlock.requirement().getString() + ")")
+                .map(unlock -> !unlocked.contains(unlock.ability())
+                        ? unlock.ability().id().getPath() + " (" + unlock.requirement().getString() + ")"
+                        : companion.isAbilityDisabled(unlock.ability())
+                        ? unlock.ability().id().getPath() + " ("
+                                + Component.translatable("command.kindredspirits.ability_off").getString() + ")"
+                        : unlock.ability().id().getPath())
                 .collect(Collectors.joining(", "));
 
         int bondPoints = companion.getBondPoints();

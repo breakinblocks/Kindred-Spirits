@@ -1,10 +1,13 @@
 package com.breakinblocks.kindredspirits.item;
 
+import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionAggression;
 import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
 import com.breakinblocks.kindredspirits.companion.CompanionCommand;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
+import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
+import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.BondRecord;
@@ -34,6 +37,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -143,6 +148,7 @@ public class KindredCharmItem extends Item {
             case PRESTIGE -> prestige(player, live);
             case USE_ABILITY -> useAbility(player, bond, live);
             case UNEQUIP -> unequip(player, live);
+            case TOGGLE_ABILITY -> toggleAbility(player, live, text);
             case SET_NAME -> rename(player, bond, live, text, value == 1);
             case SET_SKIN -> setSkin(player, bond, live, text, value == 1);
             case REFRESH -> {
@@ -168,6 +174,27 @@ public class KindredCharmItem extends Item {
             return false;
         }
         return live.useActiveAbility(player);
+    }
+
+    private static void toggleAbility(ServerPlayer player, @Nullable CompanionEntity live, String text) {
+        CompanionAbility ability = CompanionAbilities.get(KindredSpirits.id(text));
+        if (ability == null) {
+            return;
+        }
+
+        if (live != null) {
+            live.setAbilityEnabled(ability, live.isAbilityDisabled(ability));
+            KindredAttachments.modifyBond(player, current -> snapshot(current, live));
+            return;
+        }
+
+        updateSnapshot(player, snap -> {
+            List<String> names = new ArrayList<>(snap.disabledAbilities());
+            if (!names.remove(text)) {
+                names.add(text);
+            }
+            return snap.withDisabledAbilities(names);
+        });
     }
 
     private static void unequip(ServerPlayer player, @Nullable CompanionEntity live) {

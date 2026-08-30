@@ -89,6 +89,13 @@ public final class CompanionLights {
         }
     }
 
+    public void clear(ServerLevel level, Identifier key) {
+        List<Entry> list = this.entries.remove(key);
+        if (list != null) {
+            list.forEach(entry -> this.remove(level, entry));
+        }
+    }
+
     public void clear(ServerLevel level) {
         this.entries.values().forEach(list -> list.forEach(entry -> this.remove(level, entry)));
         this.entries.clear();

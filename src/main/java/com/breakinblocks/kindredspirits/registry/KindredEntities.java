@@ -22,12 +22,17 @@ public final class KindredEntities {
 
     static {
         for (CompanionSpecies species : CompanionSpecies.values()) {
-            BY_SPECIES.put(species, ENTITY_TYPES.register(species.getSerializedName(), registryName ->
-                    EntityType.Builder.<CompanionEntity>of((type, level) -> new CompanionEntity(type, level, species), MobCategory.CREATURE)
-                            .sized(species.width(), species.height())
-                            .clientTrackingRange(10)
-                            .updateInterval(2)
-                            .build(ResourceKey.create(Registries.ENTITY_TYPE, registryName))));
+            BY_SPECIES.put(species, ENTITY_TYPES.register(species.getSerializedName(), registryName -> {
+                EntityType.Builder<CompanionEntity> builder = EntityType.Builder
+                        .<CompanionEntity>of((type, level) -> new CompanionEntity(type, level, species), MobCategory.CREATURE)
+                        .sized(species.width(), species.height())
+                        .clientTrackingRange(10)
+                        .updateInterval(2);
+                if (species.immunities().fireImmune()) {
+                    builder.fireImmune();
+                }
+                return builder.build(ResourceKey.create(Registries.ENTITY_TYPE, registryName));
+            }));
         }
     }
 

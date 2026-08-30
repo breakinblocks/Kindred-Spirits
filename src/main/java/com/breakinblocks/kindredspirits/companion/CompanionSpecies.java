@@ -6,7 +6,15 @@ import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import com.breakinblocks.kindredspirits.config.KindredConfig.SpeciesStat;
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -39,7 +47,7 @@ public enum CompanionSpecies implements StringRepresentable {
 
     TREX("trex",
             new Size(1.2f, 1.7f, 0.6f, 0.5f),
-            new Stats(30.0, 0.25, 4.0, 2.0, 0.6, 1.0),
+            new Stats(30.0, 0.25, 4.0, 2.0, 0.9, 1.0),
             CombatStyle.MELEE, false,
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
                     CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
@@ -208,6 +216,14 @@ public enum CompanionSpecies implements StringRepresentable {
         return this.storageRows() * 9;
     }
 
+    public Immunities immunities() {
+        return switch (this) {
+            case BABY_DRAGON -> Immunities.NONE.withDamageTags(DamageTypeTags.IS_FIRE);
+            case NIGHTFOX -> Immunities.NONE.withDamageTypes(DamageTypes.WITHER).withEffects(MobEffects.WITHER);
+            default -> Immunities.NONE;
+        };
+    }
+
     public List<String> headBones() {
         if (this.headBones == null) {
             this.headBones = switch (this) {
@@ -265,6 +281,38 @@ public enum CompanionSpecies implements StringRepresentable {
     }
 
     public record Size(float width, float height, float renderScale, double hitboxOffset) {
+    }
+
+    public record Immunities(Set<TagKey<DamageType>> damageTags, Set<ResourceKey<DamageType>> damageTypes,
+                             Set<Holder<MobEffect>> effects) {
+        public static final Immunities NONE = new Immunities(Set.of(), Set.of(), Set.of());
+
+        @SafeVarargs
+        public final Immunities withDamageTags(TagKey<DamageType>... tags) {
+            return new Immunities(Set.of(tags), this.damageTypes, this.effects);
+        }
+
+        @SafeVarargs
+        public final Immunities withDamageTypes(ResourceKey<DamageType>... types) {
+            return new Immunities(this.damageTags, Set.of(types), this.effects);
+        }
+
+        @SafeVarargs
+        public final Immunities withEffects(Holder<MobEffect>... effects) {
+            return new Immunities(this.damageTags, this.damageTypes, Set.of(effects));
+        }
+
+        public boolean fireImmune() {
+            return this.damageTags.contains(DamageTypeTags.IS_FIRE);
+        }
+
+        public boolean blocks(DamageSource source) {
+            return this.damageTags.stream().anyMatch(source::is) || this.damageTypes.stream().anyMatch(source::is);
+        }
+
+        public boolean blocks(Holder<MobEffect> effect) {
+            return this.effects.contains(effect);
+        }
     }
 
     public record Stats(double health, double moveSpeed, double attackDamage,

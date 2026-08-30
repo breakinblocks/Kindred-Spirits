@@ -8,6 +8,7 @@ import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionLevels;
 import com.breakinblocks.kindredspirits.companion.CompanionSnapshot;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
+import com.breakinblocks.kindredspirits.companion.CompanionStats;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.BondRecord;
@@ -20,6 +21,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
 import java.util.Optional;
 
 public record CharmView(boolean bound, String species, Optional<String> name,
@@ -29,13 +31,15 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                         float health, float maxHealth, float armour, float attackDamage,
                         int command, int aggression, boolean stored, int reviveSeconds, boolean present,
                         String skin, int companionsBonded, int highestLevel, int highestStars,
-                        String activeAbility, int activeCooldownSeconds, ItemStack equipment) {
+                        String activeAbility, int activeCooldownSeconds, ItemStack equipment,
+                        CompanionStats stats, List<String> disabledAbilities) {
 
     public static CharmView unbound(BondRecord record) {
         return new CharmView(false, "", Optional.empty(),
                 0, 0, 1, 0, 1, 0, 1, 0, 0, false,
                 0.0f, 0.0f, 0.0f, 0.0f, 0, 1, true, 0, false, "",
-                record.companionsBonded(), record.highestLevelReached(), record.highestStars(), "", 0, ItemStack.EMPTY);
+                record.companionsBonded(), record.highestLevelReached(), record.highestStars(), "", 0, ItemStack.EMPTY,
+                CompanionStats.EMPTY, List.of());
     }
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CharmView> STREAM_CODEC = new StreamCodec<>() {
@@ -70,7 +74,9 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                     ByteBufCodecs.VAR_INT.decode(buffer),
                     ByteBufCodecs.STRING_UTF8.decode(buffer),
                     ByteBufCodecs.VAR_INT.decode(buffer),
-                    ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer));
+                    ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer),
+                    CompanionStats.STREAM_CODEC.decode(buffer),
+                    ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).decode(buffer));
         }
 
         @Override
@@ -104,6 +110,8 @@ public record CharmView(boolean bound, String species, Optional<String> name,
             ByteBufCodecs.STRING_UTF8.encode(buffer, view.activeAbility());
             ByteBufCodecs.VAR_INT.encode(buffer, view.activeCooldownSeconds());
             ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, view.equipment());
+            CompanionStats.STREAM_CODEC.encode(buffer, view.stats());
+            ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).encode(buffer, view.disabledAbilities());
         }
     };
 
@@ -154,7 +162,15 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                 record.companionsBonded(), record.highestLevelReached(), record.highestStars(),
                 active.map(ability -> ability.id().getPath()).orElse(""),
                 active.map(ability -> Math.ceilDiv(live.abilityCooldownTicks(ability.id()), 20)).orElse(0),
-                snapshot.equipment());
+                snapshot.equipment(),
+                live != null ? CompanionStats.of(live)
+                        : snapshot.resolveSpecies().map(species -> CompanionStats.of(species, snapshot))
+                                .orElse(CompanionStats.EMPTY),
+                snapshot.disabledAbilities());
+    }
+
+    public boolean isDisabled(CompanionAbility ability) {
+        return this.disabledAbilities.contains(ability.id().getPath());
     }
 
     public Optional<CompanionAbility> resolveActiveAbility() {

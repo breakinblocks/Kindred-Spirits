@@ -44,6 +44,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -115,6 +116,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Boolean> DATA_BONDED =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<String> DATA_DISABLED_ABILITIES =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_SKIN =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
 
@@ -337,6 +340,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         entityData.define(DATA_AGGRESSION, (byte) CompanionAggression.NEUTRAL.ordinal());
         entityData.define(DATA_BONDED, false);
         entityData.define(DATA_SKIN, "");
+        entityData.define(DATA_DISABLED_ABILITIES, "");
     }
 
     @Override
@@ -354,6 +358,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         output.putString("Aggression", this.getAggression().getSerializedName());
         output.putBoolean("PlayedSpawnAnimation", this.playedSpawnAnimation);
         output.putString("Skin", this.getSkinName());
+        if (!this.disabledAbilityNames().isEmpty()) {
+            output.store("DisabledAbilities", Codec.STRING.listOf(), this.disabledAbilityNames());
+        }
         if (!this.equipment.isEmpty()) {
             output.store("Equipment", ItemStack.CODEC, this.equipment);
         }
@@ -371,6 +378,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.lights = input.read("Lights", CompanionLights.CODEC).orElseGet(CompanionLights::new);
         this.playedSpawnAnimation = input.getBooleanOr("PlayedSpawnAnimation", true);
         this.entityData.set(DATA_SKIN, input.getStringOr("Skin", ""));
+        this.setDisabledAbilityNames(input.read("DisabledAbilities", Codec.STRING.listOf()).orElse(List.of()));
         this.equipment = input.read("Equipment", ItemStack.CODEC).orElse(ItemStack.EMPTY);
         this.entityData.set(DATA_AGGRESSION, (byte) CompanionAggression
                 .byName(input.getStringOr("Aggression", CompanionAggression.NEUTRAL.getSerializedName())).ordinal());
@@ -544,14 +552,48 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         return this.cachedAbilities;
     }
 
+    public List<CompanionAbility> activeAbilities() {
+        return this.unlockedAbilities().stream().filter(ability -> !this.isAbilityDisabled(ability)).toList();
+    }
+
     public boolean hasAbility(CompanionAbility ability) {
-        return this.unlockedAbilities().contains(ability);
+        return this.unlockedAbilities().contains(ability) && !this.isAbilityDisabled(ability);
+    }
+
+    public List<String> disabledAbilityNames() {
+        String joined = this.entityData.get(DATA_DISABLED_ABILITIES);
+        return joined.isEmpty() ? List.of() : List.of(joined.split(","));
+    }
+
+    public boolean isAbilityDisabled(CompanionAbility ability) {
+        return this.disabledAbilityNames().contains(ability.id().getPath());
+    }
+
+    public void setDisabledAbilityNames(List<String> names) {
+        this.entityData.set(DATA_DISABLED_ABILITIES, String.join(",", names));
+        if (this.cachedAbilityLevel >= 0) {
+            this.applyAbilityBonuses();
+        }
+    }
+
+    public void setAbilityEnabled(CompanionAbility ability, boolean enabled) {
+        List<String> names = new ArrayList<>(this.disabledAbilityNames());
+        String name = ability.id().getPath();
+        if (enabled) {
+            names.remove(name);
+        } else if (!names.contains(name)) {
+            names.add(name);
+            if (this.level() instanceof ServerLevel serverLevel) {
+                this.lights.clear(serverLevel, ability.id());
+            }
+        }
+        this.setDisabledAbilityNames(names);
     }
 
     private void applyAbilityBonuses() {
         this.applyBonuses(
                 CompanionAbilities.all().values().stream().flatMap(ability -> ability.attributeBonuses().stream()).toList(),
-                this.cachedAbilities.stream().flatMap(ability -> ability.attributeBonuses().stream()).toList(),
+                this.activeAbilities().stream().flatMap(ability -> ability.attributeBonuses().stream()).toList(),
                 false);
     }
 
@@ -633,8 +675,18 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         return super.getAttackBoundingBox(horizontalExpansion + this.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE));
     }
 
+    @Override
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return super.isInvulnerableTo(level, source) || this.species.immunities().blocks(source);
+    }
+
+    @Override
+    public boolean canBeAffected(MobEffectInstance effect) {
+        return super.canBeAffected(effect) && !this.species.immunities().blocks(effect.getEffect());
+    }
+
     public Optional<CompanionAbility> activeAbility() {
-        return this.unlockedAbilities().stream().filter(CompanionAbility::isActive).findFirst();
+        return this.activeAbilities().stream().filter(CompanionAbility::isActive).findFirst();
     }
 
     public int abilityCooldownTicks(Identifier ability) {
@@ -748,6 +800,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.progress = snapshot.progress().copy();
         this.setBondPoints(snapshot.bondPoints());
         this.setEquipment(snapshot.equipment().copy());
+        this.setDisabledAbilityNames(snapshot.disabledAbilities());
         this.applyLevelScaling(true);
     }
 
@@ -878,7 +931,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
 
         ServerPlayer owner = this.getOwner() instanceof ServerPlayer serverPlayer ? serverPlayer : null;
-        for (CompanionAbility ability : this.unlockedAbilities()) {
+        for (CompanionAbility ability : this.activeAbilities()) {
             if (this.tickCount % this.scaledInterval(ability) == 0) {
                 ability.serverTick(this, owner);
             }

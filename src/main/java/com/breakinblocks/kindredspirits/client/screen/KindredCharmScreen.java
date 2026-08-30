@@ -11,6 +11,10 @@ import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import com.breakinblocks.kindredspirits.companion.CompanionSpecies.Unlock;
+import com.breakinblocks.kindredspirits.companion.CompanionStats;
+import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
@@ -18,6 +22,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
@@ -73,6 +79,23 @@ public class KindredCharmScreen extends Screen {
     private static final int COLOUR_BOND = 0xFFD79BE8;
     private static final int COLOUR_STARS = 0xFFF5C542;
 
+    private static final int SIDE_WIDTH = 150;
+    private static final int SIDE_TAB_WIDTH = 12;
+    private static final int SIDE_TAB_HEIGHT = 20;
+    private static final int SIDE_TAB_Y = 8;
+    private static final int SIDE_SLIDE_TICKS = 8;
+    private static final int SIDE_PAD = 8;
+    private static final int SIDE_TITLE_Y = 9;
+    private static final int SIDE_CONTENT_Y = 26;
+    private static final int STAT_ROW_HEIGHT = 13;
+    private static final int STAT_GROUP_GAP = 6;
+    private static final int ABILITY_ROW_HEIGHT = 24;
+    private static final int TOGGLE_WIDTH = 32;
+    private static final int TOGGLE_HEIGHT = 14;
+    private static final int COLOUR_BOOSTED = 0xFF7FD46B;
+
+    private static final boolean[] SIDE_OPEN = {true, true};
+
     private static final int REFRESH_INTERVAL = 20;
     private static final int MAX_SKIN_LENGTH = 16;
 
@@ -93,6 +116,8 @@ public class KindredCharmScreen extends Screen {
     private Button prestigeButton;
     private Button abilityButton;
     private Button unequipButton;
+    private SidePanel statsPanel;
+    private SidePanel abilitiesPanel;
 
     public KindredCharmScreen(CharmView view) {
         super(Component.translatable("screen.kindredspirits.charm"));
@@ -100,7 +125,8 @@ public class KindredCharmScreen extends Screen {
     }
 
     public void updateView(CharmView view) {
-        boolean sameCompanion = this.view.species().equals(view.species())
+        boolean sameSpecies = this.view.species().equals(view.species());
+        boolean sameCompanion = sameSpecies
                 && this.view.name().equals(view.name())
                 && this.view.skin().equals(view.skin());
         this.view = view;
@@ -109,7 +135,7 @@ public class KindredCharmScreen extends Screen {
             this.display = null;
         }
 
-        if (this.summonButton != null && this.skinRow != this.wantsSkinRow()) {
+        if (this.summonButton != null && (this.skinRow != this.wantsSkinRow() || !sameSpecies)) {
             this.rebuildWidgets();
             return;
         }
@@ -206,7 +232,16 @@ public class KindredCharmScreen extends Screen {
             this.skinField = null;
         }
 
+        this.statsPanel = new StatsPanel();
+        this.abilitiesPanel = new AbilitiesPanel();
+        this.statsPanel.build();
+        this.abilitiesPanel.build();
+
         this.updateButtonState();
+    }
+
+    private List<SidePanel> panels() {
+        return List.of(this.statsPanel, this.abilitiesPanel);
     }
 
     private Component abilityLabel() {
@@ -250,6 +285,10 @@ public class KindredCharmScreen extends Screen {
         this.unequipButton.visible = bound && !this.view.equipment().isEmpty();
         this.unequipButton.active = this.unequipButton.visible;
 
+        for (SidePanel panel : this.panels()) {
+            panel.updateState();
+        }
+
         if (this.nameField != null) {
             this.nameField.box.visible = bound;
             this.nameField.box.setEditable(bound);
@@ -285,6 +324,11 @@ public class KindredCharmScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, COLOUR_BACKDROP);
+
+        for (SidePanel panel : this.panels()) {
+            panel.layout(partialTick);
+            panel.render(graphics, mouseX, mouseY);
+        }
 
         graphics.fill(this.left - 1, this.top - 1, this.left + PANEL_WIDTH + 1, this.top + PANEL_HEIGHT + 1, COLOUR_EDGE);
         graphics.fill(this.left, this.top, this.left + PANEL_WIDTH, this.top + PANEL_HEIGHT, COLOUR_PANEL);
@@ -425,6 +469,12 @@ public class KindredCharmScreen extends Screen {
         return value == Math.floor(value) ? String.valueOf((int) value) : String.format("%.1f", value);
     }
 
+    private static String formatStat(int index, float value) {
+        return CompanionStats.ATTRIBUTES.get(index).is(Attributes.MOVEMENT_SPEED)
+                ? String.format("%.2f", value)
+                : format(value);
+    }
+
     private @Nullable CompanionEntity displayEntity() {
         if (this.display != null) {
             return this.display;
@@ -490,6 +540,10 @@ public class KindredCharmScreen extends Screen {
             field.tickFocus();
         }
 
+        for (SidePanel panel : this.panels()) {
+            panel.tick();
+        }
+
         if (++this.refreshTimer >= REFRESH_INTERVAL) {
             this.refreshTimer = 0;
             this.send(Action.REFRESH, 0);
@@ -509,6 +563,251 @@ public class KindredCharmScreen extends Screen {
 
         this.display = null;
         super.onClose();
+    }
+
+    private abstract class SidePanel {
+        private final int side;
+        private final Component title;
+        private final List<AbstractWidget> widgets = new ArrayList<>();
+        private Button tab;
+        private float progress;
+        private float previous;
+        private int x;
+
+        private SidePanel(int side, Component title) {
+            this.side = side;
+            this.title = title;
+            this.progress = this.isOpen() ? 1.0f : 0.0f;
+            this.previous = this.progress;
+        }
+
+        private int index() {
+            return this.side < 0 ? 0 : 1;
+        }
+
+        private boolean isOpen() {
+            return SIDE_OPEN[this.index()];
+        }
+
+        private void build() {
+            this.tab = KindredCharmScreen.this.addRenderableWidget(Button.builder(this.tabLabel(), button -> {
+                SIDE_OPEN[this.index()] = !this.isOpen();
+                this.tab.setMessage(this.tabLabel());
+                this.tab.setTooltip(this.tabTooltip());
+            }).bounds(0, 0, SIDE_TAB_WIDTH, SIDE_TAB_HEIGHT).build());
+            this.tab.setTooltip(this.tabTooltip());
+            this.buildWidgets();
+        }
+
+        protected <T extends AbstractWidget> T add(T widget) {
+            this.widgets.add(widget);
+            return KindredCharmScreen.this.addRenderableWidget(widget);
+        }
+
+        private Component tabLabel() {
+            return Component.literal(this.side < 0 == this.isOpen() ? "<" : ">");
+        }
+
+        private Tooltip tabTooltip() {
+            return Tooltip.create(Component.translatable(this.isOpen()
+                    ? "screen.kindredspirits.panel_collapse" : "screen.kindredspirits.panel_expand"));
+        }
+
+        private void tick() {
+            this.previous = this.progress;
+            float step = 1.0f / SIDE_SLIDE_TICKS;
+            this.progress = Mth.clamp(this.progress + (this.isOpen() ? step : -step), 0.0f, 1.0f);
+        }
+
+        private float offset(float partialTick) {
+            float linear = Mth.lerp(partialTick, this.previous, this.progress);
+            return linear * linear * (3.0f - 2.0f * linear);
+        }
+
+        private boolean fullyOpen() {
+            return this.progress >= 1.0f && this.previous >= 1.0f;
+        }
+
+        private void layout(float partialTick) {
+            KindredCharmScreen screen = KindredCharmScreen.this;
+            int travel = Math.round(SIDE_WIDTH * this.offset(partialTick));
+
+            if (this.side < 0) {
+                this.x = Math.max(SIDE_TAB_WIDTH + 1, screen.left - travel);
+                this.tab.setX(this.x - SIDE_TAB_WIDTH);
+            } else {
+                this.x = Math.min(screen.width - SIDE_WIDTH - SIDE_TAB_WIDTH - 1,
+                        screen.left + PANEL_WIDTH - SIDE_WIDTH + travel);
+                this.tab.setX(this.x + SIDE_WIDTH);
+            }
+
+            this.tab.setY(screen.top + SIDE_TAB_Y);
+            this.tab.visible = screen.view.bound();
+            this.tab.active = this.tab.visible;
+
+            this.positionWidgets(this.x, screen.top, this.tab.visible && this.fullyOpen());
+        }
+
+        private void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+            KindredCharmScreen screen = KindredCharmScreen.this;
+            if (!screen.view.bound() || this.progress <= 0.0f && this.previous <= 0.0f) {
+                return;
+            }
+
+            int top = screen.top;
+            graphics.fill(this.x - 1, top - 1, this.x + SIDE_WIDTH + 1, top + PANEL_HEIGHT + 1, COLOUR_EDGE);
+            graphics.fill(this.x, top, this.x + SIDE_WIDTH, top + PANEL_HEIGHT, COLOUR_PANEL);
+            graphics.fill(this.x, top, this.x + SIDE_WIDTH, top + 2, COLOUR_ACCENT);
+            graphics.text(screen.font, this.title, this.x + SIDE_PAD, top + SIDE_TITLE_Y, COLOUR_TITLE);
+
+            this.renderContent(graphics, this.x, top + SIDE_CONTENT_Y, mouseX, mouseY);
+        }
+
+        protected void updateState() {
+        }
+
+        protected abstract void buildWidgets();
+
+        protected abstract void positionWidgets(int x, int top, boolean visible);
+
+        protected abstract void renderContent(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY);
+    }
+
+    private final class StatsPanel extends SidePanel {
+        private StatsPanel() {
+            super(-1, Component.translatable("screen.kindredspirits.panel_stats"));
+        }
+
+        @Override
+        protected void buildWidgets() {
+        }
+
+        @Override
+        protected void positionWidgets(int x, int top, boolean visible) {
+        }
+
+        @Override
+        protected void renderContent(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
+            CompanionStats stats = KindredCharmScreen.this.view.stats();
+            int right = x + SIDE_WIDTH - SIDE_PAD;
+
+            for (int i = 0; i < CompanionStats.KEYS.size(); i++) {
+                float base = stats.base().get(i);
+                float modified = stats.modified().get(i);
+                this.row(graphics, x, y, right,
+                        Component.translatable("screen.kindredspirits.stat." + CompanionStats.KEYS.get(i)),
+                        formatStat(i, modified), formatStat(i, base),
+                        modified > base + 0.001f ? COLOUR_BOOSTED : COLOUR_VALUE);
+                y += STAT_ROW_HEIGHT;
+            }
+
+            y += STAT_GROUP_GAP;
+            this.row(graphics, x, y, right, Component.translatable("screen.kindredspirits.stat.xp_multiplier"),
+                    String.format("x%.2f", stats.experienceMultiplier()), null,
+                    stats.experienceMultiplier() > 1.001f ? COLOUR_BOOSTED : COLOUR_VALUE);
+            y += STAT_ROW_HEIGHT;
+            this.row(graphics, x, y, right, Component.translatable("screen.kindredspirits.stat.storage"),
+                    stats.storageSlots() + " / " + stats.storageMax(), null, COLOUR_VALUE);
+            y += STAT_ROW_HEIGHT;
+            this.row(graphics, x, y, right, Component.translatable("screen.kindredspirits.stat.revive"),
+                    formatDuration(stats.reviveSeconds()), null, COLOUR_VALUE);
+            y += STAT_ROW_HEIGHT + STAT_GROUP_GAP;
+
+            graphics.textWithWordWrap(KindredCharmScreen.this.font,
+                    Component.translatable("screen.kindredspirits.stat_hint"),
+                    x + SIDE_PAD, y, SIDE_WIDTH - SIDE_PAD * 2, COLOUR_LABEL);
+        }
+
+        private void row(GuiGraphicsExtractor graphics, int x, int y, int right, Component label,
+                         String modified, @Nullable String base, int colour) {
+            graphics.text(KindredCharmScreen.this.font, label, x + SIDE_PAD, y, COLOUR_LABEL);
+
+            int cursor = right;
+            if (base != null) {
+                String bracket = " (" + base + ")";
+                cursor -= KindredCharmScreen.this.font.width(bracket);
+                graphics.text(KindredCharmScreen.this.font, Component.literal(bracket), cursor, y, COLOUR_LABEL);
+            }
+            cursor -= KindredCharmScreen.this.font.width(modified);
+            graphics.text(KindredCharmScreen.this.font, Component.literal(modified), cursor, y, colour);
+        }
+    }
+
+    private final class AbilitiesPanel extends SidePanel {
+        private final List<Button> toggles = new ArrayList<>();
+        private List<Unlock> unlocks = List.of();
+
+        private AbilitiesPanel() {
+            super(1, Component.translatable("screen.kindredspirits.panel_abilities"));
+        }
+
+        @Override
+        protected void buildWidgets() {
+            this.unlocks = KindredCharmScreen.this.view.resolveSpecies()
+                    .map(CompanionSpecies::unlocks).orElse(List.of());
+            this.toggles.clear();
+            for (Unlock unlock : this.unlocks) {
+                String id = unlock.ability().id().getPath();
+                this.toggles.add(this.add(Button.builder(Component.empty(), button ->
+                                ClientPacketDistributor.sendToServer(
+                                        new CharmActionPayload(Action.TOGGLE_ABILITY, 0, id)))
+                        .bounds(0, 0, TOGGLE_WIDTH, TOGGLE_HEIGHT).build()));
+            }
+        }
+
+        private boolean unlocked(Unlock unlock) {
+            CharmView view = KindredCharmScreen.this.view;
+            return unlock.isMet(view.level(), view.bondLevel());
+        }
+
+        @Override
+        protected void updateState() {
+            CharmView view = KindredCharmScreen.this.view;
+            for (int i = 0; i < this.unlocks.size(); i++) {
+                boolean enabled = !view.isDisabled(this.unlocks.get(i).ability());
+                this.toggles.get(i).setMessage(Component.translatable(enabled
+                                ? "screen.kindredspirits.ability_on" : "screen.kindredspirits.ability_off")
+                        .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY));
+            }
+        }
+
+        @Override
+        protected void positionWidgets(int x, int top, boolean visible) {
+            int y = top + SIDE_CONTENT_Y;
+            for (int i = 0; i < this.toggles.size(); i++) {
+                Button toggle = this.toggles.get(i);
+                toggle.setX(x + SIDE_WIDTH - SIDE_PAD - TOGGLE_WIDTH);
+                toggle.setY(y + (ABILITY_ROW_HEIGHT - TOGGLE_HEIGHT) / 2 - 2);
+                toggle.visible = visible && this.unlocked(this.unlocks.get(i));
+                toggle.active = toggle.visible;
+                y += ABILITY_ROW_HEIGHT;
+            }
+        }
+
+        @Override
+        protected void renderContent(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
+            CharmView view = KindredCharmScreen.this.view;
+            int textWidth = SIDE_WIDTH - SIDE_PAD * 2 - TOGGLE_WIDTH - 4;
+
+            for (Unlock unlock : this.unlocks) {
+                CompanionAbility ability = unlock.ability();
+                boolean unlocked = this.unlocked(unlock);
+                boolean enabled = unlocked && !view.isDisabled(ability);
+
+                graphics.text(KindredCharmScreen.this.font, ability.displayName(), x + SIDE_PAD, y,
+                        enabled ? COLOUR_VALUE : COLOUR_LABEL);
+                Component requirement = unlocked ? unlock.requirement() : unlock.requirement().copy()
+                        .append(" ").append(Component.translatable("screen.kindredspirits.ability_locked"));
+                graphics.text(KindredCharmScreen.this.font, requirement, x + SIDE_PAD, y + TEXT_HEIGHT + 2, COLOUR_LABEL);
+
+                if (mouseX >= x + SIDE_PAD && mouseX < x + SIDE_PAD + textWidth
+                        && mouseY >= y && mouseY < y + ABILITY_ROW_HEIGHT - 2) {
+                    graphics.setTooltipForNextFrame(KindredCharmScreen.this.font, ability.description(), mouseX, mouseY);
+                }
+
+                y += ABILITY_ROW_HEIGHT;
+            }
+        }
     }
 
     private final class TextField {
