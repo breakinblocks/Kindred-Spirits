@@ -1,27 +1,35 @@
 package com.breakinblocks.kindredspirits.companion;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.fox.Fox;
+import net.minecraft.world.entity.animal.rabbit.Rabbit;
 import net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+
+import java.util.Optional;
+import java.util.UUID;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class CompanionObtainEvents {
@@ -31,6 +39,9 @@ public final class CompanionObtainEvents {
     private static final float TRADER_PRICE_MULTIPLIER = 0.05f;
     private static final int HATCH_FIRE_IMMUNITY_TICKS = 200;
     private static final int HATCH_PARTICLES = 12;
+    private static final int TICKS_PER_DAY = 24000;
+    private static final int GREMLIN_HOUR_START = 18000;
+    private static final int GREMLIN_HOUR_END = 23000;
 
     private CompanionObtainEvents() {
     }
@@ -79,10 +90,43 @@ public final class CompanionObtainEvents {
 
     @SubscribeEvent
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        if (!(event.getTarget() instanceof Fox fox) || !event.getItemStack().is(Items.SCULK)) {
+        ItemStack stack = event.getItemStack();
+
+        if (event.getTarget() instanceof Fox fox && stack.is(Items.SCULK)) {
+            transform(event, fox, CompanionSpecies.NIGHTFOX, ParticleTypes.SCULK_SOUL);
             return;
         }
 
+        if (event.getTarget() instanceof Rabbit rabbit) {
+            interactRabbit(event, rabbit, stack);
+        }
+    }
+
+    private static void interactRabbit(PlayerInteractEvent.EntityInteract event, Rabbit rabbit, ItemStack stack) {
+        if (stack.is(Items.CARROT)) {
+            if (!event.getLevel().isClientSide()) {
+                rabbit.setData(KindredAttachments.RABBIT_FED_BY, Optional.of(event.getEntity().getUUID()));
+            }
+            return;
+        }
+
+        UUID fedBy = rabbit.getData(KindredAttachments.RABBIT_FED_BY).orElse(null);
+
+        if (!stack.is(Items.COOKED_CHICKEN) || !event.getEntity().getUUID().equals(fedBy)
+                || !isWitchingHour(event.getLevel())) {
+            return;
+        }
+
+        transform(event, rabbit, CompanionSpecies.GREMLIN, ParticleTypes.ELECTRIC_SPARK);
+    }
+
+    private static boolean isWitchingHour(Level level) {
+        long timeOfDay = level.getDefaultClockTime() % TICKS_PER_DAY;
+        return timeOfDay >= GREMLIN_HOUR_START && timeOfDay < GREMLIN_HOUR_END;
+    }
+
+    private static void transform(PlayerInteractEvent.EntityInteract event, Mob source,
+                                  CompanionSpecies species, ParticleOptions particle) {
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
 
@@ -91,6 +135,6 @@ public final class CompanionObtainEvents {
         }
 
         event.getItemStack().consume(1, event.getEntity());
-        CompanionSpawns.transform(fox, CompanionSpecies.NIGHTFOX, ParticleTypes.SCULK_SOUL);
+        CompanionSpawns.transform(source, species, particle);
     }
 }

@@ -43,6 +43,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
@@ -173,6 +174,12 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final int TABLET_WANDER_TICKS = 600;
     private static final float TABLET_WANDER_CHANCE = 0.25f;
     private static final Identifier METEOR_FIRE = KindredSpirits.id("meteor_fire");
+    private static final int BATTERY_INTERVAL = 20;
+    private static final int BATTERY_RADIUS = 4;
+    private static final int BATTERY_EXTRA_TICKS = 8;
+    private static final float BATTERY_CHANCE = 0.1f;
+    private static final double BATTERY_SHOCK_RADIUS = 3.0;
+    private static final float BATTERY_SHOCK_DAMAGE = 2.0f;
 
     private final CompanionSpecies species;
     private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
@@ -940,6 +947,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.tickShockwave();
         this.tickMeteors();
         this.tickTabletWander();
+        this.tickBattery();
         this.tickProgress();
 
         if (!this.isBonded() || !CompanionAbilities.enabled()) {
@@ -1401,6 +1409,29 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.tabletWanderRestore = this.getCommand();
         this.tabletWanderUntil = this.level().getGameTime() + TABLET_WANDER_TICKS;
         this.setCommand(CompanionCommand.WANDER);
+    }
+
+    private void tickBattery() {
+        if (this.tickCount % BATTERY_INTERVAL != 0 || !this.isBonded()
+                || !this.hasEquipment(KindredItems.BATTERY.get())
+                || !(this.level() instanceof ServerLevel level)
+                || this.random.nextFloat() >= BATTERY_CHANCE) {
+            return;
+        }
+
+        BlockPos accelerated = CompanionTinkering.accelerateNearby(level, this.blockPosition(),
+                BATTERY_RADIUS, BATTERY_EXTRA_TICKS, this.random);
+        if (accelerated == null) {
+            return;
+        }
+
+        CompanionTinkering.sparks(level, accelerated);
+        DamageSource shock = this.damageSources().source(DamageTypes.LIGHTNING_BOLT, this);
+
+        for (LivingEntity hostile : this.hostilesWithin(level, this.getBoundingBox().inflate(BATTERY_SHOCK_RADIUS), null)) {
+            hostile.hurtServer(level, shock, BATTERY_SHOCK_DAMAGE);
+            CompanionAbilities.hitParticles(level, hostile, ParticleTypes.ELECTRIC_SPARK, 8, 0.5, 0.3, 0.02);
+        }
     }
 
     private void endTabletWander() {

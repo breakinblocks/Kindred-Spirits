@@ -143,6 +143,14 @@ public final class KindredAttachments {
     public static final Supplier<AttachmentType<PlayerActivity>> PLAYER_ACTIVITY = ATTACHMENT_TYPES.register(
             "player_activity", () -> AttachmentType.builder(() -> new PlayerActivity()).build());
 
+    public static final Supplier<AttachmentType<Long>> SNACK_SCALE = ATTACHMENT_TYPES.register(
+            "snack_scale", () -> AttachmentType.builder(() -> 0L).build());
+
+    public static final Supplier<AttachmentType<Optional<UUID>>> RABBIT_FED_BY = ATTACHMENT_TYPES.register(
+            "rabbit_fed_by", () -> AttachmentType.<Optional<UUID>>builder(() -> Optional.empty())
+                    .serialize(UUIDUtil.CODEC.optionalFieldOf("player"))
+                    .build());
+
     public static final Supplier<AttachmentType<ItemContainerContents>> COMPANION_STORAGE =
             ATTACHMENT_TYPES.register("companion_storage", () ->
                     AttachmentType.builder(() -> ItemContainerContents.EMPTY)

@@ -39,7 +39,10 @@ public final class KindredItems {
             new AttributeBonus(Attributes.MOVEMENT_SPEED, new AttributeModifier(KindredSpirits.id("running_shoes"),
                     0.6, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL))));
 
-    private static final List<DeferredItem<KindredEquipmentItem>> EQUIPMENT = List.of(BOXING_GLOVES, DRAGON_TABLET, RUNNING_SHOES);
+    public static final DeferredItem<KindredEquipmentItem> BATTERY = equipment("battery", List.of());
+
+    private static final List<DeferredItem<KindredEquipmentItem>> EQUIPMENT =
+            List.of(BOXING_GLOVES, DRAGON_TABLET, RUNNING_SHOES, BATTERY);
 
     private static final Map<CompanionSpecies, DeferredItem<SpawnEggItem>> SPAWN_EGGS =
             new EnumMap<>(CompanionSpecies.class);

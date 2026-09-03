@@ -1,6 +1,7 @@
 package com.breakinblocks.kindredspirits.companion;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,6 +32,7 @@ public final class CompanionProgressEvents {
 
         if (player.tickCount % GUARD_INTERVAL == 0) {
             updateGuard(player);
+            CompanionAbilities.expireSnackScale(player);
         }
     }
 

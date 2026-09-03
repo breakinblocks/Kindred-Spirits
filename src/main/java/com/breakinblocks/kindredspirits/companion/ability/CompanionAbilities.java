@@ -5,13 +5,16 @@ import com.breakinblocks.kindredspirits.companion.CompanionAnimations;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionLevels.AttributeBonus;
 import com.breakinblocks.kindredspirits.companion.CompanionLights;
+import com.breakinblocks.kindredspirits.companion.CompanionTinkering;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
+import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredBlocks;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import com.breakinblocks.kindredspirits.util.BlockPosUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -20,11 +23,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Inventory;
@@ -120,6 +125,13 @@ public final class CompanionAbilities {
     public static final CompanionAbility FRIENDLY_FACE = register(ownerBuff("friendly_face", 600,
             OWNER_RANGE_LONG_SQR, MobEffects.HERO_OF_THE_VILLAGE, 1200, 0));
 
+    public static final CompanionAbility TINKER = register(new TinkerAbility(KindredSpirits.id("tinker")));
+
+    public static final CompanionAbility SNACK_THIEF = register(new SnackThiefAbility(KindredSpirits.id("snack_thief")));
+
+    public static final CompanionAbility ENERGIZED_CHAOS =
+            register(new EnergizedChaosAbility(KindredSpirits.id("energized_chaos")));
+
     public static final CompanionAbility ONE_WITH_THE_NIGHT = register(new SimpleAbility(KindredSpirits.id("one_with_the_night"), 40,
             (companion, owner) -> {
                 if (!ownerEffect(companion, owner, OWNER_RANGE_LONG_SQR, MobEffects.NIGHT_VISION, 400, 0)) {
@@ -183,6 +195,10 @@ public final class CompanionAbilities {
         hitParticles(level, target, hit, hitCount, 0.5, 0.25, 0.02);
         companion.magicHurt(level, target, companion.attackDamage() * damageMultiplier);
         onHit.accept(target);
+    }
+
+    public static void expireSnackScale(ServerPlayer owner) {
+        SnackThiefAbility.expire(owner);
     }
 
     public static boolean enabled() {
@@ -551,6 +567,146 @@ public final class CompanionAbilities {
 
         @Override
         public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
+        }
+    }
+
+    private record TinkerAbility(Identifier id) implements CompanionAbility {
+        private static final int RADIUS = 4;
+        private static final int EXTRA_TICKS = 4;
+        private static final double BASE_CHANCE = 0.10;
+        private static final double CHANCE_PER_LEVEL = 0.01;
+
+        @Override
+        public int intervalTicks() {
+            return 200;
+        }
+
+        @Override
+        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
+            if (!(companion.level() instanceof ServerLevel level)
+                    || companion.getRandom().nextDouble() >= BASE_CHANCE + companion.getLevel() * CHANCE_PER_LEVEL) {
+                return;
+            }
+
+            BlockPos accelerated = CompanionTinkering.accelerateNearby(level, companion.blockPosition(),
+                    RADIUS, EXTRA_TICKS, companion.getRandom());
+
+            if (accelerated != null) {
+                CompanionTinkering.sparks(level, accelerated);
+            }
+        }
+    }
+
+    private record SnackThiefAbility(Identifier id) implements CompanionAbility {
+        private static final int BUFF_TICKS = 1200;
+        private static final double CHANCE = 0.5;
+        private static final double SCALE_BONUS = 0.25;
+        private static final AttributeModifier SNACK_SCALE = new AttributeModifier(
+                KindredSpirits.id("snack_scale"), SCALE_BONUS, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+
+        @Override
+        public int intervalTicks() {
+            return 3600;
+        }
+
+        @Override
+        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
+            if (!companion.ownerWithin(owner, OWNER_RANGE_SQR)
+                    || companion.getRandom().nextDouble() >= CHANCE
+                    || !steal(companion, owner)) {
+                return;
+            }
+
+            companion.playAction(CompanionAnimations.INTERACT, SoundEvents.PLAYER_BURP, 0.8f, 1.4f);
+            companion.burst(ParticleTypes.HAPPY_VILLAGER, 6);
+
+            switch (companion.getRandom().nextInt(3)) {
+                case 0 -> ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.STRENGTH, BUFF_TICKS, 0);
+                case 1 -> ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.SPEED, BUFF_TICKS, 0);
+                default -> grow(owner);
+            }
+        }
+
+        private static boolean steal(CompanionEntity companion, ServerPlayer owner) {
+            Inventory inventory = owner.getInventory();
+            List<Integer> slots = new ArrayList<>();
+
+            for (int slot = 0; slot < inventory.getNonEquipmentItems().size(); slot++) {
+                if (slot != inventory.getSelectedSlot() && inventory.getItem(slot).has(DataComponents.FOOD)) {
+                    slots.add(slot);
+                }
+            }
+
+            if (slots.isEmpty()) {
+                return false;
+            }
+
+            inventory.removeItem(slots.get(companion.getRandom().nextInt(slots.size())), 1);
+            return true;
+        }
+
+        private static void grow(ServerPlayer owner) {
+            AttributeInstance scale = owner.getAttribute(Attributes.SCALE);
+            if (scale == null) {
+                return;
+            }
+
+            if (!scale.hasModifier(SNACK_SCALE.id())) {
+                scale.addTransientModifier(SNACK_SCALE);
+            }
+            owner.setData(KindredAttachments.SNACK_SCALE, owner.level().getGameTime() + BUFF_TICKS);
+        }
+
+        static void expire(ServerPlayer owner) {
+            long until = owner.getData(KindredAttachments.SNACK_SCALE);
+            if (until == 0L || owner.level().getGameTime() < until) {
+                return;
+            }
+
+            AttributeInstance scale = owner.getAttribute(Attributes.SCALE);
+            if (scale != null) {
+                scale.removeModifier(SNACK_SCALE.id());
+            }
+            owner.setData(KindredAttachments.SNACK_SCALE, 0L);
+        }
+    }
+
+    private record EnergizedChaosAbility(Identifier id) implements CompanionAbility {
+        private static final int RADIUS = 4;
+        private static final double CHANCE = 0.3;
+
+        @Override
+        public int intervalTicks() {
+            return 600;
+        }
+
+        @Override
+        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
+            if (!(companion.level() instanceof ServerLevel level)
+                    || companion.getRandom().nextDouble() >= CHANCE) {
+                return;
+            }
+
+            List<BlockPos> targets = new ArrayList<>();
+            for (BlockPos pos : BlockPosUtil.cube(companion.blockPosition(), RADIUS)) {
+                BlockState state = level.getBlockState(pos);
+                if (state.is(Blocks.STONE) || state.is(Blocks.DEEPSLATE)) {
+                    targets.add(pos.immutable());
+                }
+            }
+
+            if (targets.isEmpty()) {
+                return;
+            }
+
+            BlockPos pick = targets.get(companion.getRandom().nextInt(targets.size()));
+            boolean deepslate = level.getBlockState(pick).is(Blocks.DEEPSLATE);
+
+            level.setBlockAndUpdate(pick, deepslate
+                    ? Blocks.DEEPSLATE_REDSTONE_ORE.defaultBlockState()
+                    : Blocks.REDSTONE_ORE.defaultBlockState());
+            companion.playSpecialAttack(0.8f, 1.4f);
+            CompanionTinkering.sparks(level, pick);
         }
     }
 

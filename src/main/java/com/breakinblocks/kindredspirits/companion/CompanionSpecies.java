@@ -95,7 +95,22 @@ public enum CompanionSpecies implements StringRepresentable {
                     Unlock.level(1, CompanionAbilities.DRAGON_BREATH),
                     Unlock.level(1, CompanionAbilities.FORGE_DRAFT),
                     Unlock.bond(5, CompanionAbilities.DRAGONFIRE),
-                    Unlock.level(30, CompanionAbilities.KILN_BREATH)));
+                    Unlock.level(30, CompanionAbilities.KILN_BREATH))),
+
+    GREMLIN("gremlin",
+            new Size(0.5f, 0.8f, 0.8f, 0.0f),
+            new Stats(10.0, 0.40, 2.0, 2.0, 0.0, 1.5),
+            CombatStyle.MELEE, false,
+            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
+                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
+            new SoundSet(SoundEvents.PIGLIN_AMBIENT, SoundEvents.PIGLIN_HURT, SoundEvents.PIGLIN_DEATH,
+                    SoundEvents.PIGLIN_ANGRY, SoundEvents.PIGLIN_CELEBRATE, SoundEvents.PIGLIN_ADMIRING_ITEM),
+            List.of(
+                    Unlock.level(1, CompanionAbilities.TINKER),
+                    Unlock.bond(5, CompanionAbilities.SNACK_THIEF),
+                    Unlock.level(12, CompanionAbilities.SWIFT_STEP),
+                    Unlock.level(30, CompanionAbilities.ENERGIZED_CHAOS)));
 
     public static final double DEFAULT_FOLLOW_RANGE = 24.0;
 
@@ -207,7 +222,7 @@ public enum CompanionSpecies implements StringRepresentable {
 
     public int storageRows() {
         return switch (this) {
-            case NIGHTFOX, BABY_DRAGON -> 1;
+            case NIGHTFOX, BABY_DRAGON, GREMLIN -> 1;
             case TREX, MINI_PLAYER -> 2;
         };
     }
@@ -220,6 +235,7 @@ public enum CompanionSpecies implements StringRepresentable {
         return switch (this) {
             case BABY_DRAGON -> Immunities.NONE.withDamageTags(DamageTypeTags.IS_FIRE);
             case NIGHTFOX -> Immunities.NONE.withDamageTypes(DamageTypes.WITHER).withEffects(MobEffects.WITHER);
+            case GREMLIN -> Immunities.NONE.withEffects(MobEffects.POISON);
             default -> Immunities.NONE;
         };
     }
@@ -228,7 +244,7 @@ public enum CompanionSpecies implements StringRepresentable {
         if (this.headBones == null) {
             this.headBones = switch (this) {
                 case TREX -> List.of("neck_upper", "head_main");
-                case MINI_PLAYER, BABY_DRAGON -> List.of("head");
+                case MINI_PLAYER, BABY_DRAGON, GREMLIN -> List.of("head");
                 case NIGHTFOX -> List.of();
             };
         }

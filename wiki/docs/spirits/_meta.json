@@ -3,5 +3,6 @@
   "nightfox.mdx": { "name": "Nightfox", "icon": null },
   "trex.mdx": { "name": "T-Rex", "icon": null },
   "baby_dragon.mdx": { "name": "Baby Dragon", "icon": null },
-  "mini_player.mdx": { "name": "Mini Player", "icon": null }
+  "mini_player.mdx": { "name": "Mini Player", "icon": null },
+  "gremlin.mdx": { "name": "Gremlin", "icon": null }
 }
