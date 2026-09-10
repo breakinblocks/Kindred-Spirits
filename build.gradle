@@ -74,6 +74,7 @@ neoForge {
             type = 'gameTestServer'
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
             gameDirectory = project.file('run-gametest')
+            programArguments.addAll '--tests', 'kindredspirits:*', '--report', 'results.xml'
         }
 
         clientData {
@@ -121,6 +122,77 @@ dependencies {
 tasks.named('test', Test).configure {
     failOnNoDiscoveredTests = false
 }
+
+tasks.register('verifyItemArt') {
+    group = 'verification'
+    description = 'Checks native 16x16 item PNGs.'
+    def textures = fileTree('src/main/resources/assets/kindredspirits/textures/item') { include '*.png' }
+    inputs.files(textures)
+    doLast {
+        textures.each { texture ->
+            def image = javax.imageio.ImageIO.read(texture)
+            if (image == null || image.width != 16 || image.height != 16) {
+                throw new GradleException("${texture.name}: expected a 16x16 PNG")
+            }
+            int opaque = 0
+            for (int y = 0; y < 16; y++) {
+                for (int x = 0; x < 16; x++) {
+                    int alpha = (image.getRGB(x, y) >>> 24) & 255
+                    if (alpha != 0 && alpha != 255) throw new GradleException("${texture.name}: partial alpha at ${x},${y}")
+                    if (alpha == 255) opaque++
+                }
+            }
+            if (opaque == 0 || opaque == 256) throw new GradleException("${texture.name}: expected a transparent silhouette")
+        }
+        logger.lifecycle("Verified ${textures.files.size()} native 16x16 item textures")
+    }
+}
+
+tasks.named('check').configure { dependsOn 'verifyItemArt' }
+
+tasks.register('verifyModResources') {
+    group = 'verification'
+    description = 'Checks JSON syntax, local item model links, and animation bone references.'
+    def resourceRoot = file('src/main/resources')
+    inputs.dir(resourceRoot)
+    doLast {
+        def json = new groovy.json.JsonSlurper()
+        def assets = new File(resourceRoot, 'assets/kindredspirits')
+        fileTree(resourceRoot) { include '**/*.json' }.each { json.parse(it) }
+        fileTree(new File(assets, 'items')) { include '*.json' }.each { item ->
+            def model = json.parse(item).model.model
+            if (model?.startsWith('kindredspirits:') && !new File(assets, "models/${model.split(':')[1]}.json").isFile()) {
+                throw new GradleException("${item.name}: missing local item model ${model}")
+            }
+        }
+        fileTree(new File(assets, 'models')) { include '**/*.json' }.each { model ->
+            def document = json.parse(model)
+            document.textures?.values()?.each { texture ->
+                if (texture.startsWith('kindredspirits:') && !new File(assets, "textures/${texture.split(':')[1]}.png").isFile()) {
+                    throw new GradleException("${model.name}: missing texture ${texture}")
+                }
+            }
+        }
+        fileTree(new File(assets, 'geckolib/models/entity')) { include '*.json' }.each { model ->
+            def geometry = json.parse(model).'minecraft:geometry'[0]
+            def names = geometry.bones.collect { it.name } as Set
+            geometry.bones.each { bone ->
+                if (bone.parent && !names.contains(bone.parent)) throw new GradleException("${model.name}: missing parent ${bone.parent}")
+            }
+            def species = model.name.replace('.geo.json', '').replace('_slim', '')
+            def animationFile = new File(assets, "geckolib/animations/entity/${species}.animation.json")
+            if (!animationFile.isFile()) throw new GradleException("${model.name}: missing animation file")
+            json.parse(animationFile).animations.each { name, animation ->
+                animation.bones?.keySet()?.each { bone ->
+                    if (!names.contains(bone)) throw new GradleException("${animationFile.name}/${name}: missing model bone ${bone}")
+                }
+            }
+        }
+        logger.lifecycle('Verified resource JSON, item model links, textures, and animation bones')
+    }
+}
+
+tasks.named('check').configure { dependsOn 'verifyModResources' }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'

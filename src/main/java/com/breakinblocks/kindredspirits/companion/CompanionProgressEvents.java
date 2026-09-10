@@ -32,6 +32,7 @@ public final class CompanionProgressEvents {
 
         if (player.tickCount % GUARD_INTERVAL == 0) {
             updateGuard(player);
+            KindredAttachments.syncTooltip(player);
             CompanionAbilities.expireSnackScale(player);
         }
     }
@@ -42,7 +43,7 @@ public final class CompanionProgressEvents {
             return;
         }
 
-        boolean guarded = bondedCompanionNear(player, CompanionBondMath.GUARD_RANGE)
+        boolean guarded = KindredConfig.COMMON.abilitiesEnabled.get() && bondedCompanionNear(player, CompanionBondMath.GUARD_RANGE)
                 .map(companion -> CompanionBondMath.grantsGuard(companion.getBondLevel()))
                 .orElse(false);
 
@@ -59,13 +60,10 @@ public final class CompanionProgressEvents {
             return;
         }
 
-        int share = (int) Math.floor(event.getAmount() * KindredConfig.COMMON.xpShare.get());
-        if (share <= 0) {
-            return;
-        }
-
-        bondedCompanionNear(player, CompanionBondMath.PASSIVE_RANGE)
-                .ifPresent(companion -> companion.gainExperience(share));
+        bondedCompanionNear(player, CompanionBondMath.PASSIVE_RANGE).ifPresent(companion -> {
+            int share = companion.progress().shareExperience(event.getAmount(), KindredConfig.COMMON.xpShare.get());
+            if (share > 0) companion.gainExperience(share);
+        });
     }
 
     public static Optional<CompanionEntity> bondedCompanionNear(ServerPlayer player, double range) {

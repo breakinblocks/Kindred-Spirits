@@ -1,5 +1,6 @@
 package com.breakinblocks.kindredspirits.client;
 
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gizmos.GizmoStyle;
@@ -13,12 +14,14 @@ public final class OreRevealOverlay {
 
     private static List<BlockPos> positions = List.of();
     private static long expiresAt;
+    private static ClientLevel sourceLevel;
 
     public static void show(List<BlockPos> ores, int ticks) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
             return;
         }
+        sourceLevel = minecraft.level;
         positions = List.copyOf(ores);
         expiresAt = minecraft.level.getGameTime() + ticks;
     }
@@ -28,8 +31,9 @@ public final class OreRevealOverlay {
         if (positions.isEmpty()) {
             return;
         }
-        if (minecraft.level == null || minecraft.level.getGameTime() >= expiresAt) {
+        if (minecraft.level == null || minecraft.level != sourceLevel || minecraft.level.getGameTime() >= expiresAt) {
             positions = List.of();
+            sourceLevel = null;
             return;
         }
         for (BlockPos pos : positions) {

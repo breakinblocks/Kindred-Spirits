@@ -1,5 +1,7 @@
 package com.breakinblocks.kindredspirits;
 
+import com.breakinblocks.kindredspirits.registry.KindredLootModifiers;
+import com.breakinblocks.kindredspirits.companion.CompanionWorldData;
 import com.breakinblocks.kindredspirits.client.KindredSpiritsClient;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
@@ -39,7 +41,9 @@ public class KindredSpirits {
         KindredBlocks.BLOCKS.register(modEventBus);
         KindredEntities.ENTITY_TYPES.register(modEventBus);
         KindredItems.ITEMS.register(modEventBus);
+        CompanionWorldData.init();
         KindredAttachments.ATTACHMENT_TYPES.register(modEventBus);
+        KindredLootModifiers.TYPES.register(modEventBus);
         KindredCreativeTabs.CREATIVE_TABS.register(modEventBus);
         KindredSounds.SOUND_EVENTS.register(modEventBus);
         KindredMenus.MENUS.register(modEventBus);

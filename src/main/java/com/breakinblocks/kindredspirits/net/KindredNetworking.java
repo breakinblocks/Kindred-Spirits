@@ -1,5 +1,6 @@
 package com.breakinblocks.kindredspirits.net;
 
+import io.netty.handler.codec.DecoderException;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.KindredClientHooks;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
@@ -28,7 +29,7 @@ public final class KindredNetworking {
 
     @SubscribeEvent
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("1");
+        var registrar = event.registrar("2");
 
         registrar.playToServer(
                 CycleCommandPayload.TYPE,
@@ -92,7 +93,7 @@ public final class KindredNetworking {
         public static final Type<CharmActionPayload> TYPE = new Type<>(KindredSpirits.id("charm_action"));
         public static final StreamCodec<RegistryFriendlyByteBuf, CharmActionPayload> STREAM_CODEC =
                 StreamCodec.composite(
-                        ByteBufCodecs.idMapper(ordinal -> Action.values()[ordinal], Action::ordinal),
+                        ByteBufCodecs.idMapper(Action::decode, Action::ordinal),
                         CharmActionPayload::action,
                         ByteBufCodecs.VAR_INT, CharmActionPayload::value,
                         ByteBufCodecs.stringUtf8(MAX_NAME_LENGTH), CharmActionPayload::text,
@@ -128,7 +129,12 @@ public final class KindredNetworking {
             USE_ABILITY,
             UNEQUIP,
             TOGGLE_ABILITY,
-            REFRESH
+            REFRESH;
+
+            private static Action decode(int ordinal) {
+                if (ordinal < 0 || ordinal >= values().length) throw new DecoderException("Invalid charm action: " + ordinal);
+                return values()[ordinal];
+            }
         }
     }
 

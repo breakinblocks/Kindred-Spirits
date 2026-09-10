@@ -1,10 +1,9 @@
 {
-  "type": "neoforge:add_table",
+  "type": "kindredspirits:trex_egg",
   "conditions": [
     {
       "condition": "neoforge:loot_table_id",
       "loot_table_id": "minecraft:archaeology/desert_pyramid"
     }
-  ],
-  "table": "kindredspirits:archaeology/trex_egg"
+  ]
 }

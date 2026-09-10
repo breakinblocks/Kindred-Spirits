@@ -50,7 +50,7 @@ public final class CompanionLights {
     }
 
     public boolean place(ServerLevel level, Identifier key, BlockPos pos, BlockState state, int max) {
-        if (!level.getBlockState(pos).isAir() || this.holds(key, pos)) {
+        if (max <= 0 || !level.isLoaded(pos) || !level.getBlockState(pos).isAir() || this.holds(key, pos)) {
             return false;
         }
 
@@ -106,8 +106,6 @@ public final class CompanionLights {
     }
 
     private void remove(ServerLevel level, Entry entry) {
-        if (level.isLoaded(entry.pos()) && level.getBlockState(entry.pos()).is(entry.block())) {
-            level.removeBlock(entry.pos(), false);
-        }
+        CompanionWorldData.removeLight(level, entry.pos(), entry.block());
     }
 }

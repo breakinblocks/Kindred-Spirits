@@ -1,5 +1,7 @@
 package com.breakinblocks.kindredspirits.companion;
 
+import net.minecraft.world.entity.EquipmentSlot;
+import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.companion.CompanionLevels.AttributeBonus;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.item.KindredEquipmentItem;
@@ -46,13 +48,18 @@ public record CompanionStats(List<Float> base, List<Float> modified,
 
         CompanionLevels.applyBaseStats(attributes, species, level, stars);
         apply(attributes, CompanionLevels.starBonusesAt(stars));
-        for (CompanionAbility ability : snapshot.activeAbilities(species)) {
+        for (CompanionAbility ability : KindredConfig.COMMON.abilitiesEnabled.get()
+                ? snapshot.activeAbilities(species) : List.<CompanionAbility>of()) {
             apply(attributes, ability.attributeBonuses());
         }
         if (snapshot.equipment().getItem() instanceof KindredEquipmentItem item) {
             apply(attributes, item.bonuses());
         }
 
+        snapshot.equipment().forEachModifier(EquipmentSlot.CHEST, (attribute, modifier) -> {
+            var instance = attributes.getInstance(attribute);
+            if (instance != null) instance.addOrReplacePermanentModifier(modifier);
+        });
         return build(species, snapshot.bondLevel(), attributes::getValue);
     }
 

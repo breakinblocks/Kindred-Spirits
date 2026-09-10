@@ -1,5 +1,8 @@
 package com.breakinblocks.kindredspirits.companion.ability;
 
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.damagesource.DamageSource;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import net.minecraft.core.particles.ParticleTypes;
@@ -67,6 +70,8 @@ public final class MirrorStrikeAbility implements CompanionAbility {
         companion.setAbilityCooldown(CompanionAbilities.MIRROR_STRIKE.id(), COOLDOWN_TICKS);
         companion.playSpecialAttack(0.7f, 1.4f);
         CompanionAbilities.hitParticles(level, target, ParticleTypes.ENCHANTED_HIT, 8, 0.6, 0.25, 0.05);
-        companion.magicHurt(level, target, damage * SHARE);
+        target.hurtServer(level, new DamageSource(
+                level.registryAccess().getOrThrow(ResourceKey.create(Registries.DAMAGE_TYPE,
+                                KindredSpirits.id("mirror_strike"))), companion), damage * SHARE);
     }
 }

@@ -23,7 +23,7 @@ public final class CompanionSpawns {
         }
 
         companion.snapTo(pos.x(), pos.y(), pos.z(), Mth.wrapDegrees(yaw), 0.0f);
-        level.addFreshEntity(companion);
+        if (!level.addFreshEntity(companion)) return null;
         level.playSound(null, pos.x(), pos.y(), pos.z(), species.sounds().interact().get(), SoundSource.NEUTRAL, 1.0f, 1.0f);
         return companion;
     }
@@ -35,10 +35,10 @@ public final class CompanionSpawns {
 
         Vec3 pos = source.position();
         float yaw = source.getYRot();
-        source.discard();
 
         CompanionEntity companion = spawnWild(level, species, pos, yaw);
         if (companion != null) {
+            source.discard();
             companion.burst(particle, TRANSFORM_PARTICLES);
         }
         return companion;

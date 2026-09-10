@@ -21,7 +21,7 @@ public final class CompanionTinkering {
         List<BlockPos> targets = new ArrayList<>();
 
         for (BlockPos pos : BlockPosUtil.cube(center, radius)) {
-            if (level.getBlockState(pos).hasBlockEntity() && ticker(level, pos) != null) {
+            if (level.isLoaded(pos) && level.getBlockState(pos).hasBlockEntity() && ticker(level, pos) != null) {
                 targets.add(pos.immutable());
             }
         }

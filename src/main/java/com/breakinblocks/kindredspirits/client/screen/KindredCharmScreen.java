@@ -101,6 +101,7 @@ public class KindredCharmScreen extends Screen {
     private @Nullable CompanionEntity display;
     private int left;
     private int top;
+    private int panelHeight;
 
     private Button summonButton;
     private Button dismissButton;
@@ -154,21 +155,38 @@ public class KindredCharmScreen extends Screen {
     }
 
     private int portraitBottom() {
-        return this.skinRow ? PORTRAIT_BOTTOM_WITH_SKIN : PORTRAIT_BOTTOM;
+        return this.lowerY(this.skinRow ? PORTRAIT_BOTTOM_WITH_SKIN : PORTRAIT_BOTTOM);
     }
 
     private int nameBoxY() {
-        return this.skinRow ? NAME_BOX_Y_WITH_SKIN : NAME_BOX_Y;
+        return this.lowerY(this.skinRow ? NAME_BOX_Y_WITH_SKIN : NAME_BOX_Y);
+    }
+
+    private int lowerY(int y) {
+        return y - (PANEL_HEIGHT - this.panelHeight);
+    }
+
+    private int buttonStart() {
+        return BUTTON_Y - Math.min(16, PANEL_HEIGHT - this.panelHeight);
+    }
+
+    private int buttonSpacing() {
+        return Math.min(BUTTON_SPACING, (this.panelHeight - this.buttonStart() - 8) / 7);
+    }
+
+    private int buttonHeight() {
+        return Math.min(BUTTON_HEIGHT, this.buttonSpacing() - 2);
     }
 
     @Override
     protected void init() {
         this.left = (this.width - PANEL_WIDTH) / 2;
-        this.top = (this.height - PANEL_HEIGHT) / 2;
+        this.panelHeight = Math.min(PANEL_HEIGHT, this.height - 8);
+        this.top = (this.height - this.panelHeight) / 2;
         this.skinRow = this.wantsSkinRow();
 
         int buttonX = this.left + COLUMN_X;
-        int y = this.top + BUTTON_Y;
+        int y = this.top + this.buttonStart();
 
         this.summonButton = this.columnButton(0, this.summonLabel(),
                 () -> this.send(this.view.stored() ? Action.SUMMON : Action.RECALL, 0));
@@ -187,11 +205,11 @@ public class KindredCharmScreen extends Screen {
 
         this.abilityButton = this.addRenderableWidget(Button.builder(this.abilityLabel(),
                         button -> this.send(Action.USE_ABILITY, 0))
-                .bounds(this.left + PAD, this.top + ABILITY_BUTTON_Y, PORTRAIT_WIDTH, BUTTON_HEIGHT).build());
+                .bounds(this.left + PAD, this.top + this.lowerY(ABILITY_BUTTON_Y), PORTRAIT_WIDTH, BUTTON_HEIGHT).build());
 
         this.unequipButton = this.addRenderableWidget(Button.builder(Component.literal("x"),
                         button -> this.send(Action.UNEQUIP, 0))
-                .bounds(this.left + PAD + PORTRAIT_WIDTH - UNEQUIP_WIDTH, this.top + EQUIPMENT_Y,
+                .bounds(this.left + PAD + PORTRAIT_WIDTH - UNEQUIP_WIDTH, this.top + this.lowerY(EQUIPMENT_Y),
                         UNEQUIP_WIDTH, EQUIPMENT_ICON).build());
         this.unequipButton.setTooltip(Tooltip.create(
                 Component.translatable("screen.kindredspirits.unequip")));
@@ -204,7 +222,7 @@ public class KindredCharmScreen extends Screen {
         this.nameField = new TextField(Action.SET_NAME, this.addRenderableWidget(nameBox));
 
         if (this.skinRow) {
-            EditBox skinBox = new EditBox(this.font, this.left + PAD, this.top + SKIN_BOX_Y,
+            EditBox skinBox = new EditBox(this.font, this.left + PAD, this.top + this.lowerY(SKIN_BOX_Y),
                     PORTRAIT_WIDTH, NAME_BOX_HEIGHT, Component.translatable("screen.kindredspirits.skin"));
             skinBox.setMaxLength(MAX_SKIN_LENGTH);
             skinBox.setHint(Component.translatable("screen.kindredspirits.skin_hint")
@@ -219,11 +237,11 @@ public class KindredCharmScreen extends Screen {
         this.statsButton = this.addRenderableWidget(Button.builder(
                         Component.translatable("screen.kindredspirits.stats"),
                         button -> this.openPopup(new StatsPopup()))
-                .bounds(buttonX, y + BUTTON_SPACING * 6, halfWidth, BUTTON_HEIGHT).build());
+                .bounds(buttonX, y + this.buttonSpacing() * 6, halfWidth, this.buttonHeight()).build());
         this.abilitiesButton = this.addRenderableWidget(Button.builder(
                         Component.translatable("screen.kindredspirits.abilities"),
                         button -> this.openPopup(new AbilitiesPopup()))
-                .bounds(buttonX + COLUMN_WIDTH - halfWidth, y + BUTTON_SPACING * 6, halfWidth, BUTTON_HEIGHT).build());
+                .bounds(buttonX + COLUMN_WIDTH - halfWidth, y + this.buttonSpacing() * 6, halfWidth, this.buttonHeight()).build());
 
         if (this.popup != null) {
             this.popup.open();
@@ -234,7 +252,7 @@ public class KindredCharmScreen extends Screen {
 
     private Button columnButton(int row, Component label, Runnable onPress) {
         return this.addRenderableWidget(Button.builder(label, button -> onPress.run())
-                .bounds(this.left + COLUMN_X, this.top + BUTTON_Y + BUTTON_SPACING * row, COLUMN_WIDTH, BUTTON_HEIGHT)
+                .bounds(this.left + COLUMN_X, this.top + this.buttonStart() + this.buttonSpacing() * row, COLUMN_WIDTH, this.buttonHeight())
                 .build());
     }
 
@@ -288,29 +306,30 @@ public class KindredCharmScreen extends Screen {
 
     private void updateButtonState() {
         boolean bound = this.view.bound();
+        boolean editable = bound && (this.view.stored() || this.view.present());
         boolean present = bound && this.view.present();
 
         this.summonButton.setMessage(this.summonLabel());
-        this.summonButton.active = bound && (present || this.view.reviveSeconds() <= 0);
+        this.summonButton.active = editable && (present || this.view.reviveSeconds() <= 0);
 
         this.dismissButton.active = present;
 
         this.commandButton.setMessage(this.commandLabel());
-        this.commandButton.active = bound;
+        this.commandButton.active = editable;
 
         this.aggressionButton.setMessage(this.aggressionLabel());
-        this.aggressionButton.active = bound;
+        this.aggressionButton.active = editable;
 
-        this.releaseButton.active = bound;
+        this.releaseButton.active = editable;
         this.prestigeButton.visible = bound && this.view.canPrestige();
-        this.prestigeButton.active = this.prestigeButton.visible;
+        this.prestigeButton.active = this.prestigeButton.visible && editable;
 
         this.abilityButton.setMessage(this.abilityLabel());
         this.abilityButton.visible = present && this.view.resolveActiveAbility().isPresent();
         this.abilityButton.active = this.abilityButton.visible && this.view.activeCooldownSeconds() <= 0;
 
         this.unequipButton.visible = bound && !this.view.equipment().isEmpty();
-        this.unequipButton.active = this.unequipButton.visible;
+        this.unequipButton.active = this.unequipButton.visible && editable;
 
         this.statsButton.visible = bound;
         this.abilitiesButton.visible = bound;
@@ -328,8 +347,8 @@ public class KindredCharmScreen extends Screen {
         }
 
         for (TextField field : this.fields()) {
-            field.box.visible = bound;
-            field.box.setEditable(bound);
+            field.box.visible = bound && this.popup == null;
+            field.box.setEditable(editable && this.popup == null);
         }
     }
 
@@ -358,7 +377,7 @@ public class KindredCharmScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, COLOUR_BACKDROP);
 
-        this.drawPanel(graphics, this.left, this.top, PANEL_WIDTH, PANEL_HEIGHT,
+        this.drawPanel(graphics, this.left, this.top, PANEL_WIDTH, this.panelHeight,
                 this.title, this.left + 10, this.top + 9);
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
@@ -371,15 +390,15 @@ public class KindredCharmScreen extends Screen {
 
             if (this.view.companionsBonded() > 0) {
                 graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_bonded",
-                        this.view.companionsBonded()), this.left + PAD, this.top + STATE_Y - 12, COLOUR_LABEL);
+                        this.view.companionsBonded()), this.left + PAD, this.top + this.lowerY(STATE_Y) - 12, COLOUR_LABEL);
             }
             if (this.view.highestLevel() > 0) {
                 graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_highest_level",
-                        this.view.highestLevel()), this.left + PAD, this.top + STATE_Y, COLOUR_LABEL);
+                        this.view.highestLevel()), this.left + PAD, this.top + this.lowerY(STATE_Y), COLOUR_LABEL);
             }
             if (this.view.highestStars() > 0) {
                 graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_highest_stars",
-                        CharmView.starText(this.view.highestStars())), this.left + PAD, this.top + STATE_Y + 12,
+                        CharmView.starText(this.view.highestStars())), this.left + PAD, this.top + this.lowerY(STATE_Y) + 12,
                         COLOUR_STARS);
             }
             return;
@@ -411,9 +430,9 @@ public class KindredCharmScreen extends Screen {
         graphics.text(this.font, Component.translatable(this.view.present()
                         ? "screen.kindredspirits.state_out"
                         : "screen.kindredspirits.state_resting"),
-                x0, this.top + STATE_Y, COLOUR_LABEL);
+                x0, this.top + this.lowerY(STATE_Y), COLOUR_LABEL);
 
-        this.renderEquipment(graphics, x0, this.top + EQUIPMENT_Y, mouseX, mouseY);
+        this.renderEquipment(graphics, x0, this.top + this.lowerY(EQUIPMENT_Y), mouseX, mouseY);
     }
 
     private void renderEquipment(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
@@ -426,10 +445,11 @@ public class KindredCharmScreen extends Screen {
         }
 
         graphics.item(equipment, x, y);
-        graphics.text(this.font, equipment.getHoverName(), x + EQUIPMENT_ICON + 4,
+        graphics.text(this.font, this.font.plainSubstrByWidth(equipment.getHoverName().getString(),
+                        PORTRAIT_WIDTH - EQUIPMENT_ICON - UNEQUIP_WIDTH - 8), x + EQUIPMENT_ICON + 4,
                 y + (EQUIPMENT_ICON - TEXT_HEIGHT) / 2, COLOUR_VALUE);
 
-        if (mouseX >= x && mouseX < x + EQUIPMENT_ICON && mouseY >= y && mouseY < y + EQUIPMENT_ICON) {
+        if (mouseX >= x && mouseX < x + PORTRAIT_WIDTH - UNEQUIP_WIDTH && mouseY >= y && mouseY < y + EQUIPMENT_ICON) {
             graphics.setTooltipForNextFrame(this.font, equipment, mouseX, mouseY);
         }
     }
@@ -605,6 +625,7 @@ public class KindredCharmScreen extends Screen {
         private Button closeButton;
         private int left;
         private int top;
+    private int panelHeight;
         private int width;
         private int height;
         private int contentHeight;
@@ -867,7 +888,7 @@ public class KindredCharmScreen extends Screen {
                 toggle.setY(rowY);
                 toggle.visible = this.unlocked(this.unlocks.get(i))
                         && rowY >= visibleTop && rowY + TOGGLE_HEIGHT <= visibleBottom;
-                toggle.active = toggle.visible;
+                toggle.active = toggle.visible && (KindredCharmScreen.this.view.stored() || KindredCharmScreen.this.view.present());
             }
         }
 

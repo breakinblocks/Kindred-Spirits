@@ -1,5 +1,7 @@
 package com.breakinblocks.kindredspirits.item;
 
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.server.level.TicketType;
 import com.breakinblocks.kindredspirits.KindredMessages;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionAggression;
@@ -14,11 +16,16 @@ import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.BondRecord;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
 import com.breakinblocks.kindredspirits.companion.CompanionSnapshot;
+import com.breakinblocks.kindredspirits.companion.CompanionWorldData;
+import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.phys.Vec3;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -41,7 +48,6 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -80,6 +86,7 @@ public class KindredCharmItem extends Item {
     }
 
     private static void toggleBond(ServerPlayer player, CompanionEntity companion) {
+        CompanionWorldData.reconcile(player);
         CompanionBond bond = KindredAttachments.bond(player);
 
         if (bond.isBound()) {
@@ -102,6 +109,7 @@ public class KindredCharmItem extends Item {
     }
 
     public static CharmView viewFor(ServerPlayer player) {
+        CompanionWorldData.reconcile(player);
         CompanionBond bond = KindredAttachments.bond(player);
         BondRecord record = KindredAttachments.get(player);
 
@@ -114,6 +122,7 @@ public class KindredCharmItem extends Item {
 
     public static void handleAction(ServerPlayer player, KindredNetworking.CharmActionPayload.Action action,
                                     int value, String text) {
+        CompanionWorldData.reconcile(player);
         CompanionBond bond = KindredAttachments.bond(player);
         ServerLevel level = player.level();
 
@@ -126,6 +135,14 @@ public class KindredCharmItem extends Item {
         }
 
         CompanionEntity live = findCompanion(player.level().getServer(), bond);
+
+        // An unavailable deployed entity is not a stored snapshot. Never edit or
+        // return its equipment until the authoritative entity has been loaded.
+        if (!bond.stored() && live == null && action != KindredNetworking.CharmActionPayload.Action.REFRESH) {
+            KindredMessages.send(player, "charm_unreachable");
+            KindredNetworking.sendCharmView(player, false);
+            return;
+        }
 
         switch (action) {
             case SUMMON -> summon(player, level, bond);
@@ -170,7 +187,8 @@ public class KindredCharmItem extends Item {
     }
 
     private static void toggleAbility(ServerPlayer player, @Nullable CompanionEntity live, String text) {
-        CompanionAbility ability = CompanionAbilities.get(KindredSpirits.id(text));
+        Identifier id = Identifier.tryParse(KindredSpirits.MOD_ID + ":" + text);
+        CompanionAbility ability = id == null ? null : CompanionAbilities.get(id);
         if (ability == null) {
             return;
         }
@@ -323,10 +341,14 @@ public class KindredCharmItem extends Item {
             return;
         }
 
-        live.teleportTo(level, player.getX(), player.getY(), player.getZ(),
-                Set.of(), player.getYRot(), 0.0f, false);
-        KindredAttachments.modifyBond(player, current -> snapshot(current, live).withStored(false));
-        KindredMessages.send(player, "charm_recalled", live.getDisplayName());
+        Entity arrived = live.teleport(new TeleportTransition(level, player.position(), Vec3.ZERO,
+                player.getYRot(), 0.0f, TeleportTransition.DO_NOTHING));
+        if (!(arrived instanceof CompanionEntity recalled)) {
+            KindredMessages.send(player, "charm_unreachable");
+            return;
+        }
+        KindredAttachments.modifyBond(player, current -> snapshot(current, recalled).withStored(false));
+        KindredMessages.send(player, "charm_recalled", recalled.getDisplayName());
     }
 
     private static void dismiss(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live) {
@@ -336,6 +358,8 @@ public class KindredCharmItem extends Item {
 
         Component name = live.getDisplayName();
         KindredAttachments.modifyBond(player, current -> snapshot(current, live).withStored(true));
+        live.burst(ParticleTypes.REVERSE_PORTAL, 16);
+        live.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 0.6f, 0.7f);
         live.discard();
         KindredMessages.send(player, "charm_dismissed", name);
     }
@@ -378,6 +402,7 @@ public class KindredCharmItem extends Item {
 
         boolean reviving = bond.reviveReadyAt() > 0;
         companion.restoreProgress(snapshot, reviving ? penalisedExperience(snapshot) : snapshot.experience());
+        if (reviving) companion.setHealth(companion.getMaxHealth());
         companion.setCommand(snapshot.commandValue());
         companion.setAggression(snapshot.aggressionValue());
         companion.setBonded(true);
@@ -390,6 +415,8 @@ public class KindredCharmItem extends Item {
         KindredAttachments.modifyBond(player, current ->
                 snapshot(current, companion).withStored(false).withReviveReadyAt(0L));
 
+        companion.burst(reviving ? ParticleTypes.HEART : ParticleTypes.PORTAL, 16);
+        companion.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 0.6f, reviving ? 1.3f : 1.0f);
         KindredMessages.send(player, reviving ? "charm_revived" : "charm_summoned", companion.getDisplayName());
     }
 
@@ -399,16 +426,17 @@ public class KindredCharmItem extends Item {
     }
 
     public static void onCompanionDied(CompanionEntity companion) {
-        if (!(companion.getOwner() instanceof ServerPlayer owner)) {
-            return;
-        }
-
-        if (!KindredAttachments.bond(owner).isBoundTo(companion.getUUID())) {
-            return;
-        }
-
+        if (!companion.isBonded() || companion.getOwnerReference() == null) return;
         int cooldownTicks = CompanionBondMath.reviveCooldownTicks(companion.getBondLevel());
-        long readyAt = companion.level().getGameTime() + cooldownTicks;
+        long readyAt = companion.level().getGameTime() + Math.max(1, cooldownTicks);
+        if (!(companion.getOwner() instanceof ServerPlayer owner)) {
+            if (companion.level() instanceof ServerLevel level) {
+                CompanionWorldData.recordDeath(level, new CompanionWorldData.Death(
+                        companion.getOwnerReference().getUUID(), companion.getUUID(), CompanionSnapshot.of(companion), readyAt));
+            }
+            return;
+        }
+        if (!KindredAttachments.bond(owner).isBoundTo(companion.getUUID())) return;
 
         KindredAttachments.modifyBond(owner, current ->
                 snapshot(current, companion).withStored(true).withReviveReadyAt(readyAt));
@@ -423,6 +451,7 @@ public class KindredCharmItem extends Item {
     }
 
     private static @Nullable CompanionEntity findCompanion(MinecraftServer server, CompanionBond bond) {
+        if (bond.stored()) return null;
         UUID bound = bond.companion().orElse(null);
         if (bound == null) {
             return null;
@@ -439,9 +468,11 @@ public class KindredCharmItem extends Item {
             return null;
         }
 
-        level.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
-
-        return level.getEntity(bound) instanceof CompanionEntity fetched && fetched.isAlive() ? fetched : null;
+        // Entity deserialization trails chunk loading. Keep the last-known chunk
+        // available for subsequent screen refreshes without blocking the server tick.
+        level.getChunkSource().addTicketAndLoadWithRadius(TicketType.PORTAL,
+                new ChunkPos(pos.getX() >> 4, pos.getZ() >> 4), 0);
+        return null;
     }
 
     private static @Nullable ServerLevel lastKnownLevel(MinecraftServer server, CompanionBond bond) {
@@ -460,13 +491,16 @@ public class KindredCharmItem extends Item {
     }
 
     public static boolean releaseFully(ServerPlayer player) {
+        CompanionWorldData.reconcile(player);
         CompanionBond bond = KindredAttachments.bond(player);
 
         if (!bond.isBound()) {
             return false;
         }
 
-        release(player, bond, findCompanion(player.level().getServer(), bond));
+        CompanionEntity live = findCompanion(player.level().getServer(), bond);
+        if (!bond.stored() && missingLive(player, bond, live)) return false;
+        release(player, bond, live);
         return true;
     }
 

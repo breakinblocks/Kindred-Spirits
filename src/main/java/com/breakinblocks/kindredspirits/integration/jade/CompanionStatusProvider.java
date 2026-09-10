@@ -2,7 +2,6 @@ package com.breakinblocks.kindredspirits.integration.jade;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
-import com.breakinblocks.kindredspirits.companion.CompanionLevels;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -33,7 +32,7 @@ public enum CompanionStatusProvider implements IEntityComponentProvider {
         }
 
         tooltip.add(Component.translatable("jade.kindredspirits.level",
-                companion.getLevel(), CompanionLevels.maxLevel()).withStyle(ChatFormatting.GOLD)
+                companion.getLevel(), companion.configuredMaxLevel()).withStyle(ChatFormatting.GOLD)
                 .append(companion.getStars() > 0
                         ? Component.literal(" ").append(CharmView.starText(companion.getStars()))
                                 .withStyle(ChatFormatting.YELLOW)

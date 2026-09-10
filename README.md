@@ -23,6 +23,12 @@ Output jar: `build/libs/kindredspirits-26.1.2-<version>.jar`
 
 Run the dev client with `./gradlew runClient`.
 
+## Verification and item art
+
+Run the dedicated integration suite with `./gradlew runGameTestServer`. It creates an isolated world under `run-gametest/` and exits nonzero if a required test fails. The GameTests cover companion storage/revival, ownership, cross-dimension recall, combat, progression, archaeology, egg hatching, persistence, and light cleanup. Test code and fixtures are excluded from the release jar.
+
+`./gradlew build` also checks that every item texture is a native 16x16 PNG with hard alpha and a transparent silhouette.
+
 ## License
 
 All Rights Reserved. See [LICENSE.md](LICENSE.md). This mod may not be
@@ -34,6 +40,6 @@ Saereth, AlfredGG
 
 ## Credits
 
-The Emberfox model, texture and animations are by **samus2002**, from the
+The Nightfox model, texture and animations are by **samus2002**, from the
 RPG Pet Pack Vol.2 (Oriental) asset pack, used under its licence. The pack's terms
 permit editing and use in content with credit to the creator, and prohibit resale.

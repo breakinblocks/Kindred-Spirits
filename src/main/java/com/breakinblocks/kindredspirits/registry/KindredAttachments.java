@@ -1,5 +1,6 @@
 package com.breakinblocks.kindredspirits.registry;
 
+import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionLevels;
 import com.breakinblocks.kindredspirits.companion.CompanionSnapshot;
@@ -165,6 +166,27 @@ public final class KindredAttachments {
                     .copyOnDeath()
                     .build());
 
+    /** Server-derived values: COMMON progression config is not synchronized to clients. */
+    public record TooltipProgress(int experienceToNext, int bondLevel, int bondMaxLevel) {
+        public static final TooltipProgress EMPTY = new TooltipProgress(0, 0, 0);
+        public static final StreamCodec<RegistryFriendlyByteBuf, TooltipProgress> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, TooltipProgress::experienceToNext,
+                ByteBufCodecs.VAR_INT, TooltipProgress::bondLevel,
+                ByteBufCodecs.VAR_INT, TooltipProgress::bondMaxLevel, TooltipProgress::new);
+    }
+
+    public static final Supplier<AttachmentType<TooltipProgress>> TOOLTIP_PROGRESS = ATTACHMENT_TYPES.register(
+            "tooltip_progress", () -> AttachmentType.builder(() -> TooltipProgress.EMPTY)
+                    .sync((holder, to) -> holder == to, TooltipProgress.STREAM_CODEC).build());
+
+    public static void syncTooltip(Player player) {
+        if (player.level().isClientSide()) return;
+        TooltipProgress progress = bond(player).snapshot().map(snapshot -> new TooltipProgress(
+                CompanionLevels.experienceToNext(snapshot.level()), snapshot.bondLevel(),
+                CompanionBondMath.maxLevel())).orElse(TooltipProgress.EMPTY);
+        if (!progress.equals(player.getData(TOOLTIP_PROGRESS))) player.setData(TOOLTIP_PROGRESS, progress);
+    }
+
     public static PlayerActivity activity(Player player) {
         return player.getData(PLAYER_ACTIVITY);
     }
@@ -183,6 +205,7 @@ public final class KindredAttachments {
 
     public static void modifyBond(Player player, UnaryOperator<CompanionBond> modifier) {
         player.setData(COMPANION_BOND, modifier.apply(player.getData(COMPANION_BOND)));
+        syncTooltip(player);
     }
 
     public static SimpleContainer storageContainer(Player player) {

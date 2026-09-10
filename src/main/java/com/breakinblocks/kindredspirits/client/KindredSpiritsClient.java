@@ -17,7 +17,6 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID, value = Dist.CLIENT)
 public final class KindredSpiritsClient {
@@ -46,14 +45,8 @@ public final class KindredSpiritsClient {
     }
 
     @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (event.getLevel().isClientSide()) {
-            OreRevealOverlay.clientTick();
-        }
-    }
-
-    @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        OreRevealOverlay.clientTick();
         while (KindredKeyMappings.CYCLE_COMMAND.consumeClick()) {
             ClientPacketDistributor.sendToServer(KindredNetworking.CycleCommandPayload.INSTANCE);
         }

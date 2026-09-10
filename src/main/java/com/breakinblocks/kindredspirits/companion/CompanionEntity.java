@@ -21,8 +21,6 @@ import com.geckolib.animation.RawAnimation;
 import com.geckolib.animation.object.PlayState;
 import com.geckolib.animation.state.AnimationTest;
 import com.geckolib.util.GeckoLibUtil;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
@@ -95,6 +93,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.HashMap;
+import net.minecraft.world.level.portal.TeleportTransition;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -120,6 +121,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_SKIN =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
+
+    private static final EntityDataAccessor<Integer> DATA_LEVEL_LIMIT = SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_STAR_LIMIT = SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
 
     public static final String MAIN_CONTROLLER = "main";
     public static final String ACTION_CONTROLLER = "action";
@@ -183,7 +187,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     private final CompanionSpecies species;
     private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
-    private final Object2IntMap<Identifier> abilityCooldowns = new Object2IntOpenHashMap<>();
+    private final Map<Identifier, Long> abilityCooldowns = new HashMap<>();
+    private boolean abilitiesWereEnabled = true;
     private @Nullable LeapImpact pendingImpact;
     private int shockwaveTicks;
     private Vec3 shockwaveOrigin = Vec3.ZERO;
@@ -193,7 +198,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private float hitboxYaw = Float.NaN;
     private RawAnimation sitVariant = SIT;
     private long sitVariantUntil;
-    private int bowCooldown;
+    private static final Identifier BOW_COOLDOWN = KindredSpirits.id("bow_attack");
     private List<CompanionAbility> cachedAbilities = List.of();
     private CompanionProgress progress = new CompanionProgress();
     private CompanionLights lights = new CompanionLights();
@@ -299,12 +304,14 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
             @Override
             public boolean canUse() {
-                return CompanionEntity.this.isBonded() && allowed.getAsBoolean() && goal.canUse();
+                return CompanionEntity.this.isAlive() && CompanionEntity.this.isBonded()
+                        && CompanionAbilities.enabled() && allowed.getAsBoolean() && goal.canUse();
             }
 
             @Override
             public boolean canContinueToUse() {
-                return CompanionEntity.this.isBonded() && allowed.getAsBoolean() && goal.canContinueToUse();
+                return CompanionEntity.this.isAlive() && CompanionEntity.this.isBonded()
+                        && CompanionAbilities.enabled() && allowed.getAsBoolean() && goal.canContinueToUse();
             }
 
             @Override
@@ -338,6 +345,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     protected void defineSynchedData(SynchedEntityData.Builder entityData) {
         super.defineSynchedData(entityData);
         entityData.define(DATA_LEVEL, CompanionLevels.MIN_LEVEL);
+        entityData.define(DATA_LEVEL_LIMIT, CompanionLevels.maxLevel());
+        entityData.define(DATA_STAR_LIMIT, CompanionLevels.maxStars());
         entityData.define(DATA_EXPERIENCE, 0);
         entityData.define(DATA_BOND, 0);
         entityData.define(DATA_BOND_LEVEL, 0);
@@ -360,7 +369,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         if (!this.lights.isEmpty()) {
             output.store("Lights", CompanionLights.CODEC, this.lights);
         }
-        output.putString("Command", this.getCommand().getSerializedName());
+        output.putString("Command", this.commandForStorage().getSerializedName());
+        output.store("CompanionState", CompanionState.CODEC, this.savedState());
+        output.putBoolean("Bonded", this.isBonded());
         output.putString("Aggression", this.getAggression().getSerializedName());
         output.putBoolean("PlayedSpawnAnimation", this.playedSpawnAnimation);
         output.putString("Skin", this.getSkinName());
@@ -375,12 +386,16 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
         super.readAdditionalSaveData(input);
-        this.entityData.set(DATA_LEVEL, Math.max(CompanionLevels.MIN_LEVEL, input.getIntOr("Level", CompanionLevels.MIN_LEVEL)));
+        this.entityData.set(DATA_LEVEL, CompanionLevels.clampLevel(input.getIntOr("Level", CompanionLevels.MIN_LEVEL)));
         this.entityData.set(DATA_EXPERIENCE, input.getIntOr("Experience", 0));
         this.setBondPoints(input.read("BondPoints", Codec.INT)
                 .orElseGet(() -> CompanionBondMath.migrateLegacy(input.getIntOr("Bond", 0))));
         this.entityData.set(DATA_STARS, CompanionLevels.clampStars(input.getIntOr("Stars", 0)));
         this.progress = input.read("Progress", CompanionProgress.CODEC).orElseGet(CompanionProgress::new);
+        this.entityData.set(DATA_BONDED, input.getBooleanOr("Bonded", false));
+        this.abilityCooldowns.clear();
+        this.abilityCooldowns.putAll(input.read("CompanionState", CompanionState.CODEC)
+                .orElse(CompanionState.LEGACY).cooldowns());
         this.lights = input.read("Lights", CompanionLights.CODEC).orElseGet(CompanionLights::new);
         this.playedSpawnAnimation = input.getBooleanOr("PlayedSpawnAnimation", true);
         this.entityData.set(DATA_SKIN, input.getStringOr("Skin", ""));
@@ -397,6 +412,14 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     public int getLevel() {
         return this.entityData.get(DATA_LEVEL);
+    }
+
+    public int configuredMaxLevel() {
+        return this.entityData.get(DATA_LEVEL_LIMIT);
+    }
+
+    public int configuredMaxStars() {
+        return this.entityData.get(DATA_STAR_LIMIT);
     }
 
     public int getExperience() {
@@ -427,7 +450,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     public void addBondPoints(int amount) {
         int before = this.getBondLevel();
-        this.setBondPoints(this.getBondPoints() + amount);
+        this.setBondPoints((int) Math.clamp((long) this.getBondPoints() + amount, 0L, Integer.MAX_VALUE));
         int after = this.getBondLevel();
 
         if (after > before && !this.level().isClientSide()) {
@@ -495,6 +518,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.entityData.set(DATA_BONDED, bonded);
 
         if (!bonded) {
+            if (this.level() instanceof ServerLevel level) this.lights.clear(level);
             this.setTarget(null);
         }
     }
@@ -596,7 +620,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private void applyAbilityBonuses() {
         this.applyBonuses(
                 CompanionAbilities.all().values().stream().flatMap(ability -> ability.attributeBonuses().stream()).toList(),
-                this.activeAbilities().stream().flatMap(ability -> ability.attributeBonuses().stream()).toList(),
+                CompanionAbilities.enabled() ? this.activeAbilities().stream().flatMap(ability -> ability.attributeBonuses().stream()).toList() : List.of(),
                 false);
     }
 
@@ -675,11 +699,11 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public int abilityCooldownTicks(Identifier ability) {
-        return this.abilityCooldowns.getInt(ability);
+        return (int) Math.clamp(this.abilityCooldowns.getOrDefault(ability, 0L) - this.level().getGameTime(), 0L, Integer.MAX_VALUE);
     }
 
     public boolean useActiveAbility(ServerPlayer owner) {
-        if (!this.isBonded() || !this.isOwnedBy(owner) || !CompanionAbilities.enabled()) {
+        if (!this.isAlive() || !this.isBonded() || !this.isOwnedBy(owner) || !CompanionAbilities.enabled()) {
             return false;
         }
         return this.activeAbility().map(ability -> ability.activate(this, owner)).orElse(false);
@@ -708,7 +732,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public boolean ownerWithin(@Nullable ServerPlayer owner, double rangeSqr) {
-        return owner != null && this.distanceToSqr(owner) <= rangeSqr;
+        return owner != null && owner.level() == this.level() && this.distanceToSqr(owner) <= rangeSqr;
     }
 
     public void announce(String key, Object... args) {
@@ -755,7 +779,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
 
         int level = this.getLevel();
-        int experience = this.getExperience() + amount;
+        int experience = (int) Math.min(Integer.MAX_VALUE, (long) this.getExperience() + amount);
 
         while (level < CompanionLevels.maxLevel() && experience >= CompanionLevels.experienceToNext(level)) {
             experience -= CompanionLevels.experienceToNext(level);
@@ -786,17 +810,25 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     public void refreshBondState() {
         if (!(this.getOwner() instanceof Player owner)) {
-            this.setBonded(false);
-            return;
+            return; // An offline owner is not a released bond.
         }
 
         CompanionBond bond = KindredAttachments.bond(owner);
-        boolean bonded = bond.isBound() && bond.companion().get().equals(this.getUUID());
+        boolean bonded = !bond.stored() && bond.isBoundTo(this.getUUID());
         this.setBonded(bonded);
 
         if (bonded) {
             KindredAttachments.modifyBond(owner, current -> KindredCharmItem.snapshot(current, this).withStored(false));
         }
+    }
+
+    public CompanionCommand commandForStorage() {
+        return this.tabletWanderRestore != null && this.getCommand() == CompanionCommand.WANDER
+                ? this.tabletWanderRestore : this.getCommand();
+    }
+
+    public CompanionState savedState() {
+        return new CompanionState(this.getHealth(), this.abilityCooldowns);
     }
 
     public void restoreProgress(CompanionSnapshot snapshot, int experience) {
@@ -807,7 +839,12 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.setBondPoints(snapshot.bondPoints());
         this.setEquipment(snapshot.equipment().copy());
         this.setDisabledAbilityNames(snapshot.disabledAbilities());
-        this.applyLevelScaling(true);
+        this.abilityCooldowns.clear();
+        this.abilityCooldowns.putAll(snapshot.state().cooldowns());
+        this.applyLevelScaling(false);
+        float health = snapshot.state().health();
+        this.setHealth(health < 0 || !Float.isFinite(health) ? this.getMaxHealth()
+                : Math.clamp(health, 0.0f, this.getMaxHealth()));
     }
 
     public void applyLevelScaling(boolean healToFull) {
@@ -920,19 +957,42 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             return;
         }
 
+        if (!this.isAlive()) return;
+
+        boolean enabled = CompanionAbilities.enabled();
+        if (enabled != this.abilitiesWereEnabled) {
+            this.abilitiesWereEnabled = enabled;
+            this.applyAbilityBonuses();
+            if (!enabled) {
+                this.setTarget(null);
+                this.lights.clear((ServerLevel) this.level());
+                this.pendingImpact = null;
+                this.meteors.forEach(meteor -> meteor.fireball.discard());
+                this.meteors.clear();
+                this.endTabletWander();
+            }
+        }
+
         if (!this.playedSpawnAnimation && this.tickCount >= SPAWN_ANIMATION_TICK) {
             this.playedSpawnAnimation = true;
             this.playCompanionAnim(CompanionAnimations.SPAWN);
         }
 
+        if (this.tickCount % PROGRESS_INTERVAL == 0) {
+            this.entityData.set(DATA_LEVEL_LIMIT, CompanionLevels.maxLevel());
+            this.entityData.set(DATA_STAR_LIMIT, CompanionLevels.maxStars());
+        }
         this.updateRunning();
+        if (enabled && this.isBonded() && this.isSprinting() && this.onGround()
+                && this.hasEquipment(KindredItems.RUNNING_SHOES.get()) && this.tickCount % 4 == 0
+                && this.level() instanceof ServerLevel level) {
+            BlockState ground = level.getBlockState(this.blockPosition().below());
+            if (!ground.isAir()) level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, ground),
+                    this.getX(), this.getY() + 0.05, this.getZ(), 2, 0.15, 0.02, 0.15, 0.02);
+        }
 
         if (this.isAlive() && this.tickCount % LOCATION_UPDATE_INTERVAL == 0) {
             this.refreshBondState();
-        }
-
-        if (this.bowCooldown > 0) {
-            this.bowCooldown--;
         }
 
         this.updateCombatMode();
@@ -956,7 +1016,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
         ServerPlayer owner = this.serverOwner();
         for (CompanionAbility ability : this.activeAbilities()) {
-            if (this.tickCount % this.scaledInterval(ability) == 0) {
+            if (Math.floorMod(this.tickCount + this.getId(), this.scaledInterval(ability)) == 0) {
                 ability.serverTick(this, owner);
             }
         }
@@ -977,7 +1037,11 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public static Optional<CompanionEntity> bondedNear(Player player, double range) {
-        return nearestOwned(player, range).filter(CompanionEntity::isBonded);
+        return player.level().getEntitiesOfClass(CompanionEntity.class, player.getBoundingBox().inflate(range),
+                        companion -> companion.isAlive() && companion.isBonded() && companion.isOwnedBy(player)
+                                && KindredAttachments.bond(player).isBoundTo(companion.getUUID())
+                                && companion.distanceToSqr(player) <= range * range).stream()
+                .min(Comparator.comparingDouble(companion -> companion.distanceToSqr(player)));
     }
 
     public static Optional<CompanionEntity> bondedWithAbility(Player player, double range, CompanionAbility ability) {
@@ -1244,7 +1308,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public void tryRangedAttack(LivingEntity target) {
-        if (this.bowCooldown > 0 || !this.species.carriesWeapons() || !this.isBonded()) {
+        if (!this.isAbilityReady(BOW_COOLDOWN) || !this.species.carriesWeapons() || !this.isBonded()
+                || !this.isAlive() || !CompanionAbilities.enabled()) {
             return;
         }
 
@@ -1252,7 +1317,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             this.refreshEquipment();
         }
 
-        this.bowCooldown = BOW_INTERVAL;
+        this.setAbilityCooldown(BOW_COOLDOWN, BOW_INTERVAL);
         this.playCompanionAnim(CompanionAnimations.SHOOT);
         this.performRangedAttack(target,
                 (float) (CompanionLevels.attackDamageAt(this.species, this.getLevel(), this.getStars()) / BOW_POWER_DIVISOR));
@@ -1260,7 +1325,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     @Override
     public void performRangedAttack(LivingEntity target, float power) {
-        if (!(this.level() instanceof ServerLevel level)) {
+        if (!this.isAlive() || !this.isBonded() || !CompanionAbilities.enabled() || !(this.level() instanceof ServerLevel level)) {
             return;
         }
 
@@ -1282,15 +1347,15 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public boolean isAbilityReady(Identifier ability) {
-        return this.abilityCooldowns.getInt(ability) <= 0;
+        return this.abilityCooldownTicks(ability) <= 0;
     }
 
     public void setAbilityCooldown(Identifier ability, int ticks) {
-        this.abilityCooldowns.put(ability, ticks);
+        this.abilityCooldowns.put(ability, this.level().getGameTime() + Math.max(0, ticks));
     }
 
     private void tickAbilityCooldowns() {
-        this.abilityCooldowns.replaceAll((ability, remaining) -> Math.max(0, remaining - 1));
+        this.abilityCooldowns.values().removeIf(deadline -> deadline <= this.level().getGameTime());
     }
 
     public void scheduleLeapImpact(float damage, double radius, double knockback) {
@@ -1399,7 +1464,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             return;
         }
 
-        if (this.tickCount % TABLET_WANDER_INTERVAL != 0 || !this.isBonded()
+        if (!CompanionAbilities.enabled() || this.tickCount % TABLET_WANDER_INTERVAL != 0 || !this.isBonded()
                 || !this.hasEquipment(KindredItems.DRAGON_TABLET.get())
                 || this.getCommand() == CompanionCommand.WANDER
                 || this.random.nextFloat() >= TABLET_WANDER_CHANCE) {
@@ -1412,7 +1477,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     private void tickBattery() {
-        if (this.tickCount % BATTERY_INTERVAL != 0 || !this.isBonded()
+        if (!CompanionAbilities.enabled() || !this.isAlive() || this.tickCount % BATTERY_INTERVAL != 0 || !this.isBonded()
                 || !this.hasEquipment(KindredItems.BATTERY.get())
                 || !(this.level() instanceof ServerLevel level)
                 || this.random.nextFloat() >= BATTERY_CHANCE) {
@@ -1511,7 +1576,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     @Override
     public boolean doHurtTarget(ServerLevel level, Entity target) {
-        if (this.species.combatStyle() == CompanionSpecies.CombatStyle.RANGED) {
+        if (!this.isAlive() || !this.isBonded() || !CompanionAbilities.enabled()
+                || this.species.combatStyle() == CompanionSpecies.CombatStyle.RANGED) {
             return false;
         }
 
@@ -1532,16 +1598,39 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     @Override
-    public void remove(RemovalReason reason) {
-        if (reason.shouldDestroy() && this.level() instanceof ServerLevel serverLevel) {
+    public @Nullable Entity teleport(TeleportTransition transition) {
+        if (this.level() instanceof ServerLevel level && transition.newLevel() != level) {
+            this.lights.clear(level);
+        }
+        return super.teleport(transition);
+    }
+
+    @Override
+    protected void tickDeath() {
+        this.deathTime++;
+        int duration = this.species == CompanionSpecies.TREX ? 58 : this.species == CompanionSpecies.GREMLIN ? 30 : 20;
+        if (this.deathTime >= duration && !this.level().isClientSide() && !this.isRemoved()) {
+            this.level().broadcastEntityEvent(this, (byte) 60);
+            this.remove(RemovalReason.KILLED);
+        }
+    }
+
+    @Override
+    public void onRemoval(RemovalReason reason) {
+        if ((reason.shouldDestroy() || reason == RemovalReason.UNLOADED_TO_CHUNK) && this.level() instanceof ServerLevel serverLevel) {
             this.lights.clear(serverLevel);
         }
-        super.remove(reason);
+        super.onRemoval(reason);
     }
 
     @Override
     public void die(DamageSource source) {
         if (!this.level().isClientSide()) {
+            this.setTarget(null);
+            this.pendingImpact = null;
+            this.lights.clear((ServerLevel) this.level());
+            this.meteors.forEach(meteor -> meteor.fireball.discard());
+            this.meteors.clear();
             this.onDeathProgress();
             KindredCharmItem.onCompanionDied(this);
             if (!this.isBonded()) {

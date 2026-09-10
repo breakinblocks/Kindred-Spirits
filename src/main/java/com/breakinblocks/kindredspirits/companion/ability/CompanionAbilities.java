@@ -369,6 +369,7 @@ public final class CompanionAbilities {
             int radius = RADIUS + companion.bondTier();
 
             for (BlockPos pos : BlockPosUtil.cube(center, radius)) {
+                if (!level.isLoaded(pos)) continue;
                 BlockState state = level.getBlockState(pos);
 
                 if (!(state.getBlock() instanceof AbstractFurnaceBlock)
@@ -420,7 +421,7 @@ public final class CompanionAbilities {
                         companion.getRandom().nextInt(RADIUS * 2 + 1) - RADIUS,
                         companion.getRandom().nextInt(RADIUS * 2 + 1) - RADIUS);
 
-                if (!level.getBlockState(pos).isAir()
+                if (!level.isLoaded(pos) || !level.getBlockState(pos).isAir()
                         || !level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)
                         || level.getBrightness(LightLayer.BLOCK, pos) > MAX_LIGHT) {
                     continue;
@@ -488,7 +489,7 @@ public final class CompanionAbilities {
 
             List<BlockPos> ores = new ArrayList<>();
             for (BlockPos pos : BlockPosUtil.cube(companion.blockPosition(), RADIUS)) {
-                if (level.getBlockState(pos).is(Tags.Blocks.ORES)) {
+                if (level.isLoaded(pos) && level.getBlockState(pos).is(Tags.Blocks.ORES)) {
                     ores.add(pos.immutable());
                     if (ores.size() >= MAX_POSITIONS) {
                         break;
@@ -689,6 +690,7 @@ public final class CompanionAbilities {
 
             List<BlockPos> targets = new ArrayList<>();
             for (BlockPos pos : BlockPosUtil.cube(companion.blockPosition(), RADIUS)) {
+                if (!level.isLoaded(pos)) continue;
                 BlockState state = level.getBlockState(pos);
                 if (state.is(Blocks.STONE) || state.is(Blocks.DEEPSLATE)) {
                     targets.add(pos.immutable());

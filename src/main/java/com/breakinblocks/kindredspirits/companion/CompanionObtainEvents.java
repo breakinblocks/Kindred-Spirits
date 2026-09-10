@@ -63,10 +63,10 @@ public final class CompanionObtainEvents {
     }
 
     private static void hatchDragonEgg(ServerLevel level, BlockPos eggPos) {
-        level.destroyBlock(eggPos, false);
         CompanionEntity dragon = CompanionSpawns.spawnWild(level, CompanionSpecies.BABY_DRAGON,
                 eggPos.getCenter(), level.getRandom().nextFloat() * 360.0f);
         if (dragon != null) {
+            level.destroyBlock(eggPos, false);
             dragon.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, HATCH_FIRE_IMMUNITY_TICKS, 0, false, false, true));
             dragon.burst(ParticleTypes.LAVA, HATCH_PARTICLES);
         }
@@ -134,7 +134,8 @@ public final class CompanionObtainEvents {
             return;
         }
 
-        event.getItemStack().consume(1, event.getEntity());
-        CompanionSpawns.transform(source, species, particle);
+        if (CompanionSpawns.transform(source, species, particle) != null) {
+            event.getItemStack().consume(1, event.getEntity());
+        }
     }
 }

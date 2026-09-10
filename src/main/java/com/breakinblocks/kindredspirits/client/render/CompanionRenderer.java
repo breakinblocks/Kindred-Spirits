@@ -14,7 +14,6 @@ import com.geckolib.renderer.base.RenderPassInfo;
 import com.geckolib.renderer.layer.builtin.AutoGlowingGeoLayer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import com.breakinblocks.kindredspirits.companion.CompanionLevels;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -77,7 +76,7 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
             state.nameTag = stars > 0
                     ? Component.translatable("entity.kindredspirits.name_with_stars",
                             entity.getDisplayName(), entity.getLevel(), CharmView.starText(stars))
-                            .withStyle(stars >= CompanionLevels.maxStars() ? ChatFormatting.GOLD : ChatFormatting.WHITE)
+                            .withStyle(stars >= entity.configuredMaxStars() ? ChatFormatting.GOLD : ChatFormatting.WHITE)
                     : Component.translatable("entity.kindredspirits.name_with_level",
                             entity.getDisplayName(), entity.getLevel());
         }

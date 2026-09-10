@@ -1,8 +1,6 @@
 package com.breakinblocks.kindredspirits.client;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
-import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
-import com.breakinblocks.kindredspirits.companion.CompanionLevels;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.companion.CompanionSnapshot;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
@@ -34,24 +32,26 @@ public final class KindredCharmTooltip {
         }
 
         CompanionSnapshot snapshot = bond.snapshot().orElseThrow();
+        var progress = event.getEntity().getData(KindredAttachments.TOOLTIP_PROGRESS);
+        if (progress.bondMaxLevel() == 0) return;
 
         event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_species",
                 snapshot.displayName()).withStyle(ChatFormatting.GOLD));
         event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_level",
-                snapshot.level(), CompanionLevels.experienceToNext(snapshot.level()))
+                snapshot.level(), progress.experienceToNext())
                 .withStyle(ChatFormatting.GRAY));
         if (snapshot.stars() > 0) {
             event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_stars",
                     CharmView.starText(snapshot.stars())).withStyle(ChatFormatting.YELLOW));
         }
         event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_bond",
-                snapshot.bondLevel(), CompanionBondMath.maxLevel()).withStyle(ChatFormatting.GRAY));
+                progress.bondLevel(), progress.bondMaxLevel()).withStyle(ChatFormatting.GRAY));
 
         snapshot.resolveSpecies().ifPresent(species -> {
             for (CompanionSpecies.Unlock unlock : species.unlocks()) {
-                boolean unlocked = unlock.isMet(snapshot.level(), snapshot.bondLevel());
+                boolean unlocked = unlock.isMet(snapshot.level(), progress.bondLevel());
                 event.getToolTip().add(Component.literal("  ")
-                        .append(unlock.label(unlock.ability().displayName(), snapshot.level(), snapshot.bondLevel()))
+                        .append(unlock.label(unlock.ability().displayName(), snapshot.level(), progress.bondLevel()))
                         .withStyle(unlocked ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
             }
         });

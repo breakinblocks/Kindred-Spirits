@@ -16,7 +16,7 @@ import java.util.Optional;
 public record CompanionSnapshot(String species, int level, int experience, int bondPoints, int stars,
                                 CompanionProgress progress, Optional<String> name,
                                 int command, int aggression, Optional<String> skin, ItemStack equipment,
-                                List<String> disabledAbilities) {
+                                List<String> disabledAbilities, CompanionState state) {
     private static final int LEGACY_BOND = -1;
 
     public static final Codec<CompanionSnapshot> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -36,33 +36,56 @@ public record CompanionSnapshot(String species, int level, int experience, int b
             Codec.STRING.optionalFieldOf("skin").forGetter(CompanionSnapshot::skin),
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("equipment", ItemStack.EMPTY).forGetter(CompanionSnapshot::equipment),
             Codec.STRING.listOf().optionalFieldOf("disabled_abilities", List.of())
-                    .forGetter(CompanionSnapshot::disabledAbilities)
+                    .forGetter(CompanionSnapshot::disabledAbilities),
+            CompanionState.CODEC.optionalFieldOf("state", CompanionState.LEGACY).forGetter(CompanionSnapshot::state)
     ).apply(instance, CompanionSnapshot::fromSaved));
 
     private static CompanionSnapshot fromSaved(String species, int level, int experience, int bondPoints,
                                                int legacyBond, int stars, CompanionProgress progress,
                                                Optional<String> name, int command, int aggression,
                                                Optional<String> skin, ItemStack equipment,
-                                               List<String> disabledAbilities) {
+                                               List<String> disabledAbilities, CompanionState state) {
         int points = bondPoints == LEGACY_BOND ? CompanionBondMath.migrateLegacy(legacyBond) : bondPoints;
         return new CompanionSnapshot(species, level, experience, points, stars, progress,
-                name, command, aggression, skin, equipment, disabledAbilities);
+                name, command, aggression, skin, equipment, disabledAbilities, state);
     }
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, CompanionSnapshot> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8, CompanionSnapshot::species,
-            ByteBufCodecs.VAR_INT, CompanionSnapshot::level,
-            ByteBufCodecs.VAR_INT, CompanionSnapshot::experience,
-            ByteBufCodecs.VAR_INT, CompanionSnapshot::bondPoints,
-            ByteBufCodecs.VAR_INT, CompanionSnapshot::stars,
-            CompanionProgress.STREAM_CODEC, CompanionSnapshot::progress,
-            ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8), CompanionSnapshot::name,
-            ByteBufCodecs.VAR_INT, CompanionSnapshot::command,
-            ByteBufCodecs.VAR_INT, CompanionSnapshot::aggression,
-            ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8), CompanionSnapshot::skin,
-            ItemStack.OPTIONAL_STREAM_CODEC, CompanionSnapshot::equipment,
-            ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()), CompanionSnapshot::disabledAbilities,
-            CompanionSnapshot::new);
+    public static final StreamCodec<RegistryFriendlyByteBuf, CompanionSnapshot> STREAM_CODEC = new StreamCodec<>() {
+        @Override
+        public CompanionSnapshot decode(RegistryFriendlyByteBuf buffer) {
+            return new CompanionSnapshot(
+                    ByteBufCodecs.STRING_UTF8.decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    CompanionProgress.STREAM_CODEC.decode(buffer),
+                    ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8).decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8).decode(buffer),
+                    ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer),
+                    ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).decode(buffer),
+                    CompanionState.STREAM_CODEC.decode(buffer));
+        }
+
+        @Override
+        public void encode(RegistryFriendlyByteBuf buffer, CompanionSnapshot snapshot) {
+            ByteBufCodecs.STRING_UTF8.encode(buffer, snapshot.species());
+            ByteBufCodecs.VAR_INT.encode(buffer, snapshot.level());
+            ByteBufCodecs.VAR_INT.encode(buffer, snapshot.experience());
+            ByteBufCodecs.VAR_INT.encode(buffer, snapshot.bondPoints());
+            ByteBufCodecs.VAR_INT.encode(buffer, snapshot.stars());
+            CompanionProgress.STREAM_CODEC.encode(buffer, snapshot.progress());
+            ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8).encode(buffer, snapshot.name());
+            ByteBufCodecs.VAR_INT.encode(buffer, snapshot.command());
+            ByteBufCodecs.VAR_INT.encode(buffer, snapshot.aggression());
+            ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8).encode(buffer, snapshot.skin());
+            ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, snapshot.equipment());
+            ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).encode(buffer, snapshot.disabledAbilities());
+            CompanionState.STREAM_CODEC.encode(buffer, snapshot.state());
+        }
+    };
 
     public static CompanionSnapshot of(CompanionEntity companion) {
         return new CompanionSnapshot(
@@ -73,11 +96,11 @@ public record CompanionSnapshot(String species, int level, int experience, int b
                 companion.getStars(),
                 companion.progress().copy(),
                 Optional.ofNullable(companion.getCustomName()).map(Component::getString),
-                companion.getCommand().ordinal(),
+                companion.commandForStorage().ordinal(),
                 companion.getAggression().ordinal(),
                 nonEmpty(companion.getSkinName()),
                 companion.equipment().copy(),
-                companion.disabledAbilityNames());
+                companion.disabledAbilityNames(), companion.savedState());
     }
 
     public int bondLevel() {
@@ -94,39 +117,39 @@ public record CompanionSnapshot(String species, int level, int experience, int b
 
     public CompanionSnapshot withName(Optional<String> name) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities);
+                this.progress, name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
     }
 
     public CompanionSnapshot withSkin(Optional<String> skin) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, this.name, this.command, this.aggression, skin, this.equipment, this.disabledAbilities);
+                this.progress, this.name, this.command, this.aggression, skin, this.equipment, this.disabledAbilities, this.state);
     }
 
     public CompanionSnapshot withCommand(int command) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, this.name, command, this.aggression, this.skin, this.equipment, this.disabledAbilities);
+                this.progress, this.name, command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
     }
 
     public CompanionSnapshot withAggression(int aggression) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, this.name, this.command, aggression, this.skin, this.equipment, this.disabledAbilities);
+                this.progress, this.name, this.command, aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
     }
 
     public CompanionSnapshot withBondPoints(int bondPoints) {
         return new CompanionSnapshot(this.species, this.level, this.experience,
                 CompanionBondMath.clampPoints(bondPoints), this.stars,
-                this.progress, this.name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities);
+                this.progress, this.name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
     }
 
     public CompanionSnapshot withEquipment(ItemStack equipment) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, this.name, this.command, this.aggression, this.skin, equipment, this.disabledAbilities);
+                this.progress, this.name, this.command, this.aggression, this.skin, equipment, this.disabledAbilities, this.state);
     }
 
     public CompanionSnapshot withDisabledAbilities(List<String> disabledAbilities) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
                 this.progress, this.name, this.command, this.aggression, this.skin, this.equipment,
-                disabledAbilities);
+                disabledAbilities, this.state);
     }
 
     public static Optional<String> nonEmpty(String value) {
@@ -153,7 +176,7 @@ public record CompanionSnapshot(String species, int level, int experience, int b
         }
 
         return new CompanionSnapshot(this.species, CompanionLevels.MIN_LEVEL, 0, this.bondPoints, this.stars + 1,
-                this.progress, this.name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities);
+                this.progress, this.name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
     }
 
     public Optional<CompanionSpecies> resolveSpecies() {

@@ -180,5 +180,7 @@
   "screen.kindredspirits.no_equipment": "No gear equipped",
   "screen.kindredspirits.unequip": "Take gear off",
   "message.kindredspirits.equipped": "%s is now wearing %s.",
-  "command.kindredspirits.no_equipment": "none"
+  "command.kindredspirits.no_equipment": "none",
+  "death.attack.kindredspirits.mirror_strike": "%1$s was struck by %2$s’s reflection",
+  "death.attack.kindredspirits.mirror_strike.player": "%1$s was struck by %2$s’s reflection while fighting %3$s"
 }

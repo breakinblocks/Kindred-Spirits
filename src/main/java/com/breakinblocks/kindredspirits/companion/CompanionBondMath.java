@@ -21,8 +21,10 @@ public final class CompanionBondMath {
             return 0;
         }
 
-        return (int) Math.round(KindredConfig.COMMON.bondBaseCost.get()
-                * Math.pow(KindredConfig.COMMON.bondGrowth.get(), level - 1));
+        // Reserve room for every configured level, even at extreme growth rates.
+        double cost = KindredConfig.COMMON.bondBaseCost.get()
+                * Math.pow(KindredConfig.COMMON.bondGrowth.get(), level - 1);
+        return (int) Math.clamp(Math.round(cost), 1L, Integer.MAX_VALUE / maxLevel());
     }
 
     public static int pointsAtLevelStart(int level) {
@@ -109,7 +111,7 @@ public final class CompanionBondMath {
     }
 
     public static int migrateLegacy(int legacyBond) {
-        return (int) Math.round(totalPoints() * Math.clamp(legacyBond, 0, LEGACY_MAX) / (double) LEGACY_MAX);
+        return (int) Math.round(totalPoints() * (Math.clamp(legacyBond, 0, LEGACY_MAX) / (double) LEGACY_MAX));
     }
 
     public static int afkTicks() {

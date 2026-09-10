@@ -83,8 +83,11 @@ public class TrexEggBlock extends Block {
         }
 
         level.playSound(null, pos, SoundEvents.SNIFFER_EGG_HATCH, SoundSource.BLOCKS, 0.7f, 0.9f + random.nextFloat() * 0.2f);
-        level.destroyBlock(pos, false);
-        CompanionSpawns.spawnWild(level, CompanionSpecies.TREX, pos.getCenter(), random.nextFloat() * 360.0f);
+        if (CompanionSpawns.spawnWild(level, CompanionSpecies.TREX, pos.getCenter(), random.nextFloat() * 360.0f) != null) {
+            level.destroyBlock(pos, false);
+        } else {
+            this.scheduleStage(level, pos);
+        }
     }
 
     private void scheduleStage(Level level, BlockPos pos) {
