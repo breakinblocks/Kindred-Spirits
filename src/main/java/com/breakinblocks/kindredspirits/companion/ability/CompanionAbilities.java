@@ -1,5 +1,6 @@
 package com.breakinblocks.kindredspirits.companion.ability;
 
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionAnimations;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
@@ -17,13 +18,11 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.particles.PowerParticleOption;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
+import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -63,6 +62,16 @@ public final class CompanionAbilities {
     private static final double OWNER_RANGE_SHORT_SQR = 64.0;
     private static final double OWNER_RANGE_FIRE_SQR = 100.0;
 
+    public static final CompanionAbility BRIGHTER_SIDE = register(new SimpleAbility(KindredSpirits.id("brighter_side"), 100,
+            (companion, owner) -> {
+                if (ownerEffect(companion, owner, OWNER_RANGE_LONG_SQR, MobEffects.LUCK, 120, 0))
+                    companion.burst(KindredParticles.HAPPY_BLOOM.get(), 1);
+            }));
+    public static final CompanionAbility SMILE = register(new SimpleAbility(KindredSpirits.id("smile"), 20,
+            com.breakinblocks.kindredspirits.companion.QuokkaSupport::smile));
+    public static final CompanionAbility ALWAYS_HAPPY = register(new SimpleAbility(KindredSpirits.id("always_happy"), 20,
+            com.breakinblocks.kindredspirits.companion.QuokkaSupport::breed));
+
     public static final CompanionAbility SWIFT_STEP = register(new SimpleAbility(KindredSpirits.id("swift_step"), 40,
             (companion, owner) -> ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.SPEED, 60,
                     companion.hasEquipment(KindredItems.RUNNING_SHOES.get()) ? 1 : 0)));
@@ -92,8 +101,11 @@ public final class CompanionAbilities {
 
     public static final CompanionAbility SAVAGE_LEAP = register(new SavageLeapAbility(KindredSpirits.id("savage_leap")));
 
-    public static final CompanionAbility CRUSHING_MIGHT = register(ownerBuff("crushing_might", 40,
-            OWNER_RANGE_SQR, MobEffects.HASTE, 60, 0));
+    public static final CompanionAbility CRUSHING_MIGHT = register(new SimpleAbility(KindredSpirits.id("crushing_might"), 40,
+            (companion, owner) -> {
+                if (ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.HASTE, 60, 0))
+                    companion.burst(KindredParticles.CRUSHING_MIGHT.get(), 1);
+            }));
 
     public static final CompanionAbility DRAGON_BREATH = register(new DragonBreathAbility(KindredSpirits.id("dragon_breath")));
 
@@ -279,8 +291,8 @@ public final class CompanionAbilities {
             }
 
             companion.playSpecialAttack(0.8f, 1.6f);
-            breathStrike(level, companion, target, ParticleTypes.SOUL_FIRE_FLAME, TRAIL_STEPS, 2, 0.06, 0.0,
-                    ParticleTypes.SCULK_SOUL, 10, DAMAGE_MULTIPLIER,
+            breathStrike(level, companion, target, KindredParticles.SHADOW_FLAME.get(), TRAIL_STEPS, 2, 0.06, 0.0,
+                    KindredParticles.SHADOW_BURST.get(), 10, DAMAGE_MULTIPLIER,
                     hit -> hit.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 40, 0, false, true, true)));
         }
     }
@@ -296,8 +308,7 @@ public final class CompanionAbilities {
         private static final float CLOUD_RADIUS = 1.5f;
         private static final int CLOUD_TICKS = 100;
         private static final int CLOUD_WAIT = 5;
-        static final PowerParticleOption BREATH_PARTICLE =
-                PowerParticleOption.create(ParticleTypes.DRAGON_BREATH, 1.0f);
+        static ParticleOptions breathParticle() { return KindredParticles.DRAGON_FLAME.get(); }
 
         @Override
         public int intervalTicks() {
@@ -324,8 +335,8 @@ public final class CompanionAbilities {
                 return;
             }
 
-            breathStrike(level, companion, target, BREATH_PARTICLE, TRAIL_STEPS, 3, 0.08, 0.01,
-                    BREATH_PARTICLE, 8, DAMAGE_MULTIPLIER, hit -> {
+            breathStrike(level, companion, target, breathParticle(), TRAIL_STEPS, 3, 0.08, 0.01,
+                    breathParticle(), 8, DAMAGE_MULTIPLIER, hit -> {
                         hit.igniteForSeconds(FIRE_SECONDS);
                         spawnBreathCloud(level, companion, hit);
                     });
@@ -335,7 +346,7 @@ public final class CompanionAbilities {
             AreaEffectCloud cloud = new AreaEffectCloud(level, target.getX(), target.getY(), target.getZ());
 
             cloud.setOwner(companion);
-            cloud.setCustomParticle(BREATH_PARTICLE);
+            cloud.setCustomParticle(KindredParticles.DRAGON_SMOKE.get());
             cloud.setRadius(CLOUD_RADIUS);
             cloud.setDuration(CLOUD_TICKS);
             cloud.setWaitTime(CLOUD_WAIT);
@@ -382,7 +393,7 @@ public final class CompanionAbilities {
                     AbstractFurnaceBlockEntity.serverTick(level, pos, state, furnace);
                 }
 
-                level.sendParticles(ParticleTypes.SMALL_FLAME,
+                level.sendParticles(KindredParticles.FORGE_EMBER.get(),
                         pos.getX() + 0.5, pos.getY() + 1.05, pos.getZ() + 0.5, 2, 0.15, 0.02, 0.15, 0.0);
             }
         }
@@ -428,7 +439,7 @@ public final class CompanionAbilities {
                 }
 
                 if (lights.place(level, this.id, pos, KindredBlocks.WISP_LIGHT.get().defaultBlockState(), MAX_WISPS)) {
-                    level.sendParticles(ParticleTypes.SOUL, pos.getX() + 0.5, pos.getY() + 0.3, pos.getZ() + 0.5,
+                    level.sendParticles(KindredParticles.SPIRIT_WISP.get(), pos.getX() + 0.5, pos.getY() + 0.3, pos.getZ() + 0.5,
                             6, 0.2, 0.2, 0.2, 0.01);
                     return;
                 }
@@ -560,8 +571,8 @@ public final class CompanionAbilities {
             companion.setAbilityCooldown(this.id, COOLDOWN_TICKS);
             companion.faceInstantly(owner);
             companion.playSpecialAttack(1.0f, 0.9f);
-            breathTrail(level, companion, owner, DragonBreathAbility.BREATH_PARTICLE, 10, 3, 0.1, 0.01);
-            level.sendParticles(ParticleTypes.FLAME, owner.getX(), owner.getY(1.0), owner.getZ(), 20, 0.4, 0.5, 0.4, 0.02);
+            breathTrail(level, companion, owner, DragonBreathAbility.breathParticle(), 10, 3, 0.1, 0.01);
+            level.sendParticles(KindredParticles.FORGE_EMBER.get(), owner.getX(), owner.getY(1.0), owner.getZ(), 20, 0.4, 0.5, 0.4, 0.02);
             owner.sendSystemMessage(Component.translatable("message.kindredspirits.kiln_smelted", smelted));
             return true;
         }
@@ -618,8 +629,8 @@ public final class CompanionAbilities {
                 return;
             }
 
-            companion.playAction(CompanionAnimations.INTERACT, SoundEvents.PLAYER_BURP, 0.8f, 1.4f);
-            companion.burst(ParticleTypes.HAPPY_VILLAGER, 6);
+            companion.playAction(CompanionAnimations.INTERACT, KindredSounds.GREMLIN_SNACK.get(), 0.8f, 1.0f);
+            companion.burst(KindredParticles.SNACK_CRUMB.get(), 6);
 
             switch (companion.getRandom().nextInt(3)) {
                 case 0 -> ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.STRENGTH, BUFF_TICKS, 0);

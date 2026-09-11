@@ -11,7 +11,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
+import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -195,7 +195,7 @@ public final class KindredNetworking {
                 Player player = context.player();
                 Entity entity = player.level().getEntity(payload.entityId());
                 if (entity instanceof CompanionEntity companion) {
-                    companion.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8f, 1.0f);
+                    companion.playSound(KindredSounds.LEVEL_UP.get(), 0.8f, 1.0f);
                 }
             });
         }

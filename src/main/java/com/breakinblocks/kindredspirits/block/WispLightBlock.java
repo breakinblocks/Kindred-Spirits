@@ -1,9 +1,8 @@
 package com.breakinblocks.kindredspirits.block;
 
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -19,7 +18,6 @@ public class WispLightBlock extends Block {
     public static final MapCodec<WispLightBlock> CODEC = simpleCodec(WispLightBlock::new);
     public static final int LIGHT = 10;
     private static final VoxelShape SHAPE = Block.box(6.0, 0.0, 6.0, 10.0, 6.0, 10.0);
-    private static final DustParticleOptions FLAME = new DustParticleOptions(0xB040FF, 0.8f);
 
     public WispLightBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -50,9 +48,9 @@ public class WispLightBlock extends Block {
         double x = pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.2;
         double y = pos.getY() + 0.15 + random.nextDouble() * 0.3;
         double z = pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.2;
-        level.addParticle(FLAME, x, y, z, 0.0, 0.02, 0.0);
+        level.addParticle(KindredParticles.SPIRIT_WISP.get(), x, y, z, 0.0, 0.02, 0.0);
         if (random.nextInt(4) == 0) {
-            level.addParticle(ParticleTypes.SOUL_FIRE_FLAME, x, y, z, 0.0, 0.01, 0.0);
+            level.addParticle(KindredParticles.SHADOW_FLAME.get(), x, y, z, 0.0, 0.01, 0.0);
         }
     }
 }

@@ -51,6 +51,20 @@ import java.util.function.Consumer;
 public final class KindredGameTests {
     private static final Map<String, Consumer<GameTestHelper>> TESTS = new LinkedHashMap<>();
     static {
+        TESTS.put("custom_sounds_resolve_and_serialize", KindredGameTests::soundPackets);
+        TESTS.put("particle_types_round_trip", KindredGameTests::particleCodecs);
+        TESTS.put("dragon_cloud_uses_custom_visual_particles", KindredGameTests::dragonParticles);
+        TESTS.put("quokka_taming_and_equipping", KindredGameTests::quokkaTame);
+        TESTS.put("quokka_growth_ticks_and_age_lock", KindredGameTests::quokkaAgeTicks);
+        TESTS.put("quokka_buffs_and_unlocks", KindredGameTests::quokkaBuffs);
+        TESTS.put("quokka_snack_cooldown_and_targeting", KindredGameTests::quokkaSnack);
+        TESTS.put("quokka_charm_expires_and_protects", KindredGameTests::quokkaCharm);
+        TESTS.put("quokka_charm_survives_save", KindredGameTests::quokkaCharmSave);
+        TESTS.put("quokka_breeding_limits", KindredGameTests::quokkaBreeding);
+        TESTS.put("quokka_baby_growth_does_not_stack", KindredGameTests::quokkaGrowth);
+        TESTS.put("quokka_decoy_cannot_tame_and_expires", KindredGameTests::quokkaDecoy);
+        TESTS.put("quokka_hurt_throws_once_and_flees", KindredGameTests::quokkaFlee);
+        TESTS.put("quokka_jungle_spawns_and_gear", KindredGameTests::quokkaSpawns);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
         TESTS.put("unreachable_equipment_is_not_duplicated", KindredGameTests::unreachable);
@@ -90,7 +104,7 @@ public final class KindredGameTests {
         Holder<TestEnvironmentDefinition<?>> environment = event.registerEnvironment(KindredSpirits.id("regressions"));
         TESTS.forEach((name, test) -> event.registerTest(KindredSpirits.id(name),
                 new FunctionGameTestInstance(ResourceKey.create(Registries.TEST_FUNCTION, KindredSpirits.id(name)),
-                        new TestData<>(environment, KindredSpirits.id("empty"), 120, 2, true))));
+                        new TestData<>(environment, KindredSpirits.id("empty"), name.equals("quokka_hurt_throws_once_and_flees") ? 300 : 120, 2, true))));
     }
 
     @SuppressWarnings("removal")
@@ -523,5 +537,279 @@ public final class KindredGameTests {
     }
 
     private KindredGameTests() { }
-}
 
+    private static void quokkaBuffs(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity quokka = pet(h, CompanionSpecies.QUOKKA, owner, true);
+        h.assertTrue(quokka.hasAbility(CompanionAbilities.BRIGHTER_SIDE) && !quokka.hasAbility(CompanionAbilities.SMILE), "Only Brighter Side unlocks at level one, bond zero");
+        CompanionAbilities.BRIGHTER_SIDE.serverTick(quokka, owner);
+        h.assertTrue(owner.hasEffect(net.minecraft.world.effect.MobEffects.LUCK), "Nearby owner must receive Luck I");
+        quokka.setBondPoints(CompanionBondMath.pointsAtLevelStart(5));
+        h.assertTrue(quokka.hasAbility(CompanionAbilities.SMILE), "Bond five unlocks Smile");
+        CompanionAbilities.SMILE.serverTick(quokka, owner);
+        h.assertTrue(quokka.abilityCooldownTicks(CompanionAbilities.SMILE.id()) == 2340, "Level one Smile cooldown is 117 seconds");
+        h.assertTrue(owner.getActiveEffects().size() == 2, "Smile adds one positive effect alongside Luck");
+        quokka.addExperience(Integer.MAX_VALUE);
+        h.assertTrue(quokka.hasAbility(CompanionAbilities.ALWAYS_HAPPY), "Level thirty unlocks Always Happy");
+        quokka.setAbilityCooldown(CompanionAbilities.SMILE.id(), 0);
+        CompanionAbilities.SMILE.serverTick(quokka, owner);
+        h.assertTrue(quokka.abilityCooldownTicks(CompanionAbilities.SMILE.id()) == 600, "Level thirty Smile cooldown is thirty seconds");
+        owner.removeAllEffects();
+        quokka.teleportTo(owner.getX() + 20, owner.getY(), owner.getZ());
+        CompanionAbilities.BRIGHTER_SIDE.serverTick(quokka, owner);
+        h.assertTrue(!owner.hasEffect(net.minecraft.world.effect.MobEffects.LUCK), "Luck cannot reach beyond sixteen blocks");
+        finish(h, owner);
+    }
+
+    private static void quokkaSnack(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity quokka = pet(h, CompanionSpecies.QUOKKA, owner, true);
+        quokka.setEquipment(new ItemStack(KindredItems.QUOKKA_SNACK.get()));
+        var zombie = h.spawnWithNoFreeWill(EntityType.ZOMBIE, new BlockPos(5, 1, 4));
+        var skeleton = h.spawnWithNoFreeWill(EntityType.SKELETON, new BlockPos(7, 1, 4));
+        // Find a deterministic successful roll without relying on a particular random implementation.
+        long seed = 0;
+        while (true) { quokka.getRandom().setSeed(seed); if (quokka.getRandom().nextFloat() < 0.2f) break; seed++; }
+        quokka.getRandom().setSeed(seed);
+        QuokkaSupport.tick(quokka);
+        h.assertTrue(QuokkaSupport.isCharmed(zombie) && zombie.getTarget() == skeleton, "Snack charms the nearest hostile into attacking another monster");
+        h.assertTrue(quokka.abilityCooldownTicks(KindredSpirits.id("quokka_snack")) == 600, "Each snack attempt has a thirty-second cooldown");
+        QuokkaSupport.tick(quokka);
+        h.assertTrue(!QuokkaSupport.isCharmed(skeleton), "Repeated ticks cannot bypass the snack cooldown");
+        action(owner, Action.DISMISS);
+        action(owner, Action.SUMMON);
+        CompanionEntity summoned = deployed(owner);
+        h.assertTrue(summoned.hasEquipment(KindredItems.QUOKKA_SNACK.get()) && summoned.abilityCooldownTicks(KindredSpirits.id("quokka_snack")) == 600,
+                "Dismiss and summon retain the snack and cooldown");
+        h.runAfterDelay(2, () -> {
+            h.assertTrue(summoned.isQuokkaSmiling(), "Equipped snack must synchronize the smiling appearance");
+            summoned.setEquipment(ItemStack.EMPTY);
+            h.runAfterDelay(2, () -> { h.assertTrue(!summoned.isQuokkaSmiling(), "Unequipping restores the normal appearance"); finish(h, owner); });
+        });
+    }
+
+    private static void quokkaCharm(GameTestHelper h) {
+        var zombie = h.spawnWithNoFreeWill(EntityType.ZOMBIE, new BlockPos(5, 1, 4));
+        var skeleton = h.spawnWithNoFreeWill(EntityType.SKELETON, new BlockPos(7, 1, 4));
+        var cow = h.spawnWithNoFreeWill(EntityType.COW, new BlockPos(4, 1, 4));
+        QuokkaSupport.charm(zombie, 5);
+        zombie.setTarget(cow);
+        h.assertTrue(zombie.getTarget() == skeleton, "Vanilla target changes cannot redirect a charmed mob onto a non-hostile");
+        float health = cow.getHealth();
+        cow.hurtServer(h.getLevel(), zombie.damageSources().mobAttack(zombie), 4);
+        h.assertTrue(cow.getHealth() == health, "Charmed attacks cannot hurt non-hostiles");
+        h.runAfterDelay(8, () -> {
+            h.assertTrue(!zombie.hasData(KindredAttachments.CHARMED) && zombie.getTarget() == null, "Charm must expire and clear its forced target");
+            zombie.setTarget(cow);
+            h.assertTrue(zombie.getTarget() == cow, "Normal targeting resumes after expiry");
+            h.succeed();
+        });
+    }
+
+    private static void quokkaCharmSave(GameTestHelper h) {
+        var mob = h.spawnWithNoFreeWill(EntityType.PIGLIN, new BlockPos(5, 1, 4));
+        var other = h.spawnWithNoFreeWill(EntityType.ZOMBIE, new BlockPos(7, 1, 4));
+        QuokkaSupport.charm(mob, 400);
+        h.assertTrue(mob.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET).orElse(null) == other,
+                "Brain-based hostiles receive the charmed target too");
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, h.getLevel().registryAccess());
+        mob.save(output);
+        var loaded = EntityType.PIGLIN.create(h.getLevel(), EntitySpawnReason.LOAD);
+        loaded.load(TagValueInput.create(ProblemReporter.DISCARDING, h.getLevel().registryAccess(), output.buildResult()));
+        h.assertTrue(QuokkaSupport.isCharmed(loaded) && loaded.getData(KindredAttachments.CHARMED).equals(mob.getData(KindredAttachments.CHARMED)),
+                "Charm's absolute expiry survives save/load without extending it");
+        h.succeed();
+    }
+
+    private static void quokkaBreeding(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity quokka = pet(h, CompanionSpecies.QUOKKA, owner, true);
+        var first = h.spawnWithNoFreeWill(EntityType.COW, new BlockPos(5, 1, 4));
+        var second = h.spawnWithNoFreeWill(EntityType.COW, new BlockPos(6, 1, 4));
+        var lonePig = h.spawnWithNoFreeWill(EntityType.PIG, new BlockPos(5, 1, 6));
+        for (int i = 0; i < 16; i++) h.spawnWithNoFreeWill(EntityType.SHEEP, new BlockPos(5 + i % 4, 1, 5 + i / 4));
+        QuokkaSupport.breed(quokka, owner);
+        h.assertTrue(first.isInLove() && second.isInLove() && !lonePig.isInLove(), "Only compatible pairs enter love mode");
+        h.assertTrue(h.getLevel().getEntitiesOfClass(net.minecraft.world.entity.animal.sheep.Sheep.class, quokka.getBoundingBox().inflate(8)).stream().noneMatch(animal -> animal.isInLove()),
+                "A herd of sixteen must not be bred");
+        first.resetLove(); second.resetLove();
+        QuokkaSupport.breed(quokka, owner);
+        h.assertTrue(!first.isInLove() && quokka.abilityCooldownTicks(CompanionAbilities.ALWAYS_HAPPY.id()) == 2400, "Breeding obeys its two-minute cooldown");
+        finish(h, owner);
+    }
+
+    private static void quokkaGrowth(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity first = pet(h, CompanionSpecies.QUOKKA, owner, true);
+        CompanionEntity second = pet(h, CompanionSpecies.QUOKKA, owner, false);
+        second.setBonded(true);
+        first.addExperience(Integer.MAX_VALUE); second.addExperience(Integer.MAX_VALUE);
+        var calf = h.spawnWithNoFreeWill(EntityType.COW, new BlockPos(5, 1, 4));
+        calf.setAge(-100);
+        QuokkaSupport.tick(first); QuokkaSupport.tick(second);
+        h.assertTrue(calf.getAge() == -98, "Two Quokkas provide only two extra age ticks, not four");
+        first.setDisabledAbilityNames(List.of("always_happy")); second.setDisabledAbilityNames(List.of("always_happy"));
+        h.runAfterDelay(2, () -> {
+            int age = calf.getAge();
+            QuokkaSupport.tick(first);
+            h.assertTrue(calf.getAge() == age, "Disabled Always Happy cannot accelerate babies");
+            finish(h, owner);
+        });
+    }
+
+    private static void quokkaDecoy(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity baby = h.spawnWithNoFreeWill(KindredEntities.type(CompanionSpecies.QUOKKA), new BlockPos(5, 1, 4));
+        baby.makeQuokkaDecoy(5);
+        owner.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.FERN, 64));
+        for (int i = 0; i < 64; i++) baby.mobInteract(owner, net.minecraft.world.InteractionHand.MAIN_HAND);
+        h.assertTrue(baby.getBbWidth() < CompanionSpecies.QUOKKA.width(), "Baby decoys have a smaller hitbox");
+        h.assertTrue(!baby.isTame() && baby.isBaby(), "Thrown babies remain babies and cannot be tamed");
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, h.getLevel().registryAccess());
+        baby.save(output);
+        CompanionEntity loaded = KindredEntities.type(CompanionSpecies.QUOKKA).create(h.getLevel(), EntitySpawnReason.LOAD);
+        loaded.load(TagValueInput.create(ProblemReporter.DISCARDING, h.getLevel().registryAccess(), output.buildResult()));
+        baby.discard(); h.getLevel().addFreshEntity(loaded);
+        h.assertTrue(loaded.isQuokkaDecoy(), "Temporary status survives a chunk/save reload");
+        h.runAfterDelay(8, () -> { h.assertTrue(loaded.isRemoved(), "Reloading cannot extend the decoy lifetime"); finish(h, owner); });
+    }
+
+    private static void quokkaFlee(GameTestHelper h) {
+        CompanionEntity wild = h.spawn(KindredEntities.type(CompanionSpecies.QUOKKA), new BlockPos(5, 1, 4));
+        var attacker = h.spawnWithNoFreeWill(EntityType.ZOMBIE, new BlockPos(7, 1, 4));
+        wild.hurtServer(h.getLevel(), attacker.damageSources().mobAttack(attacker), 1);
+        h.assertTrue(wild.isQuokkaFleeing(), "Hurt wild adults enter the escape window");
+        var babies = h.getLevel().getEntitiesOfClass(CompanionEntity.class, wild.getBoundingBox().inflate(4), CompanionEntity::isQuokkaDecoy);
+        h.assertTrue(babies.size() == 1 && babies.getFirst().getDeltaMovement().x > 0, "One baby is thrown toward the attacker");
+        wild.invulnerableTime = 0;
+        wild.hurtServer(h.getLevel(), attacker.damageSources().mobAttack(attacker), 1);
+        h.assertTrue(h.getLevel().getEntitiesOfClass(CompanionEntity.class, wild.getBoundingBox().inflate(4), CompanionEntity::isQuokkaDecoy).size() == 1,
+                "Hits during the same escape cannot flood the world with babies");
+        h.runAfterDelay(5, () -> {
+            h.assertTrue(wild.getMoveControl().getSpeedModifier() == 1.5 && !wild.isSprinting(),
+                    "Escape uses 1.5x movement without adding Minecraft's separate sprint bonus");
+        });
+        h.runAfterDelay(202, () -> { h.assertTrue(!wild.isQuokkaFleeing(), "Escape ends after ten seconds"); h.succeed(); });
+    }
+
+    private static void quokkaSpawns(GameTestHelper h) {
+        var jungle = h.getLevel().registryAccess().getOrThrow(net.minecraft.world.level.biome.Biomes.JUNGLE).value();
+        var spawns = jungle.getMobSettings().getMobs(MobCategory.CREATURE).unwrap();
+        h.assertTrue(spawns.stream().anyMatch(entry -> entry.value().type() == KindredEntities.type(CompanionSpecies.QUOKKA)
+                && entry.weight() == 2 && entry.value().minCount() == 1 && entry.value().maxCount() == 3), "Jungles must load the weight-two Quokka biome modifier");
+        h.assertTrue(new ItemStack(Items.FERN).is(CompanionSpecies.QUOKKA.tamingTag()), "Shrubs tag must resolve as taming food");
+        h.assertTrue(new ItemStack(KindredItems.QUOKKA_SNACK.get()).is(CompanionSpecies.QUOKKA.equipmentTag()), "Snack must resolve as Quokka equipment");
+        h.assertTrue(CompanionSpecies.QUOKKA.storageSlots() == 27, "Quokka has three storage rows");
+        h.succeed();
+    }
+
+    private static void quokkaTame(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity wild = h.spawnWithNoFreeWill(KindredEntities.type(CompanionSpecies.QUOKKA), new BlockPos(4, 1, 4));
+        double chance = KindredConfig.COMMON.tamingChance.get();
+        try {
+            KindredConfig.COMMON.tamingChance.set(1.0);
+            owner.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.FERN));
+            wild.mobInteract(owner, net.minecraft.world.InteractionHand.MAIN_HAND);
+            h.assertTrue(wild.isOwnedBy(owner), "Using a shrub tames the wild Quokka through its normal interaction");
+            owner.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(KindredItems.QUOKKA_SNACK.get()));
+            wild.mobInteract(owner, net.minecraft.world.InteractionHand.MAIN_HAND);
+            h.assertTrue(wild.hasEquipment(KindredItems.QUOKKA_SNACK.get()), "Owner can equip the snack by interaction");
+            owner.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(KindredItems.BATTERY.get()));
+            wild.mobInteract(owner, net.minecraft.world.InteractionHand.MAIN_HAND);
+            h.assertTrue(wild.hasEquipment(KindredItems.QUOKKA_SNACK.get()), "Equipment from another species is rejected");
+        } finally { KindredConfig.COMMON.tamingChance.set(chance); }
+        finish(h, owner);
+    }
+
+    private static void quokkaAgeTicks(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity quokka = pet(h, CompanionSpecies.QUOKKA, owner, true);
+        quokka.addExperience(Integer.MAX_VALUE);
+        quokka.setDisabledAbilityNames(List.of("always_happy"));
+        var calf = h.spawn(EntityType.COW, new BlockPos(5, 1, 4));
+        var locked = h.spawn(EntityType.COW, new BlockPos(6, 1, 4));
+        calf.setAge(-1000); locked.setAge(-1000);
+        owner.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.GOLDEN_DANDELION));
+        locked.mobInteract(owner, net.minecraft.world.InteractionHand.MAIN_HAND);
+        h.assertTrue(locked.isAgeLocked(), "Fixture golden dandelion must lock the calf's age");
+        h.runAfterDelay(1, () -> {
+            int age = calf.getAge();
+            int lockedAge = locked.getAge();
+            quokka.setDisabledAbilityNames(List.of());
+            h.runAfterDelay(10, () -> {
+                h.assertTrue(calf.getAge() == age + 30, "Ten world ticks must advance baby growth by exactly thirty ticks");
+                h.assertTrue(locked.getAge() == lockedAge, "Always Happy respects golden-dandelion age locks");
+                finish(h, owner);
+            });
+        });
+    }
+
+    private static void particleCodecs(GameTestHelper h) {
+        var codec = net.minecraft.core.particles.ParticleTypes.CODEC;
+        var stream = net.minecraft.core.particles.ParticleTypes.STREAM_CODEC;
+        var ops = h.getLevel().registryAccess().createSerializationContext(JsonOps.INSTANCE);
+        var buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), h.getLevel().registryAccess());
+        try {
+            for (var effect : KindredParticles.effects()) {
+                var particle = effect.type().get();
+                var json = codec.encodeStart(ops, particle).getOrThrow();
+                h.assertTrue(codec.parse(ops, json).getOrThrow().getType() == particle,
+                        "Custom particle must survive save/command codec: " + effect.type().getId());
+                stream.encode(buffer, particle);
+                h.assertTrue(stream.decode(buffer).getType() == particle && buffer.readableBytes() == 0,
+                        "Custom particle must survive server-to-client serialization: " + effect.type().getId());
+            }
+        } finally { buffer.release(); }
+        h.succeed();
+    }
+
+    private static void soundPackets(GameTestHelper h) {
+        var registry = net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT;
+        for (var species : CompanionSpecies.values()) {
+            var sounds = species.sounds();
+            for (var supplier : List.of(sounds.ambient(), sounds.hurt(), sounds.death(),
+                    sounds.attack(), sounds.specialAttack(), sounds.interact())) {
+                var sound = supplier.get();
+                h.assertTrue(sound.location().getNamespace().equals(KindredSpirits.MOD_ID)
+                                && registry.containsKey(sound.location()),
+                        species + " must resolve registered custom sounds after server startup");
+            }
+        }
+        var codec = net.minecraft.network.protocol.game.ClientboundSoundPacket.STREAM_CODEC;
+        var buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), h.getLevel().registryAccess());
+        try {
+            for (var holder : KindredSounds.SOUND_EVENTS.getEntries()) {
+                var packet = new net.minecraft.network.protocol.game.ClientboundSoundPacket(holder,
+                        net.minecraft.sounds.SoundSource.NEUTRAL, 4.5, 2.0, -3.25, 0.7f, 1.0f, 42L);
+                codec.encode(buffer, packet);
+                var decoded = codec.decode(buffer);
+                h.assertTrue(decoded.getSound().value() == holder.get() && buffer.readableBytes() == 0,
+                        "Sound event must survive server-to-client registry serialization: " + holder.getId());
+                h.assertTrue(decoded.getX() == 4.5 && decoded.getY() == 2.0 && decoded.getZ() == -3.25
+                                && decoded.getVolume() == 0.7f && decoded.getPitch() == 1.0f,
+                        "Positional audio and playback levels must survive the sound packet");
+            }
+        } finally { buffer.release(); }
+        h.succeed();
+    }
+
+    private static void dragonParticles(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity dragon = pet(h, CompanionSpecies.BABY_DRAGON, owner, true);
+        var target = h.spawnWithNoFreeWill(EntityType.ZOMBIE, new BlockPos(7, 1, 4));
+        dragon.setTarget(target);
+        CompanionAbilities.DRAGON_BREATH.serverTick(dragon, owner);
+        var clouds = h.getLevel().getEntitiesOfClass(AreaEffectCloud.class, target.getBoundingBox().inflate(3));
+        h.assertTrue(clouds.size() == 1 && clouds.getFirst().getParticle().getType() == KindredParticles.DRAGON_SMOKE.get(),
+                "Dragon Breath must create its custom animated smoke pool");
+        var cloud = clouds.getFirst();
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, h.getLevel().registryAccess());
+        cloud.save(output);
+        h.assertTrue(!output.buildResult().contains("potion_contents"), "The custom pool stays visual-only, with no potion effects");
+        var loaded = EntityType.AREA_EFFECT_CLOUD.create(h.getLevel(), EntitySpawnReason.LOAD);
+        loaded.load(TagValueInput.create(ProblemReporter.DISCARDING, h.getLevel().registryAccess(), output.buildResult()));
+        h.assertTrue(loaded.getParticle().getType() == KindredParticles.DRAGON_SMOKE.get(), "Custom cloud appearance survives saving");
+        finish(h, owner);
+    }
+}

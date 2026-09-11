@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "#kindredspirits:shrubs",
+    "minecraft:wheat",
+    "minecraft:apple",
+    "minecraft:honey_bottle"
+  ],
+  "result": {
+    "id": "kindredspirits:quokka_snack"
+  }
+}

@@ -194,6 +194,112 @@ tasks.register('verifyModResources') {
 
 tasks.named('check').configure { dependsOn 'verifyModResources' }
 
+tasks.register('verifyParticleArt') {
+    group = 'verification'
+    description = 'Validates particle registration and animation frames.'
+    inputs.dir('src/main/resources/assets/kindredspirits/particles')
+    inputs.dir('src/main/resources/assets/kindredspirits/textures/particle')
+    inputs.file('src/main/java/com/breakinblocks/kindredspirits/registry/KindredParticles.java')
+    doLast {
+        def json = new groovy.json.JsonSlurper()
+        def assets = file('src/main/resources/assets/kindredspirits')
+        def registry = file('src/main/java/com/breakinblocks/kindredspirits/registry/KindredParticles.java').text
+        def registered = (registry =~ /register\("([a-z_]+)"/).collect { it[1] } as Set
+        def descriptions = fileTree(new File(assets, 'particles')) { include '*.json' }
+        def manifest = descriptions.collect {
+            [name: it.name.replace('.json', ''), frames: json.parse(it).textures.size()]
+        }
+        def names = manifest.collect { it.name } as Set
+        if (registered != names || names.size() != manifest.size()) throw new GradleException('Particle descriptions and registrations differ')
+        def expectedTextures = [] as Set
+        int frames = 0
+        manifest.each { entry ->
+            if (entry.frames < 1) throw new GradleException("${entry.name}: empty animation")
+            def textures = json.parse(new File(assets, "particles/${entry.name}.json")).textures
+            def expected = (0..<entry.frames).collect { "kindredspirits:${entry.name}_${it}".toString() }
+            if (textures != expected) throw new GradleException("${entry.name}: frames must be in order")
+            def distinct = [] as Set
+            textures.each { id ->
+                def texture = new File(assets, "textures/particle/${id.split(':')[1]}.png")
+                expectedTextures.add(texture.name)
+                if (!texture.isFile()) throw new GradleException("Missing particle frame: ${id}")
+                def image = javax.imageio.ImageIO.read(texture)
+                if (image == null || image.width != 16 || image.height != 16) throw new GradleException("${id}: expected 16x16 PNG")
+                def pixels = []
+                int opaque = 0
+                for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+                    int pixel = image.getRGB(x, y)
+                    int alpha = (pixel >>> 24) & 255
+                    if (alpha != 0 && alpha != 255) throw new GradleException("${id}: partial-alpha pixel")
+                    if (alpha == 255) opaque++
+                    pixels.add(pixel)
+                }
+                if (opaque == 0 || opaque == 256) throw new GradleException("${id}: expected a transparent silhouette")
+                distinct.add(pixels)
+                frames++
+            }
+            if (entry.frames > 1 && distinct.size() < 2) throw new GradleException("${entry.name}: animation has no visible changes")
+        }
+        def actual = fileTree(new File(assets, 'textures/particle')) { include '*.png' }.collect { it.name } as Set
+        if (actual != expectedTextures) throw new GradleException('Unreferenced or missing particle frames')
+        logger.lifecycle("Verified ${manifest.size()} animated particles and ${frames} native 16x16 frames")
+    }
+}
+
+tasks.named('check').configure { dependsOn 'verifyParticleArt' }
+
+tasks.register('verifySoundAssets') {
+    group = 'verification'
+    description = 'Validates custom sound registrations, subtitles and mono Vorbis assets.'
+    inputs.dir('src/main/resources/assets/kindredspirits/sounds')
+    inputs.file('src/main/resources/assets/kindredspirits/sounds.json')
+    inputs.file('src/main/resources/assets/kindredspirits/lang/en_us.json')
+    inputs.file('src/main/java/com/breakinblocks/kindredspirits/registry/KindredSounds.java')
+    doLast {
+        def json = new groovy.json.JsonSlurper()
+        def assets = file('src/main/resources/assets/kindredspirits')
+        def sounds = json.parse(new File(assets, 'sounds.json'))
+        def lang = json.parse(new File(assets, 'lang/en_us.json'))
+        def registry = file('src/main/java/com/breakinblocks/kindredspirits/registry/KindredSounds.java').text
+        def registered = (registry =~ /register\("([a-z_.]+)"/).collect { it[1] } as Set
+        if (registered != sounds.keySet()) throw new GradleException('Sound registrations and sounds.json differ')
+        def referenced = [] as Set
+        sounds.each { event, definition ->
+            if (!lang[definition.subtitle]) throw new GradleException("${event}: missing subtitle")
+            if (!definition.sounds) throw new GradleException("${event}: empty sound list")
+            definition.sounds.each { entry ->
+                def name = entry instanceof String ? entry : entry.name
+                if (name.startsWith('minecraft:')) return
+                if (!name.startsWith('kindredspirits:')) throw new GradleException("${event}: unknown sound namespace in ${name}")
+                def path = name.substring('kindredspirits:'.length()) + '.ogg'
+                referenced.add(path)
+                def soundFile = new File(assets, "sounds/${path}")
+                if (!soundFile.isFile()) throw new GradleException("${event}: missing ${path}")
+                byte[] bytes = soundFile.bytes
+                if (bytes.length < 60 || new String(bytes, 0, 4, 'US-ASCII') != 'OggS')
+                    throw new GradleException("${path}: not an OGG stream")
+                int packet = 27 + (bytes[26] & 255)
+                if (bytes.length < packet + 30 || bytes[packet] != 1
+                        || new String(bytes, packet + 1, 6, 'US-ASCII') != 'vorbis')
+                    throw new GradleException("${path}: not Vorbis audio")
+                if (path != 'yeet.ogg') {
+                    int sampleRate = java.nio.ByteBuffer.wrap(bytes, packet + 12, 4)
+                            .order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt()
+                    if ((bytes[packet + 11] & 255) != 1 || sampleRate != 44100)
+                        throw new GradleException("${path}: expected mono 44.1 kHz audio")
+                }
+            }
+        }
+        def actual = fileTree(new File(assets, 'sounds')) { include '**/*.ogg' }.files.collect {
+            new File(assets, 'sounds').toPath().relativize(it.toPath()).toString().replace('\\', '/')
+        } as Set
+        if (actual != referenced) throw new GradleException('Unreferenced sound assets')
+        logger.lifecycle("Verified ${sounds.size()} custom sound events, subtitles and OGG assets")
+    }
+}
+
+tasks.named('check').configure { dependsOn 'verifySoundAssets' }
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.release = 25

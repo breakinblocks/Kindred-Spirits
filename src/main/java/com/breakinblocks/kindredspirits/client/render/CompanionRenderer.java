@@ -25,9 +25,9 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
     private final CompanionSpecies species;
 
     public CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species) {
-        this(context, species, new DefaultedEntityGeoModel<CompanionEntity>(
-                KindredSpirits.id(species.getSerializedName())));
-        this.withRenderLayer(new AutoGlowingGeoLayer<>(this));
+        this(context, species, species == CompanionSpecies.QUOKKA ? new QuokkaGeoModel()
+                : new DefaultedEntityGeoModel<CompanionEntity>(KindredSpirits.id(species.getSerializedName())));
+        if (species != CompanionSpecies.QUOKKA) this.withRenderLayer(new AutoGlowingGeoLayer<>(this));
     }
 
     protected CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species,
@@ -36,6 +36,19 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
         this.species = species;
         this.withScale(species.renderScale());
         this.shadowRadius = species.width() * 0.6f;
+    }
+
+    @Override
+    public void addRenderData(CompanionEntity entity, Void relatedObject,
+                              LivingEntityRenderState renderState, float partialTick) {
+        super.addRenderData(entity, relatedObject, renderState, partialTick);
+        renderState.addGeckolibData(QuokkaGeoModel.SMILING, entity.isQuokkaSmiling());
+    }
+
+    @Override
+    public void scaleModelForRender(RenderPassInfo<LivingEntityRenderState> renderPass, float width, float height) {
+        float ageScale = renderPass.renderState().ageScale;
+        super.scaleModelForRender(renderPass, width * ageScale, height * ageScale);
     }
 
     @Override

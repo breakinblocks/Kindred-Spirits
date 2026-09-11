@@ -1,9 +1,9 @@
 package com.breakinblocks.kindredspirits.companion.ability;
 
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -76,7 +76,7 @@ public final class CompanionAbilityEvents {
         if (target.isAlive() && companion.getRandom().nextDouble() < DRAGONFIRE_CHANCE) {
             target.igniteForSeconds(target.getRemainingFireTicks() / 20.0f + DRAGONFIRE_SECONDS);
             if (target.level() instanceof ServerLevel level) {
-                CompanionAbilities.hitParticles(level, target, ParticleTypes.FLAME, 8, 0.5, 0.3, 0.02);
+                CompanionAbilities.hitParticles(level, target, KindredParticles.DRAGON_FLAME.get(), 8, 0.5, 0.3, 0.02);
             }
         }
     }
@@ -95,7 +95,7 @@ public final class CompanionAbilityEvents {
         companionWith(owner, CompanionAbilities.HELPING_HAND).ifPresent(companion -> {
             if (owner.getRandom().nextDouble() < companion.scaledChance(HELPING_HAND_CHANCE)) {
                 owner.getInventory().placeItemBackInInventory(crafted.copy());
-                companion.burst(ParticleTypes.HAPPY_VILLAGER, 6);
+                companion.burst(KindredParticles.CRAFT_SPARK.get(), 6);
                 companion.playSound(companion.species().sounds().interact().get(), 0.8f, 1.2f);
             }
         });
@@ -117,7 +117,7 @@ public final class CompanionAbilityEvents {
             companion.heal(food.nutrition() * share);
             float saturation = owner.getFoodData().getSaturationLevel() + food.saturation() * companion.getLevel() / 100.0f;
             owner.getFoodData().setSaturation(Math.min(saturation, owner.getFoodData().getFoodLevel()));
-            companion.burst(ParticleTypes.HEART, 2);
+            companion.burst(KindredParticles.BOND_HEART.get(), 2);
         });
     }
 

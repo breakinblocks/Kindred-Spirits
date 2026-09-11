@@ -1,12 +1,12 @@
 package com.breakinblocks.kindredspirits.companion;
 
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -68,7 +68,7 @@ public final class CompanionObtainEvents {
         if (dragon != null) {
             level.destroyBlock(eggPos, false);
             dragon.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, HATCH_FIRE_IMMUNITY_TICKS, 0, false, false, true));
-            dragon.burst(ParticleTypes.LAVA, HATCH_PARTICLES);
+            dragon.burst(KindredParticles.METEOR_BURST.get(), HATCH_PARTICLES);
         }
     }
 
@@ -93,7 +93,7 @@ public final class CompanionObtainEvents {
         ItemStack stack = event.getItemStack();
 
         if (event.getTarget() instanceof Fox fox && stack.is(Items.SCULK)) {
-            transform(event, fox, CompanionSpecies.NIGHTFOX, ParticleTypes.SCULK_SOUL);
+            transform(event, fox, CompanionSpecies.NIGHTFOX, KindredParticles.SHADOW_BURST.get());
             return;
         }
 
@@ -117,7 +117,7 @@ public final class CompanionObtainEvents {
             return;
         }
 
-        transform(event, rabbit, CompanionSpecies.GREMLIN, ParticleTypes.ELECTRIC_SPARK);
+        transform(event, rabbit, CompanionSpecies.GREMLIN, KindredParticles.GREMLIN_SPARK.get());
     }
 
     private static boolean isWitchingHour(Level level) {

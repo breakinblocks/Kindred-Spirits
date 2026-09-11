@@ -1,8 +1,8 @@
 package com.breakinblocks.kindredspirits.companion;
 
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.util.BlockPosUtil;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -57,7 +57,7 @@ public final class CompanionTinkering {
     }
 
     public static void sparks(ServerLevel level, BlockPos pos) {
-        level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+        level.sendParticles(KindredParticles.GREMLIN_SPARK.get(),
                 pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, SPARK_COUNT, 0.3, 0.3, 0.3, 0.05);
     }
 

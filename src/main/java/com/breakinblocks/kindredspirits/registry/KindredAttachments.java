@@ -29,6 +29,12 @@ public final class KindredAttachments {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, KindredSpirits.MOD_ID);
 
+    public static final Supplier<AttachmentType<Long>> CHARMED = ATTACHMENT_TYPES.register(
+            "charmed", () -> AttachmentType.builder(() -> 0L).serialize(Codec.LONG.fieldOf("until")).build());
+
+    public static final Supplier<AttachmentType<Long>> QUOKKA_AGED_AT = ATTACHMENT_TYPES.register(
+            "quokka_aged_at", () -> AttachmentType.builder(() -> Long.MIN_VALUE).build());
+
     public record BondRecord(int companionsBonded, int highestLevelReached, int highestStars) {
         public static final BondRecord DEFAULT = new BondRecord(0, 0, 0);
 

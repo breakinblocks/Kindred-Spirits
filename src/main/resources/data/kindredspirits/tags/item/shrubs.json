@@ -1,0 +1,11 @@
+{
+  "values": [
+    "minecraft:short_grass",
+    "minecraft:fern",
+    "minecraft:tall_grass",
+    {
+      "id": "minecraft:bush",
+      "required": false
+    }
+  ]
+}

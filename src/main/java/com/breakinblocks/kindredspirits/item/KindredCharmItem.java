@@ -1,5 +1,6 @@
 package com.breakinblocks.kindredspirits.item;
 
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.server.level.TicketType;
 import com.breakinblocks.kindredspirits.KindredMessages;
@@ -24,8 +25,7 @@ import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.sounds.SoundEvents;
+import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -358,8 +358,8 @@ public class KindredCharmItem extends Item {
 
         Component name = live.getDisplayName();
         KindredAttachments.modifyBond(player, current -> snapshot(current, live).withStored(true));
-        live.burst(ParticleTypes.REVERSE_PORTAL, 16);
-        live.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 0.6f, 0.7f);
+        live.burst(KindredParticles.DISMISS_RUNE.get(), 16);
+        live.playSound(KindredSounds.CHARM_DISMISS.get(), 0.6f, 1.0f);
         live.discard();
         KindredMessages.send(player, "charm_dismissed", name);
     }
@@ -415,8 +415,8 @@ public class KindredCharmItem extends Item {
         KindredAttachments.modifyBond(player, current ->
                 snapshot(current, companion).withStored(false).withReviveReadyAt(0L));
 
-        companion.burst(reviving ? ParticleTypes.HEART : ParticleTypes.PORTAL, 16);
-        companion.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 0.6f, reviving ? 1.3f : 1.0f);
+        companion.burst(reviving ? KindredParticles.REVIVE_BLOOM.get() : KindredParticles.SUMMON_RUNE.get(), 16);
+        companion.playSound(reviving ? KindredSounds.CHARM_REVIVE.get() : KindredSounds.CHARM_SUMMON.get(), 0.6f, 1.0f);
         KindredMessages.send(player, reviving ? "charm_revived" : "charm_summoned", companion.getDisplayName());
     }
 

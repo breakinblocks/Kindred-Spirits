@@ -85,3 +85,6 @@ secrets.txt
 crowdin_token*
 
 metadata/bb2geo.py
+
+# Local audio files
+metadata/audio/

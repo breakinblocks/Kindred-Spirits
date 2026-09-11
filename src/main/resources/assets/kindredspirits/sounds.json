@@ -1,10 +1,362 @@
 {
+  "entity.quokka.interact": {
+    "subtitle": "subtitles.kindredspirits.quokka_interact",
+    "sounds": [
+      {
+        "name": "kindredspirits:quokka_interact"
+      }
+    ]
+  },
   "entity.baby_dragon.death": {
     "category": "neutral",
     "subtitle": "subtitles.kindredspirits.baby_dragon_death",
     "sounds": [
       {
         "name": "kindredspirits:yeet"
+      }
+    ]
+  },
+  "entity.nightfox.ambient": {
+    "subtitle": "subtitles.kindredspirits.nightfox_ambient",
+    "sounds": [
+      {
+        "name": "kindredspirits:nightfox_ambient"
+      }
+    ]
+  },
+  "entity.nightfox.hurt": {
+    "subtitle": "subtitles.kindredspirits.nightfox_hurt",
+    "sounds": [
+      {
+        "name": "kindredspirits:nightfox_hurt"
+      }
+    ]
+  },
+  "entity.nightfox.death": {
+    "subtitle": "subtitles.kindredspirits.nightfox_death",
+    "sounds": [
+      {
+        "name": "kindredspirits:nightfox_death"
+      }
+    ]
+  },
+  "entity.nightfox.special_attack": {
+    "subtitle": "subtitles.kindredspirits.nightfox_special_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:nightfox_special_attack"
+      }
+    ]
+  },
+  "entity.nightfox.interact": {
+    "subtitle": "subtitles.kindredspirits.nightfox_interact",
+    "sounds": [
+      {
+        "name": "kindredspirits:nightfox_interact"
+      }
+    ]
+  },
+  "entity.trex.ambient": {
+    "subtitle": "subtitles.kindredspirits.trex_ambient",
+    "sounds": [
+      {
+        "name": "kindredspirits:trex_ambient"
+      }
+    ]
+  },
+  "entity.trex.hurt": {
+    "subtitle": "subtitles.kindredspirits.trex_hurt",
+    "sounds": [
+      {
+        "name": "kindredspirits:trex_hurt"
+      }
+    ]
+  },
+  "entity.trex.death": {
+    "subtitle": "subtitles.kindredspirits.trex_death",
+    "sounds": [
+      {
+        "name": "kindredspirits:trex_death"
+      }
+    ]
+  },
+  "entity.trex.attack": {
+    "subtitle": "subtitles.kindredspirits.trex_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:trex_attack"
+      }
+    ]
+  },
+  "entity.trex.special_attack": {
+    "subtitle": "subtitles.kindredspirits.trex_special_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:trex_special_attack"
+      }
+    ]
+  },
+  "entity.trex.interact": {
+    "subtitle": "subtitles.kindredspirits.trex_interact",
+    "sounds": [
+      {
+        "name": "kindredspirits:trex_interact"
+      }
+    ]
+  },
+  "entity.mini_player.ambient": {
+    "subtitle": "subtitles.kindredspirits.mini_player_ambient",
+    "sounds": [
+      {
+        "name": "kindredspirits:mini_player_ambient"
+      }
+    ]
+  },
+  "entity.mini_player.hurt": {
+    "subtitle": "subtitles.kindredspirits.mini_player_hurt",
+    "sounds": [
+      {
+        "name": "kindredspirits:mini_player_hurt"
+      }
+    ]
+  },
+  "entity.mini_player.death": {
+    "subtitle": "subtitles.kindredspirits.mini_player_death",
+    "sounds": [
+      {
+        "name": "kindredspirits:mini_player_death"
+      }
+    ]
+  },
+  "entity.mini_player.attack": {
+    "subtitle": "subtitles.kindredspirits.mini_player_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:mini_player_attack"
+      }
+    ]
+  },
+  "entity.mini_player.special_attack": {
+    "subtitle": "subtitles.kindredspirits.mini_player_special_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:mini_player_special_attack"
+      }
+    ]
+  },
+  "entity.mini_player.interact": {
+    "subtitle": "subtitles.kindredspirits.mini_player_interact",
+    "sounds": [
+      {
+        "name": "kindredspirits:mini_player_interact"
+      }
+    ]
+  },
+  "entity.baby_dragon.ambient": {
+    "subtitle": "subtitles.kindredspirits.baby_dragon_ambient",
+    "sounds": [
+      {
+        "name": "kindredspirits:baby_dragon_ambient"
+      }
+    ]
+  },
+  "entity.baby_dragon.hurt": {
+    "subtitle": "subtitles.kindredspirits.baby_dragon_hurt",
+    "sounds": [
+      {
+        "name": "kindredspirits:baby_dragon_hurt"
+      }
+    ]
+  },
+  "entity.baby_dragon.special_attack": {
+    "subtitle": "subtitles.kindredspirits.baby_dragon_special_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:baby_dragon_special_attack"
+      }
+    ]
+  },
+  "entity.baby_dragon.interact": {
+    "subtitle": "subtitles.kindredspirits.baby_dragon_interact",
+    "sounds": [
+      {
+        "name": "kindredspirits:baby_dragon_interact"
+      }
+    ]
+  },
+  "entity.gremlin.ambient": {
+    "subtitle": "subtitles.kindredspirits.gremlin_ambient",
+    "sounds": [
+      {
+        "name": "kindredspirits:gremlin_ambient"
+      }
+    ]
+  },
+  "entity.gremlin.hurt": {
+    "subtitle": "subtitles.kindredspirits.gremlin_hurt",
+    "sounds": [
+      {
+        "name": "kindredspirits:gremlin_hurt"
+      }
+    ]
+  },
+  "entity.gremlin.death": {
+    "subtitle": "subtitles.kindredspirits.gremlin_death",
+    "sounds": [
+      {
+        "name": "kindredspirits:gremlin_death"
+      }
+    ]
+  },
+  "entity.gremlin.attack": {
+    "subtitle": "subtitles.kindredspirits.gremlin_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:gremlin_attack"
+      }
+    ]
+  },
+  "entity.gremlin.special_attack": {
+    "subtitle": "subtitles.kindredspirits.gremlin_special_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:gremlin_special_attack"
+      }
+    ]
+  },
+  "entity.gremlin.interact": {
+    "subtitle": "subtitles.kindredspirits.gremlin_interact",
+    "sounds": [
+      {
+        "name": "kindredspirits:gremlin_interact"
+      }
+    ]
+  },
+  "entity.quokka.ambient": {
+    "subtitle": "subtitles.kindredspirits.quokka_ambient",
+    "sounds": [
+      {
+        "name": "kindredspirits:quokka_ambient"
+      }
+    ]
+  },
+  "entity.quokka.hurt": {
+    "subtitle": "subtitles.kindredspirits.quokka_hurt",
+    "sounds": [
+      {
+        "name": "kindredspirits:quokka_hurt"
+      }
+    ]
+  },
+  "entity.quokka.death": {
+    "subtitle": "subtitles.kindredspirits.quokka_death",
+    "sounds": [
+      {
+        "name": "kindredspirits:quokka_death"
+      }
+    ]
+  },
+  "entity.quokka.attack": {
+    "subtitle": "subtitles.kindredspirits.quokka_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:quokka_attack"
+      }
+    ]
+  },
+  "entity.quokka.special_attack": {
+    "subtitle": "subtitles.kindredspirits.quokka_special_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:quokka_special_attack"
+      }
+    ]
+  },
+  "charm.summon": {
+    "subtitle": "subtitles.kindredspirits.charm_summon",
+    "sounds": [
+      {
+        "name": "kindredspirits:charm_summon"
+      }
+    ]
+  },
+  "charm.dismiss": {
+    "subtitle": "subtitles.kindredspirits.charm_dismiss",
+    "sounds": [
+      {
+        "name": "kindredspirits:charm_dismiss"
+      }
+    ]
+  },
+  "charm.revive": {
+    "subtitle": "subtitles.kindredspirits.charm_revive",
+    "sounds": [
+      {
+        "name": "kindredspirits:charm_revive"
+      }
+    ]
+  },
+  "level.up": {
+    "subtitle": "subtitles.kindredspirits.level_up",
+    "sounds": [
+      {
+        "name": "kindredspirits:level_up"
+      }
+    ]
+  },
+  "prestige": {
+    "subtitle": "subtitles.kindredspirits.prestige",
+    "sounds": [
+      {
+        "name": "kindredspirits:prestige"
+      }
+    ]
+  },
+  "trex.egg_crack": {
+    "subtitle": "subtitles.kindredspirits.trex_egg_crack",
+    "sounds": [
+      {
+        "name": "kindredspirits:trex_egg_crack"
+      }
+    ]
+  },
+  "trex.egg_hatch": {
+    "subtitle": "subtitles.kindredspirits.trex_egg_hatch",
+    "sounds": [
+      {
+        "name": "kindredspirits:trex_egg_hatch"
+      }
+    ]
+  },
+  "trex.leap_impact": {
+    "subtitle": "subtitles.kindredspirits.trex_leap_impact",
+    "sounds": [
+      {
+        "name": "kindredspirits:trex_leap_impact"
+      }
+    ]
+  },
+  "mini.player_bow": {
+    "subtitle": "subtitles.kindredspirits.mini_player_bow",
+    "sounds": [
+      {
+        "name": "kindredspirits:mini_player_bow"
+      }
+    ]
+  },
+  "gremlin.snack": {
+    "subtitle": "subtitles.kindredspirits.gremlin_snack",
+    "sounds": [
+      {
+        "name": "kindredspirits:gremlin_snack"
+      }
+    ]
+  },
+  "meteor.impact": {
+    "subtitle": "subtitles.kindredspirits.meteor_impact",
+    "sounds": [
+      {
+        "name": "kindredspirits:meteor_impact"
       }
     ]
   }

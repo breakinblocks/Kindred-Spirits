@@ -17,7 +17,6 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.Item;
@@ -34,8 +33,8 @@ public enum CompanionSpecies implements StringRepresentable {
             CombatStyle.RANGED, true,
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK,
                     CompanionAnimations.SPECIAL_ATTACK, CompanionAnimations.INTERACT),
-            new SoundSet(SoundEvents.FOX_AMBIENT, SoundEvents.FOX_HURT, SoundEvents.FOX_DEATH,
-                    SoundEvents.FOX_BITE, SoundEvents.EVOKER_CAST_SPELL, SoundEvents.FOX_SNIFF),
+            new SoundSet(KindredSounds.NIGHTFOX_AMBIENT, KindredSounds.NIGHTFOX_HURT, KindredSounds.NIGHTFOX_DEATH,
+                    KindredSounds.NIGHTFOX_SPECIAL_ATTACK, KindredSounds.NIGHTFOX_SPECIAL_ATTACK, KindredSounds.NIGHTFOX_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.SWIFT_STEP),
                     Unlock.level(1, CompanionAbilities.SHADOW_BALL),
@@ -52,8 +51,8 @@ public enum CompanionSpecies implements StringRepresentable {
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
                     CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
                     CompanionAnimations.JUMP_ATTACK, CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
-            new SoundSet(SoundEvents.RAVAGER_AMBIENT, SoundEvents.RAVAGER_HURT, SoundEvents.RAVAGER_DEATH,
-                    SoundEvents.RAVAGER_ATTACK, SoundEvents.RAVAGER_ROAR, SoundEvents.RAVAGER_STEP),
+            new SoundSet(KindredSounds.TREX_AMBIENT, KindredSounds.TREX_HURT, KindredSounds.TREX_DEATH,
+                    KindredSounds.TREX_ATTACK, KindredSounds.TREX_SPECIAL_ATTACK, KindredSounds.TREX_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.SAVAGE_LEAP),
                     Unlock.level(1, CompanionAbilities.CRUSHING_MIGHT),
@@ -70,8 +69,8 @@ public enum CompanionSpecies implements StringRepresentable {
                     CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SHOOT,
                     CompanionAnimations.SPECIAL_ATTACK, CompanionAnimations.INTERACT,
                     CompanionAnimations.HURT, CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
-            new SoundSet(SoundEvents.PLAYER_BREATH, SoundEvents.PLAYER_HURT, SoundEvents.PLAYER_DEATH,
-                    SoundEvents.PLAYER_ATTACK_STRONG, SoundEvents.PLAYER_ATTACK_SWEEP, SoundEvents.PLAYER_BURP),
+            new SoundSet(KindredSounds.MINI_PLAYER_AMBIENT, KindredSounds.MINI_PLAYER_HURT, KindredSounds.MINI_PLAYER_DEATH,
+                    KindredSounds.MINI_PLAYER_ATTACK, KindredSounds.MINI_PLAYER_SPECIAL_ATTACK, KindredSounds.MINI_PLAYER_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.MIRROR_STRIKE),
                     Unlock.level(1, CompanionAbilities.EAT_THAT),
@@ -87,15 +86,27 @@ public enum CompanionSpecies implements StringRepresentable {
                     CompanionAnimations.SIT_STILL, CompanionAnimations.SIT_RARE,
                     CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
                     CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
-            new SoundSet(SoundEvents.PARROT_IMITATE_ENDER_DRAGON, SoundEvents.ENDER_DRAGON_HURT,
-                    SoundEvents.ENDER_DRAGON_FLAP, SoundEvents.ENDER_DRAGON_GROWL,
-                    SoundEvents.ENDER_DRAGON_SHOOT, SoundEvents.GENERIC_EAT.value())
-                    .withDeath(KindredSounds.BABY_DRAGON_DEATH),
+            new SoundSet(KindredSounds.BABY_DRAGON_AMBIENT, KindredSounds.BABY_DRAGON_HURT, KindredSounds.BABY_DRAGON_DEATH,
+                    KindredSounds.BABY_DRAGON_SPECIAL_ATTACK, KindredSounds.BABY_DRAGON_SPECIAL_ATTACK, KindredSounds.BABY_DRAGON_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.DRAGON_BREATH),
                     Unlock.level(1, CompanionAbilities.FORGE_DRAFT),
                     Unlock.bond(5, CompanionAbilities.DRAGONFIRE),
                     Unlock.level(30, CompanionAbilities.KILN_BREATH))),
+
+    QUOKKA("quokka",
+            new Size(0.5f, 0.65f, 1.0f, 0.0f),
+            new Stats(18.0, 0.36, 2.0, 6.0, 0.0, 0.5),
+            CombatStyle.MELEE, false,
+            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
+                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH, CompanionAnimations.HURT,
+                    CompanionAnimations.INTERACT),
+            new SoundSet(KindredSounds.QUOKKA_AMBIENT, KindredSounds.QUOKKA_HURT, KindredSounds.QUOKKA_DEATH,
+                    KindredSounds.QUOKKA_ATTACK, KindredSounds.QUOKKA_SPECIAL_ATTACK, KindredSounds.QUOKKA_INTERACT),
+            List.of(Unlock.level(1, CompanionAbilities.BRIGHTER_SIDE),
+                    Unlock.bond(5, CompanionAbilities.SMILE),
+                    Unlock.level(30, CompanionAbilities.ALWAYS_HAPPY))),
 
     GREMLIN("gremlin",
             new Size(0.5f, 0.8f, 0.8f, 0.0f),
@@ -104,8 +115,8 @@ public enum CompanionSpecies implements StringRepresentable {
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
                     CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
                     CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
-            new SoundSet(SoundEvents.PIGLIN_AMBIENT, SoundEvents.PIGLIN_HURT, SoundEvents.PIGLIN_DEATH,
-                    SoundEvents.PIGLIN_ANGRY, SoundEvents.PIGLIN_CELEBRATE, SoundEvents.PIGLIN_ADMIRING_ITEM),
+            new SoundSet(KindredSounds.GREMLIN_AMBIENT, KindredSounds.GREMLIN_HURT, KindredSounds.GREMLIN_DEATH,
+                    KindredSounds.GREMLIN_ATTACK, KindredSounds.GREMLIN_SPECIAL_ATTACK, KindredSounds.GREMLIN_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.TINKER),
                     Unlock.bond(5, CompanionAbilities.SNACK_THIEF),
@@ -224,6 +235,7 @@ public enum CompanionSpecies implements StringRepresentable {
         return switch (this) {
             case NIGHTFOX, BABY_DRAGON, GREMLIN -> 1;
             case TREX, MINI_PLAYER -> 2;
+            case QUOKKA -> 3;
         };
     }
 
@@ -244,7 +256,7 @@ public enum CompanionSpecies implements StringRepresentable {
         if (this.headBones == null) {
             this.headBones = switch (this) {
                 case TREX -> List.of("neck_upper", "head_main");
-                case MINI_PLAYER, BABY_DRAGON, GREMLIN -> List.of("head");
+                case MINI_PLAYER, BABY_DRAGON, GREMLIN, QUOKKA -> List.of("head");
                 case NIGHTFOX -> List.of();
             };
         }
@@ -367,14 +379,6 @@ public enum CompanionSpecies implements StringRepresentable {
     public record SoundSet(Supplier<SoundEvent> ambient, Supplier<SoundEvent> hurt,
                            Supplier<SoundEvent> death, Supplier<SoundEvent> attack,
                            Supplier<SoundEvent> specialAttack, Supplier<SoundEvent> interact) {
-        public SoundSet(SoundEvent ambient, SoundEvent hurt, SoundEvent death,
-                        SoundEvent attack, SoundEvent specialAttack, SoundEvent interact) {
-            this(() -> ambient, () -> hurt, () -> death, () -> attack, () -> specialAttack, () -> interact);
-        }
-
-        public SoundSet withDeath(Supplier<SoundEvent> death) {
-            return new SoundSet(this.ambient, this.hurt, death, this.attack, this.specialAttack, this.interact);
-        }
     }
 
     public enum CombatStyle {

@@ -1,5 +1,6 @@
 package com.breakinblocks.kindredspirits;
 
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.registry.KindredLootModifiers;
 import com.breakinblocks.kindredspirits.companion.CompanionWorldData;
 import com.breakinblocks.kindredspirits.client.KindredSpiritsClient;
@@ -46,6 +47,7 @@ public class KindredSpirits {
         KindredLootModifiers.TYPES.register(modEventBus);
         KindredCreativeTabs.CREATIVE_TABS.register(modEventBus);
         KindredSounds.SOUND_EVENTS.register(modEventBus);
+        KindredParticles.TYPES.register(modEventBus);
         KindredMenus.MENUS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, KindredConfig.COMMON_SPEC);

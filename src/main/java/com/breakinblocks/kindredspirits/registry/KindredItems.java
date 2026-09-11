@@ -41,8 +41,10 @@ public final class KindredItems {
 
     public static final DeferredItem<KindredEquipmentItem> BATTERY = equipment("battery", List.of());
 
+    public static final DeferredItem<KindredEquipmentItem> QUOKKA_SNACK = equipment("quokka_snack", List.of());
+
     private static final List<DeferredItem<KindredEquipmentItem>> EQUIPMENT =
-            List.of(BOXING_GLOVES, DRAGON_TABLET, RUNNING_SHOES, BATTERY);
+            List.of(BOXING_GLOVES, DRAGON_TABLET, RUNNING_SHOES, BATTERY, QUOKKA_SNACK);
 
     private static final Map<CompanionSpecies, DeferredItem<SpawnEggItem>> SPAWN_EGGS =
             new EnumMap<>(CompanionSpecies.class);

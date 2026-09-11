@@ -25,6 +25,7 @@ public final class KindredSpiritsClient {
         modEventBus.addListener(KindredSpiritsClient::clientSetup);
         modEventBus.addListener(KindredSpiritsClient::registerRenderers);
         modEventBus.addListener(KindredKeyMappings::register);
+        modEventBus.addListener(KindredParticle::register);
         modEventBus.addListener(KindredSpiritsClient::registerScreens);
     }
 
