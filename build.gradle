@@ -6,8 +6,10 @@ plugins {
     id 'net.neoforged.moddev' version "${mdg_version}"
 }
 
-def isSnapshot = System.getenv('SNAPSHOT') == 'true'
-version = "${minecraft_version}-${mod_version}${isSnapshot ? '-SNAPSHOT' : ''}"
+def hasSnapshotVersion = mod_version ==~ /.*-SNAPSHOT(?:\.\d+)?/
+def isSnapshot = hasSnapshotVersion || System.getenv('SNAPSHOT') == 'true'
+def modArtifactVersion = "${mod_version}${isSnapshot && !hasSnapshotVersion ? '-SNAPSHOT' : ''}"
+version = "${minecraft_version}-${modArtifactVersion}"
 group = mod_group_id
 
 base {
@@ -315,7 +317,7 @@ tasks.named('processResources', ProcessResources).configure {
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
-            mod_version            : mod_version,
+            mod_version            : modArtifactVersion,
             mod_authors            : mod_authors,
             mod_credits            : mod_credits,
             mod_description        : mod_description
