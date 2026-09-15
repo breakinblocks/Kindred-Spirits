@@ -22,17 +22,7 @@ src/generated/resources/.cache
 # Built Visual Studio Code Extensions
 *.vsix
 
-# Ignore markdown files in root except README, CONTRIBUTING and LICENSE
-/*.md
-!/[Rr][Ee][Aa][Dd][Mm][Ee].[Mm][Dd]
-!/[Cc][Oo][Nn][Tt][Rr][Ii][Bb][Uu][Tt][Ii][Nn][Gg].[Mm][Dd]
-!/[Ll][Ii][Cc][Ee][Nn][Ss][Ee].[Mm][Dd]
-!README.md
-!LICENSE.md
-
 # Ignore Python files as they are generally untility scripts unrelated to the project
-*.py
-!metadata/bb2geo.py
 __pycache__/
 
 # Licensed third-party art packs - never redistribute
@@ -40,19 +30,9 @@ samus2002_*.zip
 
 *.csv
 
-# Ignore everything in tools/ except wiki sync scripts
-tools/*
-!tools/sync-wiki.sh
-!tools/git-hooks/
-!tools/git-hooks/*
-!tools/port-lang.py
-!tools/lang-key-map.json
-
 gradlew
 
-gradlew.bat
 run-gametest/
-metadata/dungeon_mobs.md
 
 altar.bbmodel
 
@@ -66,12 +46,6 @@ gt.log
 
 run-client.log
 
-metadata/cf.md
-
-metadata/ROADMAP.md
-
-metadata/showcase.md
-
 # Translation glossary is source, not generated data
 !crowdin/glossary.csv
 
@@ -84,7 +58,23 @@ metadata/showcase.md
 secrets.txt
 crowdin_token*
 
-metadata/bb2geo.py
 
 # Local audio files
 metadata/audio/
+
+# Markdown: ignored by default. Tracked: root README, LICENSE and CHANGELOG,
+# release changelogs, docs and wiki pages, and markdown inside mod sources
+*.md
+!/README.md
+!/LICENSE.md
+!/CHANGELOG.md
+!/metadata/changelogs/**/*.md
+!/docs/**/*.md
+!/wiki/**/*.md
+!**/src/**/*.md
+
+# Batch files: only the Gradle wrapper
+*.bat
+!gradlew.bat
+
+/tools/
