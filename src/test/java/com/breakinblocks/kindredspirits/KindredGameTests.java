@@ -69,6 +69,7 @@ public final class KindredGameTests {
         TESTS.put("direwolf_digs_up_ground_loot", KindredGameTests::direwolfDig);
         TESTS.put("direwolf_wolf_armour_and_best_friend", KindredGameTests::direwolfArmour);
         TESTS.put("trex_gloves_sync_to_the_client", KindredGameTests::trexGloves);
+        TESTS.put("dragon_tablet_syncs_to_the_client", KindredGameTests::dragonTablet);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
         TESTS.put("unreachable_equipment_is_not_duplicated", KindredGameTests::unreachable);
@@ -708,6 +709,23 @@ public final class KindredGameTests {
         action(owner, Action.UNEQUIP);
         h.assertTrue(trex.equipmentId().isEmpty() && owner.getInventory().contains(new ItemStack(KindredItems.BOXING_GLOVES.get())),
                 "Taking the gloves off clears the synced id and returns them");
+        finish(h, owner);
+    }
+
+    private static void dragonTablet(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity dragon = pet(h, CompanionSpecies.BABY_DRAGON, owner, true);
+        dragon.setEquipment(new ItemStack(KindredItems.DRAGON_TABLET.get()));
+        h.assertTrue(dragon.equipmentId().equals(KindredItems.DRAGON_TABLET.getId().toString()),
+                "Equipping must sync the item id the renderer swaps the tablet model on");
+        action(owner, Action.DISMISS);
+        action(owner, Action.SUMMON);
+        CompanionEntity summoned = deployed(owner);
+        h.assertTrue(summoned.equipmentId().equals(KindredItems.DRAGON_TABLET.getId().toString()),
+                "A summoned companion syncs its tablet before the first render");
+        action(owner, Action.UNEQUIP);
+        h.assertTrue(summoned.equipmentId().isEmpty() && owner.getInventory().contains(new ItemStack(KindredItems.DRAGON_TABLET.get())),
+                "Taking the tablet off clears the synced id and returns it");
         finish(h, owner);
     }
 

@@ -4,6 +4,7 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
+import com.breakinblocks.kindredspirits.registry.KindredItems;
 import com.geckolib.constant.dataticket.DataTicket;
 import com.geckolib.model.DefaultedEntityGeoModel;
 import com.geckolib.model.GeoModel;
@@ -37,7 +38,8 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
     private static GeoModel<CompanionEntity> modelFor(CompanionSpecies species) {
         return switch (species) {
             case QUOKKA -> new QuokkaGeoModel();
-            case TREX -> new TrexGeoModel();
+            case TREX -> new EquippedVariantGeoModel(species, KindredItems.BOXING_GLOVES, "trex_gloves");
+            case BABY_DRAGON -> new EquippedVariantGeoModel(species, KindredItems.DRAGON_TABLET, "baby_dragon_tablet");
             default -> new DefaultedEntityGeoModel<>(KindredSpirits.id(species.getSerializedName()));
         };
     }

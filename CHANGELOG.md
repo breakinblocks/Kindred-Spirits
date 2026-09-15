@@ -63,6 +63,8 @@
   (Mini Player), any wolf armour (Direwolf). Right-click to equip.
 - The T-Rex wears its Boxing Gloves: a gloved model, texture and animation set replace the
   base ones while they are equipped, and its attack becomes a punch.
+- The Baby Dragon holds its Dragon Tablet: a tablet model, texture and animation set replace
+  the base ones while it is equipped, with the screen glowing in the dark.
 
 ### Charm screen
 
