@@ -13,6 +13,7 @@ import com.geckolib.renderer.base.GeoRenderState;
 import com.geckolib.renderer.base.RenderPassInfo;
 import com.geckolib.renderer.layer.builtin.AutoGlowingGeoLayer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.core.Direction;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import net.minecraft.ChatFormatting;
@@ -27,7 +28,7 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
     public CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species) {
         this(context, species, species == CompanionSpecies.QUOKKA ? new QuokkaGeoModel()
                 : new DefaultedEntityGeoModel<CompanionEntity>(KindredSpirits.id(species.getSerializedName())));
-        if (species != CompanionSpecies.QUOKKA) this.withRenderLayer(new AutoGlowingGeoLayer<>(this));
+        if (species.hasGlowMask()) this.withRenderLayer(new AutoGlowingGeoLayer<>(this));
     }
 
     protected CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species,
@@ -73,10 +74,17 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
         float yaw = Mth.clamp(state.yRot, -limit, limit) * Mth.DEG_TO_RAD / headBones.size();
         float pitch = Mth.clamp(state.xRot, -limit, limit) * Mth.DEG_TO_RAD / headBones.size();
 
+        boolean yawOnZ = this.species.headYawAxis() == Direction.Axis.Z;
+
         for (String bone : headBones) {
-            boneSnapshots.ifPresent(bone, snapshot -> snapshot
-                    .setRotY(snapshot.getRotY() + yaw)
-                    .setRotX(snapshot.getRotX() + pitch));
+            boneSnapshots.ifPresent(bone, snapshot -> {
+                snapshot.setRotX(snapshot.getRotX() + pitch);
+                if (yawOnZ) {
+                    snapshot.setRotZ(snapshot.getRotZ() + yaw);
+                } else {
+                    snapshot.setRotY(snapshot.getRotY() + yaw);
+                }
+            });
         }
     }
 

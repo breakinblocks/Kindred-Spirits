@@ -65,6 +65,9 @@ public final class KindredGameTests {
         TESTS.put("quokka_decoy_cannot_tame_and_expires", KindredGameTests::quokkaDecoy);
         TESTS.put("quokka_hurt_throws_once_and_flees", KindredGameTests::quokkaFlee);
         TESTS.put("quokka_jungle_spawns_and_gear", KindredGameTests::quokkaSpawns);
+        TESTS.put("direwolf_golden_bone_transforms_wolves", KindredGameTests::direwolfTransform);
+        TESTS.put("direwolf_digs_up_ground_loot", KindredGameTests::direwolfDig);
+        TESTS.put("direwolf_wolf_armour_and_best_friend", KindredGameTests::direwolfArmour);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
         TESTS.put("unreachable_equipment_is_not_duplicated", KindredGameTests::unreachable);
@@ -690,6 +693,92 @@ public final class KindredGameTests {
                     "Escape uses 1.5x movement without adding Minecraft's separate sprint bonus");
         });
         h.runAfterDelay(202, () -> { h.assertTrue(!wild.isQuokkaFleeing(), "Escape ends after ten seconds"); h.succeed(); });
+    }
+
+    private static void direwolfTransform(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        ServerPlayer stranger = player(h);
+        var hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+        var wild = h.spawnWithNoFreeWill(EntityType.WOLF, new BlockPos(4, 1, 4));
+        var mine = h.spawnWithNoFreeWill(EntityType.WOLF, new BlockPos(6, 1, 4));
+        var theirs = h.spawnWithNoFreeWill(EntityType.WOLF, new BlockPos(8, 1, 4));
+        mine.tame(owner);
+        mine.setCustomName(net.minecraft.network.chat.Component.literal("Fenrir"));
+        mine.setBodyArmorItem(new ItemStack(Items.WOLF_ARMOR));
+        theirs.tame(stranger);
+        owner.setItemInHand(hand, new ItemStack(KindredItems.GOLDEN_BONE.get()));
+        for (var wolf : List.of(wild, mine, theirs)) {
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
+                    new net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract(owner, hand, wolf));
+        }
+        h.assertTrue(wild.isRemoved() && mine.isRemoved() && !theirs.isRemoved(), "Only wild wolves and the player's own wolves transform");
+        var direwolves = h.getLevel().getEntitiesOfClass(CompanionEntity.class, h.getBounds().inflate(2),
+                pet -> pet.species() == CompanionSpecies.DIREWOLF);
+        h.assertTrue(direwolves.size() == 2, "Two wolves must have become Direwolves");
+        var tamed = direwolves.stream().filter(CompanionEntity::isTame).findFirst().orElseThrow();
+        h.assertTrue(tamed.isOwnedBy(owner) && "Fenrir".equals(tamed.getCustomName().getString()), "A tamed wolf comes out tamed and keeps its name");
+        h.assertTrue(tamed.hasEquipment(Items.WOLF_ARMOR), "A tamed wolf's armour carries over as equipment");
+        h.assertTrue(direwolves.stream().anyMatch(pet -> !pet.isTame()), "A wild wolf comes out wild");
+        h.assertTrue(new ItemStack(KindredItems.GOLDEN_BONE.get()).is(CompanionSpecies.DIREWOLF.tamingTag()), "Golden Bone must resolve as the Direwolf taming item");
+        h.assertTrue(new ItemStack(Items.WOLF_ARMOR).is(CompanionSpecies.DIREWOLF.equipmentTag()), "Wolf armour must resolve as Direwolf equipment");
+        h.getLevel().getServer().getPlayerList().remove(stranger);
+        finish(h, owner);
+    }
+
+    private static void direwolfDig(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity pet = pet(h, CompanionSpecies.DIREWOLF, owner, true);
+        pet.setCommand(CompanionCommand.FOLLOW);
+        BlockPos ground = h.absolutePos(new BlockPos(4, 0, 4));
+        h.getLevel().setBlockAndUpdate(ground, Blocks.GRAVEL.defaultBlockState());
+        LootTable table = h.getLevel().getServer().reloadableRegistries().getLootTable(CompanionEntity.DIG_LOOT);
+        int treasure = 0;
+        for (long seed = 1; seed <= 64; seed++) {
+            LootParams params = new LootParams.Builder(h.getLevel())
+                    .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(ground))
+                    .withParameter(LootContextParams.THIS_ENTITY, pet)
+                    .create(LootContextParamSets.GIFT);
+            var loot = table.getRandomItems(params, seed);
+            h.assertTrue(loot.size() == 1, "A dig must yield exactly one stack");
+            if (!loot.getFirst().is(Items.BONE) && !loot.getFirst().is(Items.FLINT)
+                    && !loot.getFirst().is(Items.WHEAT_SEEDS) && !loot.getFirst().is(Items.BEETROOT_SEEDS)) treasure++;
+        }
+        h.assertTrue(treasure > 0, "Gravel must sometimes roll the trail ruins archaeology tables");
+        h.runAfterDelay(5, () -> {
+            h.assertTrue(pet.isIdle(), "A standing companion with no target must count as idle");
+            CompanionAbilities.NOT_ANOTHER_HOLE.serverTick(pet, owner);
+            h.assertTrue(pet.isDigging() && !pet.isAbilityReady(CompanionAbilities.NOT_ANOTHER_HOLE.id()),
+                    "Digging must start on diggable ground and begin the cooldown");
+            h.assertTrue(pet.abilityCooldownTicks(CompanionAbilities.NOT_ANOTHER_HOLE.id()) == (180 - 4) * 20,
+                    "Level one digs every 176 seconds");
+            h.runAfterDelay(45, () -> {
+                h.assertTrue(!pet.isDigging(), "Digging must finish after two seconds");
+                h.assertTrue(!h.getLevel().getEntitiesOfClass(ItemEntity.class, pet.getBoundingBox().inflate(3)).isEmpty(),
+                        "Finishing a dig must drop an item");
+                finish(h, owner);
+            });
+        });
+    }
+
+    private static void direwolfArmour(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity pet = pet(h, CompanionSpecies.DIREWOLF, owner, true);
+        pet.setBondPoints(CompanionBondMath.pointsAtLevelStart(5));
+        pet.setEquipment(new ItemStack(Items.WOLF_ARMOR));
+        h.assertTrue(pet.getItemBySlot(EquipmentSlot.BODY).is(Items.WOLF_ARMOR), "Wolf armour is worn in the body slot");
+        h.runAfterDelay(2, () -> {
+            h.assertTrue(Math.abs(pet.getAttributeValue(Attributes.ARMOR) - (CompanionSpecies.DIREWOLF.armour() + 11)) < 0.001,
+                    "Vanilla must apply the wolf armour's 11 armour through the body slot");
+            CompanionStats stored = CompanionStats.of(pet.species(), CompanionSnapshot.of(pet));
+            h.assertTrue(Math.abs(stored.modified().get(2) - pet.getAttributeValue(Attributes.ARMOR)) < 0.001,
+                    "Resting stats must include wolf armour");
+            h.assertTrue(pet.hasAbility(CompanionAbilities.BEST_FRIEND), "Best Friend unlocks at bond five");
+            var victim = h.spawnWithNoFreeWill(EntityType.ZOMBIE, new BlockPos(6, 1, 4));
+            var event = new net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent(victim, owner, 10);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(event);
+            h.assertTrue(event.getDroppedExperience() == 15, "Best Friend adds half again to experience drops");
+            finish(h, owner);
+        });
     }
 
     private static void quokkaSpawns(GameTestHelper h) {

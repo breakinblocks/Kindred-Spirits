@@ -12,6 +12,7 @@ public final class CompanionAnimations {
     public static final String SPECIAL_ATTACK = "special_attack";
     public static final String SHOOT = "shoot";
     public static final String JUMP_ATTACK = "jump_attack";
+    public static final String DIG = "dig";
     public static final String HURT = "hurt";
     public static final String DEATH = "death";
     public static final String SPAWN = "spawn";

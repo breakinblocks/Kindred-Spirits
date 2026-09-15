@@ -6,6 +6,7 @@ import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import com.breakinblocks.kindredspirits.config.KindredConfig.SpeciesStat;
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -121,7 +122,22 @@ public enum CompanionSpecies implements StringRepresentable {
                     Unlock.level(1, CompanionAbilities.TINKER),
                     Unlock.bond(5, CompanionAbilities.SNACK_THIEF),
                     Unlock.level(12, CompanionAbilities.SWIFT_STEP),
-                    Unlock.level(30, CompanionAbilities.ENERGIZED_CHAOS)));
+                    Unlock.level(30, CompanionAbilities.ENERGIZED_CHAOS))),
+
+    DIREWOLF("direwolf",
+            new Size(1.0f, 1.1f, 1.3f, 0.0f),
+            new Stats(18.0, 0.32, 5.0, 4.0, 0.2, 1.0),
+            CombatStyle.MELEE, false,
+            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
+                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.DIG, CompanionAnimations.HURT, CompanionAnimations.INTERACT,
+                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
+            new SoundSet(KindredSounds.DIREWOLF_AMBIENT, KindredSounds.DIREWOLF_HURT, KindredSounds.DIREWOLF_DEATH,
+                    KindredSounds.DIREWOLF_ATTACK, KindredSounds.DIREWOLF_SPECIAL_ATTACK, KindredSounds.DIREWOLF_INTERACT),
+            List.of(
+                    Unlock.level(1, CompanionAbilities.NOT_ANOTHER_HOLE),
+                    Unlock.bond(5, CompanionAbilities.BEST_FRIEND),
+                    Unlock.level(30, CompanionAbilities.LEADER_OF_THE_PACK)));
 
     public static final double DEFAULT_FOLLOW_RANGE = 24.0;
 
@@ -227,6 +243,10 @@ public enum CompanionSpecies implements StringRepresentable {
         return this == MINI_PLAYER;
     }
 
+    public boolean hasGlowMask() {
+        return this != QUOKKA && this != DIREWOLF;
+    }
+
     public boolean carriesWeapons() {
         return this == MINI_PLAYER;
     }
@@ -234,7 +254,7 @@ public enum CompanionSpecies implements StringRepresentable {
     public int storageRows() {
         return switch (this) {
             case NIGHTFOX, BABY_DRAGON, GREMLIN -> 1;
-            case TREX, MINI_PLAYER -> 2;
+            case TREX, MINI_PLAYER, DIREWOLF -> 2;
             case QUOKKA -> 3;
         };
     }
@@ -256,7 +276,7 @@ public enum CompanionSpecies implements StringRepresentable {
         if (this.headBones == null) {
             this.headBones = switch (this) {
                 case TREX -> List.of("neck_upper", "head_main");
-                case MINI_PLAYER, BABY_DRAGON, GREMLIN, QUOKKA -> List.of("head");
+                case MINI_PLAYER, BABY_DRAGON, GREMLIN, QUOKKA, DIREWOLF -> List.of("head");
                 case NIGHTFOX -> List.of();
             };
         }
@@ -266,6 +286,10 @@ public enum CompanionSpecies implements StringRepresentable {
 
     public float maxHeadYaw() {
         return 30.0f;
+    }
+
+    public Direction.Axis headYawAxis() {
+        return this == DIREWOLF ? Direction.Axis.Z : Direction.Axis.Y;
     }
 
     public CombatStyle combatStyle() {

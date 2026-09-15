@@ -14,6 +14,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.fox.Fox;
 import net.minecraft.world.entity.animal.rabbit.Rabbit;
+import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -22,6 +23,7 @@ import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import org.jspecify.annotations.Nullable;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -99,6 +101,36 @@ public final class CompanionObtainEvents {
 
         if (event.getTarget() instanceof Rabbit rabbit) {
             interactRabbit(event, rabbit, stack);
+            return;
+        }
+
+        if (event.getTarget() instanceof Wolf wolf && stack.is(KindredItems.GOLDEN_BONE.get())) {
+            interactWolf(event, wolf);
+        }
+    }
+
+    private static void interactWolf(PlayerInteractEvent.EntityInteract event, Wolf wolf) {
+        if (wolf.isTame() && !wolf.isOwnedBy(event.getEntity())) {
+            return;
+        }
+
+        boolean owned = wolf.isTame();
+        ItemStack armour = wolf.getBodyArmorItem().copy();
+        CompanionEntity direwolf = transform(event, wolf, CompanionSpecies.DIREWOLF, KindredParticles.PACK_CALL.get());
+        if (direwolf == null) {
+            return;
+        }
+
+        if (wolf.hasCustomName()) {
+            direwolf.setCustomName(wolf.getCustomName());
+        }
+        if (owned) {
+            direwolf.adopt(event.getEntity());
+            if (!armour.isEmpty()) {
+                direwolf.setEquipment(armour);
+            }
+        } else if (!armour.isEmpty()) {
+            direwolf.spawnAtLocation((ServerLevel) direwolf.level(), armour);
         }
     }
 
@@ -125,17 +157,19 @@ public final class CompanionObtainEvents {
         return timeOfDay >= GREMLIN_HOUR_START && timeOfDay < GREMLIN_HOUR_END;
     }
 
-    private static void transform(PlayerInteractEvent.EntityInteract event, Mob source,
-                                  CompanionSpecies species, ParticleOptions particle) {
+    private static @Nullable CompanionEntity transform(PlayerInteractEvent.EntityInteract event, Mob source,
+                                                       CompanionSpecies species, ParticleOptions particle) {
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
 
         if (event.getLevel().isClientSide()) {
-            return;
+            return null;
         }
 
-        if (CompanionSpawns.transform(source, species, particle) != null) {
+        CompanionEntity companion = CompanionSpawns.transform(source, species, particle);
+        if (companion != null) {
             event.getItemStack().consume(1, event.getEntity());
         }
+        return companion;
     }
 }

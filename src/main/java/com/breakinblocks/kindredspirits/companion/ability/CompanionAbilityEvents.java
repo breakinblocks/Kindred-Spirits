@@ -17,6 +17,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
+import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
@@ -32,6 +33,7 @@ public final class CompanionAbilityEvents {
     private static final float DRAGONFIRE_SECONDS = 4.0f;
     private static final double HELPING_HAND_CHANCE = 0.05;
     private static final double EAT_THAT_BASE_SHARE = 0.10;
+    private static final double BEST_FRIEND_BONUS = 0.5;
 
     public static double alphaRadius(int level) {
         return ALPHA_BASE_RADIUS + level / ALPHA_LEVELS_PER_BLOCK;
@@ -118,6 +120,23 @@ public final class CompanionAbilityEvents {
             float saturation = owner.getFoodData().getSaturationLevel() + food.saturation() * companion.getLevel() / 100.0f;
             owner.getFoodData().setSaturation(Math.min(saturation, owner.getFoodData().getFoodLevel()));
             companion.burst(KindredParticles.BOND_HEART.get(), 2);
+        });
+    }
+
+    @SubscribeEvent
+    public static void onExperienceDrop(LivingExperienceDropEvent event) {
+        if (!(event.getAttackingPlayer() instanceof ServerPlayer owner) || event.getEntity() instanceof CompanionEntity
+                || event.getDroppedExperience() <= 0) {
+            return;
+        }
+
+        companionWith(owner, CompanionAbilities.BEST_FRIEND).ifPresent(companion -> {
+            event.setDroppedExperience(event.getDroppedExperience()
+                    + (int) Math.ceil(event.getDroppedExperience() * BEST_FRIEND_BONUS));
+            LivingEntity victim = event.getEntity();
+            if (victim.level() instanceof ServerLevel level) {
+                CompanionAbilities.hitParticles(level, victim, KindredParticles.LEVEL_STAR.get(), 4, 0.5, 0.3, 0.02);
+            }
         });
     }
 

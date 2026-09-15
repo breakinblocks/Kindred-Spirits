@@ -4,7 +4,7 @@
 
 ### Companions
 
-- Nightfox, T-Rex, Baby Dragon, Mini Player and Gremlin.
+- Nightfox, T-Rex, Baby Dragon, Mini Player, Gremlin, Quokka and Direwolf.
 - Baby Dragon is immune to fire and lava. Nightfox is immune to wither. Gremlin is immune
   to poison.
 - T-Rex knockback resistance raised from 0.6 to 0.9.
@@ -20,6 +20,10 @@
 - Sculk used on a fox turns it into a Nightfox.
 - A rabbit fed a carrot, then cooked chicken by the same player between 18000 and 23000,
   turns into a Gremlin.
+- Quokkas spawn wild in jungles and are tamed with shrubs.
+- A Golden Bone (a bone in eight gold nuggets) used on a wolf turns it into a Direwolf. Your
+  own tamed wolf comes out tamed, keeps its name and its wolf armour; a wild wolf comes out
+  wild and is tamed with more Golden Bones.
 
 ### Bond
 
@@ -46,13 +50,17 @@
 - Baby Dragon: Forge Draft (now level 1), Dragonfire, Kiln Breath (`/kindredspirits smelt`).
 - Mini Player: Are You Gonna Eat That?, Helping Hand, Friendly Face.
 - Gremlin: Tinker, Snack Thief, Energized Chaos.
+- Quokka: Brighter Side, Smile, Always Happy.
+- Direwolf: Not Another Hole (digs up loot on soft ground, archaeology tables on sand and
+  gravel), Best Friend (+50% experience from your kills), Leader of the Pack (Resistance II
+  and glowing hostiles every 90 seconds).
 - Abilities can be switched off individually from the charm screen.
 
 ### Equipment
 
 - One equipment slot per species: Boxing Gloves (T-Rex), Dragon Tablet (Baby Dragon),
-  Running Shoes (Nightfox), Battery (Gremlin), any chestplate (Mini Player). Right-click
-  to equip.
+  Running Shoes (Nightfox), Battery (Gremlin), Quokka Snack (Quokka), any chestplate
+  (Mini Player), any wolf armour (Direwolf). Right-click to equip.
 
 ### Charm screen
 

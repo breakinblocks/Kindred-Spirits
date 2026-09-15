@@ -359,5 +359,53 @@
         "name": "kindredspirits:meteor_impact"
       }
     ]
+  },
+  "entity.direwolf.ambient": {
+    "subtitle": "subtitles.kindredspirits.direwolf_ambient",
+    "sounds": [
+      {
+        "name": "kindredspirits:direwolf_ambient"
+      }
+    ]
+  },
+  "entity.direwolf.hurt": {
+    "subtitle": "subtitles.kindredspirits.direwolf_hurt",
+    "sounds": [
+      {
+        "name": "kindredspirits:direwolf_hurt"
+      }
+    ]
+  },
+  "entity.direwolf.death": {
+    "subtitle": "subtitles.kindredspirits.direwolf_death",
+    "sounds": [
+      {
+        "name": "kindredspirits:direwolf_death"
+      }
+    ]
+  },
+  "entity.direwolf.attack": {
+    "subtitle": "subtitles.kindredspirits.direwolf_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:direwolf_attack"
+      }
+    ]
+  },
+  "entity.direwolf.special_attack": {
+    "subtitle": "subtitles.kindredspirits.direwolf_special_attack",
+    "sounds": [
+      {
+        "name": "kindredspirits:direwolf_special_attack"
+      }
+    ]
+  },
+  "entity.direwolf.interact": {
+    "subtitle": "subtitles.kindredspirits.direwolf_interact",
+    "sounds": [
+      {
+        "name": "kindredspirits:direwolf_interact"
+      }
+    ]
   }
 }

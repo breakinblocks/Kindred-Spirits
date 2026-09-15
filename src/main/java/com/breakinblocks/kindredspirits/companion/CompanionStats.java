@@ -56,10 +56,13 @@ public record CompanionStats(List<Float> base, List<Float> modified,
             apply(attributes, item.bonuses());
         }
 
-        snapshot.equipment().forEachModifier(EquipmentSlot.CHEST, (attribute, modifier) -> {
-            var instance = attributes.getInstance(attribute);
-            if (instance != null) instance.addOrReplacePermanentModifier(modifier);
-        });
+        EquipmentSlot worn = CompanionEntity.wornSlot(snapshot.equipment());
+        if (worn != null) {
+            snapshot.equipment().forEachModifier(worn, (attribute, modifier) -> {
+                var instance = attributes.getInstance(attribute);
+                if (instance != null) instance.addOrReplacePermanentModifier(modifier);
+            });
+        }
         return build(species, snapshot.bondLevel(), attributes::getValue);
     }
 

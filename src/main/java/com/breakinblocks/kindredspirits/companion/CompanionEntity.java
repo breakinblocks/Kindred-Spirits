@@ -23,11 +23,14 @@ import com.geckolib.animation.state.AnimationTest;
 import com.geckolib.util.GeckoLibUtil;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -35,6 +38,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleContainer;
@@ -71,17 +75,21 @@ import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -159,6 +167,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final RawAnimation ATTACK = RawAnimation.begin().thenPlay(CompanionAnimations.ATTACK);
     private static final RawAnimation SPECIAL_ATTACK = RawAnimation.begin().thenPlay(CompanionAnimations.SPECIAL_ATTACK);
     private static final RawAnimation JUMP_ATTACK = RawAnimation.begin().thenPlay(CompanionAnimations.JUMP_ATTACK);
+    private static final RawAnimation DIG = RawAnimation.begin().thenPlayXTimes(CompanionAnimations.DIG, 4);
     private static final RawAnimation SHOOT = RawAnimation.begin().thenPlay(CompanionAnimations.SHOOT);
     private static final RawAnimation HURT = RawAnimation.begin().thenPlay(CompanionAnimations.HURT);
     private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold(CompanionAnimations.DEATH);
@@ -205,6 +214,11 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final float BATTERY_CHANCE = 0.1f;
     private static final double BATTERY_SHOCK_RADIUS = 3.0;
     private static final float BATTERY_SHOCK_DAMAGE = 2.0f;
+    private static final int DIG_TICKS = 40;
+    private static final int DIG_EFFECT_INTERVAL = 5;
+    private static final double DIG_DRIFT_SQR = 2.25;
+    public static final ResourceKey<LootTable> DIG_LOOT =
+            ResourceKey.create(Registries.LOOT_TABLE, KindredSpirits.id("gameplay/direwolf_dig"));
 
     private final CompanionSpecies species;
     private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
@@ -229,6 +243,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private final List<Meteor> meteors = new ArrayList<>();
     private @Nullable CompanionCommand tabletWanderRestore;
     private long tabletWanderUntil;
+    private @Nullable BlockPos digPos;
+    private int digTicks;
 
     public CompanionEntity(EntityType<? extends CompanionEntity> type, Level level, CompanionSpecies species) {
         super(type, level);
@@ -949,13 +965,17 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.consumeWithFeedback(player, stack);
 
         if (this.random.nextDouble() < KindredConfig.COMMON.tamingChance.get()) {
-            this.tame(player);
-            this.setCommand(CompanionCommand.FOLLOW);
-            this.burst(KindredParticles.BOND_HEART.get(), FEED_HEARTS);
-            this.level().broadcastEntityEvent(this, (byte) 7);
+            this.adopt(player);
         } else {
             this.level().broadcastEntityEvent(this, (byte) 6);
         }
+    }
+
+    public void adopt(Player player) {
+        this.tame(player);
+        this.setCommand(CompanionCommand.FOLLOW);
+        this.burst(KindredParticles.BOND_HEART.get(), FEED_HEARTS);
+        this.level().broadcastEntityEvent(this, (byte) 7);
     }
 
     private boolean feedForBond(Player player, ItemStack stack) {
@@ -1002,6 +1022,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                 this.setTarget(null);
                 this.lights.clear((ServerLevel) this.level());
                 this.pendingImpact = null;
+                this.digPos = null;
                 this.meteors.forEach(meteor -> meteor.fireball.discard());
                 this.meteors.clear();
                 this.endTabletWander();
@@ -1044,6 +1065,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.tickLeapImpact();
         this.tickShockwave();
         this.tickMeteors();
+        this.tickDig();
         this.tickTabletWander();
         this.tickBattery();
         this.tickProgress();
@@ -1275,8 +1297,21 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
     }
 
+    public static @Nullable EquipmentSlot wornSlot(ItemStack stack) {
+        Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
+        if (equippable == null) {
+            return null;
+        }
+        return switch (equippable.slot()) {
+            case CHEST, BODY -> equippable.slot();
+            default -> null;
+        };
+    }
+
     private void refreshEquipment() {
-        this.equip(EquipmentSlot.CHEST, this.equipment.is(ItemTags.CHEST_ARMOR) ? this.equipment.copy() : ItemStack.EMPTY);
+        EquipmentSlot worn = wornSlot(this.equipment);
+        this.equip(EquipmentSlot.CHEST, worn == EquipmentSlot.CHEST ? this.equipment.copy() : ItemStack.EMPTY);
+        this.equip(EquipmentSlot.BODY, worn == EquipmentSlot.BODY ? this.equipment.copy() : ItemStack.EMPTY);
 
         if (!this.species.carriesWeapons()) {
             return;
@@ -1539,6 +1574,67 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
     }
 
+    public boolean isIdle() {
+        return this.digPos == null && this.getTarget() == null && this.onGround() && !this.isInWater()
+                && !this.isInSittingPose() && !this.isSprinting() && this.getNavigation().isDone();
+    }
+
+    public boolean isDigging() {
+        return this.digPos != null;
+    }
+
+    public void startDig(BlockPos ground) {
+        this.digPos = ground.immutable();
+        this.digTicks = DIG_TICKS;
+        this.getNavigation().stop();
+        this.playCompanionAnim(CompanionAnimations.DIG);
+    }
+
+    private void tickDig() {
+        BlockPos ground = this.digPos;
+        if (ground == null || !(this.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        BlockState state = level.getBlockState(ground);
+        if (!this.isBonded() || !CompanionAbilities.enabled() || !this.hasAbility(CompanionAbilities.NOT_ANOTHER_HOLE)
+                || this.getTarget() != null || !this.onGround() || this.isInSittingPose()
+                || !this.getNavigation().isDone() || !state.is(KindredTags.DIREWOLF_DIGGABLE)
+                || this.distanceToSqr(Vec3.atBottomCenterOf(ground.above())) > DIG_DRIFT_SQR) {
+            this.digPos = null;
+            this.abilityCooldowns.remove(CompanionAbilities.NOT_ANOTHER_HOLE.id());
+            return;
+        }
+
+        if (this.digTicks % DIG_EFFECT_INTERVAL == 0) {
+            Vec3 paws = this.position().add(Vec3.directionFromRotation(0.0f, this.yBodyRot).scale(0.6 * this.species.renderScale()));
+            level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state),
+                    paws.x, paws.y + 0.1, paws.z, 6, 0.15, 0.05, 0.15, 0.08);
+            level.playSound(null, ground, state.getSoundType(level, ground, this).getHitSound(),
+                    SoundSource.NEUTRAL, 0.6f, 0.7f);
+        }
+
+        if (--this.digTicks <= 0) {
+            this.digPos = null;
+            this.finishDig(level, ground);
+        }
+    }
+
+    private void finishDig(ServerLevel level, BlockPos ground) {
+        LootTable table = level.getServer().reloadableRegistries().getLootTable(DIG_LOOT);
+        LootParams params = new LootParams.Builder(level)
+                .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(ground))
+                .withParameter(LootContextParams.THIS_ENTITY, this)
+                .create(LootContextParamSets.GIFT);
+
+        for (ItemStack stack : table.getRandomItems(params)) {
+            this.spawnAtLocation(level, stack);
+        }
+
+        this.burst(KindredParticles.EARTH_IMPACT.get(), 8);
+        this.playSound(this.species.sounds().interact().get(), 0.8f, 1.1f);
+    }
+
     private void endTabletWander() {
         if (this.tabletWanderRestore == null) {
             return;
@@ -1676,6 +1772,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         if (!this.level().isClientSide()) {
             this.setTarget(null);
             this.pendingImpact = null;
+            this.digPos = null;
             this.lights.clear((ServerLevel) this.level());
             this.meteors.forEach(meteor -> meteor.fireball.discard());
             this.meteors.clear();
@@ -1711,6 +1808,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         addTriggerable(action, CompanionAnimations.ATTACK, ATTACK);
         addTriggerable(action, CompanionAnimations.SPECIAL_ATTACK, SPECIAL_ATTACK);
         addTriggerable(action, CompanionAnimations.JUMP_ATTACK, JUMP_ATTACK);
+        addTriggerable(action, CompanionAnimations.DIG, DIG);
         addTriggerable(action, CompanionAnimations.SHOOT, SHOOT);
         addTriggerable(action, CompanionAnimations.HURT, HURT);
         addTriggerable(action, CompanionAnimations.SPAWN, SPAWN);

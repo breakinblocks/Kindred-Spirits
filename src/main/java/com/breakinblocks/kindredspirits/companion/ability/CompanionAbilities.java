@@ -12,6 +12,7 @@ import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredBlocks;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
+import com.breakinblocks.kindredspirits.registry.KindredTags;
 import com.breakinblocks.kindredspirits.util.BlockPosUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -143,6 +144,14 @@ public final class CompanionAbilities {
 
     public static final CompanionAbility ENERGIZED_CHAOS =
             register(new EnergizedChaosAbility(KindredSpirits.id("energized_chaos")));
+
+    public static final CompanionAbility NOT_ANOTHER_HOLE =
+            register(new NotAnotherHoleAbility(KindredSpirits.id("not_another_hole")));
+
+    public static final CompanionAbility BEST_FRIEND = register(new PassiveAbility(KindredSpirits.id("best_friend"), List.of()));
+
+    public static final CompanionAbility LEADER_OF_THE_PACK =
+            register(new LeaderOfThePackAbility(KindredSpirits.id("leader_of_the_pack")));
 
     public static final CompanionAbility ONE_WITH_THE_NIGHT = register(new SimpleAbility(KindredSpirits.id("one_with_the_night"), 40,
             (companion, owner) -> {
@@ -720,6 +729,70 @@ public final class CompanionAbilities {
                     : Blocks.REDSTONE_ORE.defaultBlockState());
             companion.playSpecialAttack(0.8f, 1.4f);
             CompanionTinkering.sparks(level, pick);
+        }
+    }
+
+    private record NotAnotherHoleAbility(Identifier id) implements CompanionAbility {
+        private static final int BASE_SECONDS = 180;
+        private static final int SECONDS_PER_LEVEL = 4;
+
+        @Override
+        public int intervalTicks() {
+            return 20;
+        }
+
+        @Override
+        public boolean scalesWithBond() {
+            return false;
+        }
+
+        public static int cooldownTicks(CompanionEntity companion) {
+            int seconds = BASE_SECONDS - SECONDS_PER_LEVEL * companion.getLevel();
+            return (int) Math.max(20L, Math.round(seconds * 20 * companion.bondRateMultiplier()));
+        }
+
+        @Override
+        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
+            if (!(companion.level() instanceof ServerLevel level) || !companion.isAbilityReady(this.id)
+                    || !companion.isIdle()) {
+                return;
+            }
+
+            BlockPos ground = companion.blockPosition().below();
+            if (!level.getBlockState(ground).is(KindredTags.DIREWOLF_DIGGABLE)) {
+                return;
+            }
+
+            companion.setAbilityCooldown(this.id, cooldownTicks(companion));
+            companion.startDig(ground);
+        }
+    }
+
+    private record LeaderOfThePackAbility(Identifier id) implements CompanionAbility {
+        private static final int RESISTANCE_TICKS = 400;
+        private static final int GLOW_TICKS = 200;
+        private static final double GLOW_RADIUS = 24.0;
+
+        @Override
+        public int intervalTicks() {
+            return 1800;
+        }
+
+        @Override
+        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
+            if (!(companion.level() instanceof ServerLevel level)
+                    || !ownerEffect(companion, owner, OWNER_RANGE_SHORT_SQR, MobEffects.RESISTANCE, RESISTANCE_TICKS, 1)) {
+                return;
+            }
+
+            companion.playSpecialAttack(1.0f, 0.8f);
+            companion.burst(KindredParticles.PACK_CALL.get(), 12);
+
+            for (LivingEntity hostile : level.getEntitiesOfClass(LivingEntity.class,
+                    companion.getBoundingBox().inflate(GLOW_RADIUS),
+                    entity -> entity.isAlive() && CompanionEntity.isHostile(entity))) {
+                hostile.addEffect(new MobEffectInstance(MobEffects.GLOWING, GLOW_TICKS, 0, false, false, true));
+            }
         }
     }
 

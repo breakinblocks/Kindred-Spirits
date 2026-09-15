@@ -8,6 +8,7 @@ import com.breakinblocks.kindredspirits.item.KindredEquipmentItem;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.SpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -26,6 +27,9 @@ public final class KindredItems {
 
     public static final DeferredItem<BlockItem> TREX_EGG =
             ITEMS.registerSimpleBlockItem("trex_egg", KindredBlocks.TREX_EGG);
+
+    public static final DeferredItem<Item> GOLDEN_BONE =
+            ITEMS.registerItem("golden_bone", props -> new Item(props.rarity(Rarity.UNCOMMON)));
 
     public static final DeferredItem<KindredEquipmentItem> BOXING_GLOVES = equipment("boxing_gloves", List.of(
             new AttributeBonus(Attributes.ATTACK_DAMAGE, new AttributeModifier(KindredSpirits.id("boxing_gloves"),

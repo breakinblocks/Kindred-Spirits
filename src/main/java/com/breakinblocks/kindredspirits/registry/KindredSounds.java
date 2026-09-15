@@ -79,6 +79,18 @@ public final class KindredSounds {
             register("entity.quokka.attack");
     public static final DeferredHolder<SoundEvent, SoundEvent> QUOKKA_SPECIAL_ATTACK =
             register("entity.quokka.special_attack");
+    public static final DeferredHolder<SoundEvent, SoundEvent> DIREWOLF_AMBIENT =
+            register("entity.direwolf.ambient");
+    public static final DeferredHolder<SoundEvent, SoundEvent> DIREWOLF_HURT =
+            register("entity.direwolf.hurt");
+    public static final DeferredHolder<SoundEvent, SoundEvent> DIREWOLF_DEATH =
+            register("entity.direwolf.death");
+    public static final DeferredHolder<SoundEvent, SoundEvent> DIREWOLF_ATTACK =
+            register("entity.direwolf.attack");
+    public static final DeferredHolder<SoundEvent, SoundEvent> DIREWOLF_SPECIAL_ATTACK =
+            register("entity.direwolf.special_attack");
+    public static final DeferredHolder<SoundEvent, SoundEvent> DIREWOLF_INTERACT =
+            register("entity.direwolf.interact");
     public static final DeferredHolder<SoundEvent, SoundEvent> CHARM_SUMMON =
             register("charm.summon");
     public static final DeferredHolder<SoundEvent, SoundEvent> CHARM_DISMISS =

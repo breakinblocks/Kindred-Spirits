@@ -26,5 +26,9 @@
   "quokka.mdx": {
     "name": "Quokka",
     "icon": null
+  },
+  "direwolf.mdx": {
+    "name": "Direwolf",
+    "icon": null
   }
 }
