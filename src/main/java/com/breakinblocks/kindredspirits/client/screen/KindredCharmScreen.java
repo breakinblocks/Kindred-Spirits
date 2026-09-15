@@ -129,6 +129,8 @@ public class KindredCharmScreen extends Screen {
 
         if (!sameCompanion) {
             this.display = null;
+        } else if (this.display != null) {
+            this.display.showEquipment(view.equipment());
         }
 
         if (this.summonButton != null && (this.skinRow != this.wantsSkinRow() || !sameSpecies)) {
@@ -537,6 +539,7 @@ public class KindredCharmScreen extends Screen {
 
         if (this.display != null) {
             this.view.name().ifPresent(name -> this.display.setCustomName(Component.literal(name)));
+            this.display.showEquipment(this.view.equipment());
 
             if (species.usesPlayerSkin()) {
                 this.display.setSkinName(this.view.skin().isEmpty() ? this.localName() : this.view.skin());

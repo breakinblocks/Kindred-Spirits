@@ -25,6 +25,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -111,9 +112,6 @@ import java.util.function.BooleanSupplier;
 public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedAttackMob {
     private long quokkaDecoyUntil;
     private long quokkaFleeUntil;
-    private static final EntityDataAccessor<Boolean> DATA_QUOKKA_SMILE =
-            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
-
     private static final EntityDataAccessor<Boolean> DATA_QUOKKA_FLEEING =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
 
@@ -123,7 +121,6 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         return this.species == CompanionSpecies.QUOKKA && !this.isTame()
                 && this.quokkaFleeUntil > this.level().getGameTime();
     }
-    public boolean isQuokkaSmiling() { return this.entityData.get(DATA_QUOKKA_SMILE); }
 
     public void makeQuokkaDecoy(int lifetimeTicks) {
         this.quokkaDecoyUntil = this.level().getGameTime() + Math.max(1, lifetimeTicks);
@@ -149,6 +146,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final EntityDataAccessor<String> DATA_DISABLED_ABILITIES =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_SKIN =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> DATA_EQUIPMENT_ID =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
 
     private static final EntityDataAccessor<Integer> DATA_LEVEL_LIMIT = SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
@@ -382,7 +381,6 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder entityData) {
         super.defineSynchedData(entityData);
-        entityData.define(DATA_QUOKKA_SMILE, false);
         entityData.define(DATA_QUOKKA_FLEEING, false);
         entityData.define(DATA_LEVEL, CompanionLevels.MIN_LEVEL);
         entityData.define(DATA_LEVEL_LIMIT, CompanionLevels.maxLevel());
@@ -395,6 +393,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         entityData.define(DATA_AGGRESSION, (byte) CompanionAggression.NEUTRAL.ordinal());
         entityData.define(DATA_BONDED, false);
         entityData.define(DATA_SKIN, "");
+        entityData.define(DATA_EQUIPMENT_ID, "");
         entityData.define(DATA_DISABLED_ABILITIES, "");
     }
 
@@ -685,11 +684,27 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public boolean hasEquipment(Item item) {
+        if (this.level().isClientSide()) {
+            return this.equipmentId().equals(equipmentId(new ItemStack(item)));
+        }
         return this.equipment.is(item);
+    }
+
+    public String equipmentId() {
+        return this.entityData.get(DATA_EQUIPMENT_ID);
+    }
+
+    public static String equipmentId(ItemStack stack) {
+        return stack.isEmpty() ? "" : BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+    }
+
+    public void showEquipment(ItemStack stack) {
+        this.entityData.set(DATA_EQUIPMENT_ID, equipmentId(stack));
     }
 
     public void setEquipment(ItemStack stack) {
         this.equipment = stack;
+        this.showEquipment(stack);
         this.applyEquipmentBonuses();
         this.refreshEquipment();
         if (!this.hasEquipment(KindredItems.DRAGON_TABLET.get())) {
@@ -1009,8 +1024,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             this.discard();
             return;
         }
-        this.entityData.set(DATA_QUOKKA_SMILE, this.species == CompanionSpecies.QUOKKA
-                && this.hasEquipment(KindredItems.QUOKKA_SNACK.get()));
+        this.showEquipment(this.equipment);
         this.entityData.set(DATA_QUOKKA_FLEEING, this.isQuokkaFleeing());
         QuokkaSupport.tick(this);
 

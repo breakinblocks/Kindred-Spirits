@@ -68,6 +68,7 @@ public final class KindredGameTests {
         TESTS.put("direwolf_golden_bone_transforms_wolves", KindredGameTests::direwolfTransform);
         TESTS.put("direwolf_digs_up_ground_loot", KindredGameTests::direwolfDig);
         TESTS.put("direwolf_wolf_armour_and_best_friend", KindredGameTests::direwolfArmour);
+        TESTS.put("trex_gloves_sync_to_the_client", KindredGameTests::trexGloves);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
         TESTS.put("unreachable_equipment_is_not_duplicated", KindredGameTests::unreachable);
@@ -585,9 +586,9 @@ public final class KindredGameTests {
         h.assertTrue(summoned.hasEquipment(KindredItems.QUOKKA_SNACK.get()) && summoned.abilityCooldownTicks(KindredSpirits.id("quokka_snack")) == 600,
                 "Dismiss and summon retain the snack and cooldown");
         h.runAfterDelay(2, () -> {
-            h.assertTrue(summoned.isQuokkaSmiling(), "Equipped snack must synchronize the smiling appearance");
+            h.assertTrue(summoned.equipmentId().equals(KindredItems.QUOKKA_SNACK.getId().toString()), "Equipped snack must synchronize the smiling appearance");
             summoned.setEquipment(ItemStack.EMPTY);
-            h.runAfterDelay(2, () -> { h.assertTrue(!summoned.isQuokkaSmiling(), "Unequipping restores the normal appearance"); finish(h, owner); });
+            h.runAfterDelay(2, () -> { h.assertTrue(summoned.equipmentId().isEmpty(), "Unequipping restores the normal appearance"); finish(h, owner); });
         });
     }
 
@@ -693,6 +694,21 @@ public final class KindredGameTests {
                     "Escape uses 1.5x movement without adding Minecraft's separate sprint bonus");
         });
         h.runAfterDelay(202, () -> { h.assertTrue(!wild.isQuokkaFleeing(), "Escape ends after ten seconds"); h.succeed(); });
+    }
+
+    private static void trexGloves(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity trex = pet(h, CompanionSpecies.TREX, owner, true);
+        h.assertTrue(trex.equipmentId().isEmpty(), "A bare companion syncs no equipment");
+        trex.setEquipment(new ItemStack(KindredItems.BOXING_GLOVES.get()));
+        h.assertTrue(trex.equipmentId().equals(KindredItems.BOXING_GLOVES.getId().toString()),
+                "Equipping must sync the item id the renderer swaps the gloved model on");
+        h.assertTrue(CompanionEntity.equipmentId(new ItemStack(Items.WOLF_ARMOR)).equals("minecraft:wolf_armor"),
+                "Synced ids are registry keys");
+        action(owner, Action.UNEQUIP);
+        h.assertTrue(trex.equipmentId().isEmpty() && owner.getInventory().contains(new ItemStack(KindredItems.BOXING_GLOVES.get())),
+                "Taking the gloves off clears the synced id and returns them");
+        finish(h, owner);
     }
 
     private static void direwolfTransform(GameTestHelper h) {

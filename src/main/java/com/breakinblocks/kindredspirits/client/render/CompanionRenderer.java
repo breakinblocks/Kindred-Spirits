@@ -4,6 +4,7 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
+import com.geckolib.constant.dataticket.DataTicket;
 import com.geckolib.model.DefaultedEntityGeoModel;
 import com.geckolib.model.GeoModel;
 import com.geckolib.renderer.GeoEntityRenderer;
@@ -19,16 +20,30 @@ import com.breakinblocks.kindredspirits.net.CharmView;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.neoforged.neoforge.registries.DeferredItem;
 
 import java.util.List;
 
 public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, LivingEntityRenderState> {
+    static final DataTicket<String> EQUIPMENT = DataTicket.create("kindredspirits:equipment", String.class);
+
     private final CompanionSpecies species;
 
     public CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species) {
-        this(context, species, species == CompanionSpecies.QUOKKA ? new QuokkaGeoModel()
-                : new DefaultedEntityGeoModel<CompanionEntity>(KindredSpirits.id(species.getSerializedName())));
+        this(context, species, modelFor(species));
         if (species.hasGlowMask()) this.withRenderLayer(new AutoGlowingGeoLayer<>(this));
+    }
+
+    private static GeoModel<CompanionEntity> modelFor(CompanionSpecies species) {
+        return switch (species) {
+            case QUOKKA -> new QuokkaGeoModel();
+            case TREX -> new TrexGeoModel();
+            default -> new DefaultedEntityGeoModel<>(KindredSpirits.id(species.getSerializedName()));
+        };
+    }
+
+    static boolean wears(GeoRenderState state, DeferredItem<?> item) {
+        return item.getId().toString().equals(state.getOrDefaultGeckolibData(EQUIPMENT, ""));
     }
 
     protected CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species,
@@ -43,7 +58,7 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
     public void addRenderData(CompanionEntity entity, Void relatedObject,
                               LivingEntityRenderState renderState, float partialTick) {
         super.addRenderData(entity, relatedObject, renderState, partialTick);
-        renderState.addGeckolibData(QuokkaGeoModel.SMILING, entity.isQuokkaSmiling());
+        renderState.addGeckolibData(EQUIPMENT, entity.equipmentId());
     }
 
     @Override

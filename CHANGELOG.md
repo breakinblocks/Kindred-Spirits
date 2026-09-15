@@ -61,6 +61,8 @@
 - One equipment slot per species: Boxing Gloves (T-Rex), Dragon Tablet (Baby Dragon),
   Running Shoes (Nightfox), Battery (Gremlin), Quokka Snack (Quokka), any chestplate
   (Mini Player), any wolf armour (Direwolf). Right-click to equip.
+- The T-Rex wears its Boxing Gloves: a gloved model, texture and animation set replace the
+  base ones while they are equipped, and its attack becomes a punch.
 
 ### Charm screen
 
