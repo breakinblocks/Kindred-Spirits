@@ -86,8 +86,8 @@
   and death sounds are a higher player hurt and a higher villager death.
 - The Quokka's death sound is the villager death.
 - The Gremlin's Snack Thief uses the eating sound.
-- New sounds for the Nightfox, Baby Dragon, Mini Player and Direwolf voices and abilities,
-  the T-Rex leap, the Gremlin's hurt, the meteor impact, and the charm's summon and revive.
+- New sounds for every companion's voice and abilities, the meteor impact, and the charm's
+  summon, revive and prestige.
 - A companion levelling up now finishes with the experience orb chime.
 
 ### Fixed
