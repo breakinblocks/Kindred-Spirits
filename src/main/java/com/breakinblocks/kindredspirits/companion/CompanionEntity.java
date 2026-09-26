@@ -181,6 +181,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final int EQUIPMENT_INTERVAL = 20;
     private static final int PROGRESS_INTERVAL = 20;
     private static final int FEED_HEARTS = 7;
+    private static final int FOOD_BOND_POINTS = 1;
     private static final int BOW_INTERVAL = 35;
     private static final double MELEE_SWITCH_RANGE = 3.0;
     private static final double BOW_SWITCH_RANGE = 6.0;
@@ -898,6 +899,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.entityData.set(DATA_EXPERIENCE, Math.max(0, experience));
         this.entityData.set(DATA_STARS, CompanionLevels.clampStars(snapshot.stars()));
         this.progress = snapshot.progress().copy();
+        this.progress.creditStoredRest(this.level().getGameTime());
         this.setBondPoints(snapshot.bondPoints());
         this.setEquipment(snapshot.equipment().copy());
         this.setDisabledAbilityNames(snapshot.disabledAbilities());
@@ -1180,6 +1182,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                     this.consumeWithFeedback(player, stack);
                     this.gainExperience(KindredConfig.COMMON.experiencePerFeed.get());
                     this.heal(2.0f);
+                    if (this.isBonded()) {
+                        this.addBondPoints(FOOD_BOND_POINTS);
+                    }
                 });
             }
         } else if (!this.isTame() && stack.is(this.species.tamingTag())) {

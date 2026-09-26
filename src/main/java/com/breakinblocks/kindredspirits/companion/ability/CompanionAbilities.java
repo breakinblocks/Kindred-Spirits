@@ -788,10 +788,13 @@ public final class CompanionAbilities {
             companion.playSpecialAttack(1.0f, 0.8f);
             companion.burst(KindredParticles.PACK_CALL.get(), 12);
 
-            for (LivingEntity hostile : level.getEntitiesOfClass(LivingEntity.class,
-                    companion.getBoundingBox().inflate(GLOW_RADIUS),
-                    entity -> entity.isAlive() && CompanionEntity.isHostile(entity))) {
-                hostile.addEffect(new MobEffectInstance(MobEffects.GLOWING, GLOW_TICKS, 0, false, false, true));
+            List<Integer> hostiles = level.getEntitiesOfClass(LivingEntity.class,
+                            companion.getBoundingBox().inflate(GLOW_RADIUS),
+                            entity -> entity.isAlive() && CompanionEntity.isHostile(entity)).stream()
+                    .map(LivingEntity::getId)
+                    .toList();
+            if (!hostiles.isEmpty() && owner != null) {
+                KindredNetworking.sendPackGlow(owner, hostiles, GLOW_TICKS);
             }
         }
     }

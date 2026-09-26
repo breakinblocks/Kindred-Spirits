@@ -24,6 +24,11 @@ public final class KindredClientHooks {
 
     public static void acceptOreReveal(List<BlockPos> ores, int ticks) {
         OreRevealOverlay.show(ores, ticks);
+        ScreenShake.start();
+    }
+
+    public static void acceptPackGlow(List<Integer> entityIds, int ticks) {
+        PackGlowOverlay.show(entityIds, ticks);
     }
 
     private KindredClientHooks() {

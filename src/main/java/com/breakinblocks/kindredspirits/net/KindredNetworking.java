@@ -29,7 +29,7 @@ public final class KindredNetworking {
 
     @SubscribeEvent
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("2");
+        var registrar = event.registrar("3");
 
         registrar.playToServer(
                 CycleCommandPayload.TYPE,
@@ -55,10 +55,18 @@ public final class KindredNetworking {
                 OreRevealPayload.TYPE,
                 OreRevealPayload.STREAM_CODEC,
                 OreRevealPayload::handleOnClient);
+        registrar.playToClient(
+                PackGlowPayload.TYPE,
+                PackGlowPayload.STREAM_CODEC,
+                PackGlowPayload::handleOnClient);
     }
 
     public static void sendOreReveal(ServerPlayer player, List<BlockPos> ores, int ticks) {
         PacketDistributor.sendToPlayer(player, new OreRevealPayload(ores, ticks));
+    }
+
+    public static void sendPackGlow(ServerPlayer player, List<Integer> entityIds, int ticks) {
+        PacketDistributor.sendToPlayer(player, new PackGlowPayload(entityIds, ticks));
     }
 
     public static void sendLevelUp(ServerPlayer player, int companionId, int level) {
@@ -174,6 +182,24 @@ public final class KindredNetworking {
 
         public static void handleOnClient(OreRevealPayload payload, IPayloadContext context) {
             context.enqueueWork(() -> KindredClientHooks.acceptOreReveal(payload.ores(), payload.ticks()));
+        }
+    }
+
+    public record PackGlowPayload(List<Integer> entityIds, int ticks) implements CustomPacketPayload {
+        public static final Type<PackGlowPayload> TYPE = new Type<>(KindredSpirits.id("pack_glow"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, PackGlowPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list()), PackGlowPayload::entityIds,
+                        ByteBufCodecs.VAR_INT, PackGlowPayload::ticks,
+                        PackGlowPayload::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+
+        public static void handleOnClient(PackGlowPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> KindredClientHooks.acceptPackGlow(payload.entityIds(), payload.ticks()));
         }
     }
 

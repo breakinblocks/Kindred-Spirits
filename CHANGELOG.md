@@ -29,7 +29,8 @@
 
 - Bond is a level from 0 to 30, earned at 1 point a second while the companion is out
   with you and you are not AFK.
-- Feeding the taming item adds 5% of current bond on a 10 minute cooldown.
+- Feeding the taming item adds 5% of current bond on a 10 minute cooldown. Ordinary
+  companion food adds 1 bond point.
 - Dying above bond 10 costs a bond level.
 - Bond scales revive time, storage slots and experience rate. Bond 5 unlocks the species
   special, bond 15 and 30 speed up the base buff, bond 30 gives the owner +2 armour.
@@ -39,6 +40,7 @@
 - Companions gain half of the experience their owner picks up, with a saturation limit
   that resets when you move 3 chunks, and rested experience after 5 idle minutes.
 - Experience from Bottles o' Enchanting is not shared with companions.
+- Rested experience also builds while the companion rests in the charm.
 - Armour and speed now grow with level alongside health and attack.
 - Prestige at level 30 for a star (up to 5). Stars raise growth and add attributes.
 
@@ -47,14 +49,14 @@
 - Three tiers per species on top of its attack: a base buff at level 1, a bond 5 special
   and a level 30 ultimate.
 - Nightfox: Wisplight, Night Light, One With The Night.
-- T-Rex: Alpha, Alpha Boost, X-Ray Stomp.
+- T-Rex: Alpha, Alpha Boost, X-Ray Stomp (shakes your screen).
 - Baby Dragon: Forge Draft (now level 1), Dragonfire, Kiln Breath (`/kindredspirits smelt`).
 - Mini Player: Are You Gonna Eat That?, Helping Hand, Friendly Face.
 - Gremlin: Tinker, Snack Thief, Energized Chaos.
 - Quokka: Brighter Side, Smile, Always Happy.
 - Direwolf: Not Another Hole (digs up loot on soft ground, archaeology tables on sand and
   gravel), Best Friend (+50% experience from your kills), Leader of the Pack (Resistance II
-  and glowing hostiles every 90 seconds).
+  and hostiles glowing for you alone every 90 seconds).
 - Abilities can be switched off individually from the charm screen.
 
 ### Equipment

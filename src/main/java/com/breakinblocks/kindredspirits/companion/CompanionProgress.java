@@ -19,7 +19,8 @@ public final class CompanionProgress {
             Codec.INT.optionalFieldOf("rested", 0).forGetter(p -> p.rested),
             Codec.LONG.optionalFieldOf("last_gain", 0L).forGetter(p -> p.lastGain),
             Codec.LONG.optionalFieldOf("feed_ready_at", 0L).forGetter(p -> p.feedReadyAt),
-            Codec.DOUBLE.optionalFieldOf("fractional_share", 0.0).forGetter(p -> p.fractionalShare)
+            Codec.DOUBLE.optionalFieldOf("fractional_share", 0.0).forGetter(p -> p.fractionalShare),
+            Codec.LONG.optionalFieldOf("last_tick", 0L).forGetter(p -> p.lastTick)
     ).apply(instance, CompanionProgress::new));
 
     public static final StreamCodec<ByteBuf, CompanionProgress> STREAM_CODEC = StreamCodec.composite(
@@ -29,6 +30,7 @@ public final class CompanionProgress {
             ByteBufCodecs.VAR_LONG, p -> p.lastGain,
             ByteBufCodecs.VAR_LONG, p -> p.feedReadyAt,
             ByteBufCodecs.DOUBLE, p -> p.fractionalShare,
+            ByteBufCodecs.VAR_LONG, p -> p.lastTick,
             CompanionProgress::new);
 
     private int saturation;
@@ -37,22 +39,26 @@ public final class CompanionProgress {
     private long lastGain;
     private long feedReadyAt;
     private double fractionalShare;
+    private long lastTick;
 
     public CompanionProgress() {
-        this(0, NO_ANCHOR, 0, 0L, 0L, 0.0);
+        this(0, NO_ANCHOR, 0, 0L, 0L, 0.0, 0L);
     }
 
-    private CompanionProgress(int saturation, long anchor, int rested, long lastGain, long feedReadyAt, double fractionalShare) {
+    private CompanionProgress(int saturation, long anchor, int rested, long lastGain, long feedReadyAt, double fractionalShare,
+                              long lastTick) {
         this.saturation = saturation;
         this.anchor = anchor;
         this.rested = rested;
         this.lastGain = lastGain;
         this.feedReadyAt = feedReadyAt;
         this.fractionalShare = Double.isFinite(fractionalShare) ? Math.clamp(fractionalShare, 0.0, Math.nextDown(1.0)) : 0.0;
+        this.lastTick = lastTick;
     }
 
     public CompanionProgress copy() {
-        return new CompanionProgress(this.saturation, this.anchor, this.rested, this.lastGain, this.feedReadyAt, this.fractionalShare);
+        return new CompanionProgress(this.saturation, this.anchor, this.rested, this.lastGain, this.feedReadyAt,
+                this.fractionalShare, this.lastTick);
     }
 
     public int shareExperience(int amount, double fraction) {
@@ -112,7 +118,18 @@ public final class CompanionProgress {
         return (int) Math.min(Integer.MAX_VALUE, (long) gained + bonus);
     }
 
+    public void creditStoredRest(long gameTime) {
+        if (this.lastTick > 0L && gameTime > this.lastTick) {
+            long seconds = (gameTime - Math.max(this.lastTick, this.lastGain + REST_DELAY_TICKS)) / 20L;
+            if (seconds > 0L) {
+                this.rested = (int) Math.min(KindredConfig.COMMON.restedCap.get(), this.rested + seconds);
+            }
+        }
+        this.lastTick = gameTime;
+    }
+
     public void tickSecond(long gameTime, @Nullable ChunkPos ownerChunk) {
+        this.lastTick = gameTime;
         if (this.saturation > 0) {
             this.saturation--;
         }

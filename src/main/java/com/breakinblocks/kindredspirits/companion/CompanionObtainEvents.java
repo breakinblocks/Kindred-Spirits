@@ -6,6 +6,7 @@ import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
@@ -95,7 +96,7 @@ public final class CompanionObtainEvents {
         ItemStack stack = event.getItemStack();
 
         if (event.getTarget() instanceof Fox fox && stack.is(Items.SCULK)) {
-            transform(event, fox, CompanionSpecies.NIGHTFOX, KindredParticles.SHADOW_BURST.get());
+            transform(event, fox, CompanionSpecies.NIGHTFOX, ParticleTypes.SCULK_SOUL);
             return;
         }
 
