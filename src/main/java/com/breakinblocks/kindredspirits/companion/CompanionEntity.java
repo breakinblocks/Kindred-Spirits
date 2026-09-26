@@ -39,6 +39,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import net.minecraft.world.InteractionHand;
@@ -213,6 +214,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final float BATTERY_CHANCE = 0.1f;
     private static final double BATTERY_SHOCK_RADIUS = 3.0;
     private static final float BATTERY_SHOCK_DAMAGE = 2.0f;
+    private static final int LEVEL_CHIME_DELAY = 17;
     private static final int DIG_TICKS = 40;
     private static final int DIG_EFFECT_INTERVAL = 5;
     private static final double DIG_DRIFT_SQR = 2.25;
@@ -244,6 +246,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private long tabletWanderUntil;
     private @Nullable BlockPos digPos;
     private int digTicks;
+    private int levelChimeTicks;
 
     public CompanionEntity(EntityType<? extends CompanionEntity> type, Level level, CompanionSpecies species) {
         super(type, level);
@@ -856,6 +859,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
         if (levelledUp) {
             this.celebrate(KindredSounds.LEVEL_UP.get(), 0.7f, 1.0f, KindredParticles.LEVEL_STAR.get(), 12);
+            this.levelChimeTicks = LEVEL_CHIME_DELAY;
 
             ServerPlayer owner = this.serverOwner();
             if (owner != null) {
@@ -1083,6 +1087,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.tickTabletWander();
         this.tickBattery();
         this.tickProgress();
+        this.tickLevelChime();
 
         if (!this.isBonded() || !CompanionAbilities.enabled()) {
             return;
@@ -1440,6 +1445,12 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     public void setAbilityCooldown(Identifier ability, int ticks) {
         this.abilityCooldowns.put(ability, this.level().getGameTime() + Math.max(0, ticks));
+    }
+
+    private void tickLevelChime() {
+        if (this.levelChimeTicks > 0 && --this.levelChimeTicks == 0) {
+            this.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 0.5f, 1.0f);
+        }
     }
 
     private void tickAbilityCooldowns() {

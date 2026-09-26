@@ -116,7 +116,16 @@
     "subtitle": "subtitles.kindredspirits.mini_player_hurt",
     "sounds": [
       {
-        "name": "kindredspirits:mini_player_hurt"
+        "name": "minecraft:damage/hit1",
+        "pitch": 1.3
+      },
+      {
+        "name": "minecraft:damage/hit2",
+        "pitch": 1.3
+      },
+      {
+        "name": "minecraft:damage/hit3",
+        "pitch": 1.3
       }
     ]
   },
@@ -124,7 +133,8 @@
     "subtitle": "subtitles.kindredspirits.mini_player_death",
     "sounds": [
       {
-        "name": "kindredspirits:mini_player_death"
+        "name": "minecraft:mob/villager/death",
+        "pitch": 1.3
       }
     ]
   },
@@ -132,7 +142,32 @@
     "subtitle": "subtitles.kindredspirits.mini_player_attack",
     "sounds": [
       {
-        "name": "kindredspirits:mini_player_attack"
+        "name": "minecraft:entity/player/attack/sweep1",
+        "volume": 0.7
+      },
+      {
+        "name": "minecraft:entity/player/attack/sweep2",
+        "volume": 0.7
+      },
+      {
+        "name": "minecraft:entity/player/attack/sweep3",
+        "volume": 0.7
+      },
+      {
+        "name": "minecraft:entity/player/attack/sweep4",
+        "volume": 0.7
+      },
+      {
+        "name": "minecraft:entity/player/attack/sweep5",
+        "volume": 0.7
+      },
+      {
+        "name": "minecraft:entity/player/attack/sweep6",
+        "volume": 0.7
+      },
+      {
+        "name": "minecraft:entity/player/attack/sweep7",
+        "volume": 0.7
       }
     ]
   },
@@ -252,7 +287,7 @@
     "subtitle": "subtitles.kindredspirits.quokka_death",
     "sounds": [
       {
-        "name": "kindredspirits:quokka_death"
+        "name": "minecraft:mob/villager/death"
       }
     ]
   },
@@ -340,7 +375,7 @@
     "subtitle": "subtitles.kindredspirits.mini_player_bow",
     "sounds": [
       {
-        "name": "kindredspirits:mini_player_bow"
+        "name": "minecraft:random/bow"
       }
     ]
   },
@@ -348,7 +383,13 @@
     "subtitle": "subtitles.kindredspirits.gremlin_snack",
     "sounds": [
       {
-        "name": "kindredspirits:gremlin_snack"
+        "name": "minecraft:random/eat1"
+      },
+      {
+        "name": "minecraft:random/eat2"
+      },
+      {
+        "name": "minecraft:random/eat3"
       }
     ]
   },
@@ -372,7 +413,13 @@
     "subtitle": "subtitles.kindredspirits.direwolf_hurt",
     "sounds": [
       {
-        "name": "kindredspirits:direwolf_hurt"
+        "name": "minecraft:mob/wolf/classic/hurt1"
+      },
+      {
+        "name": "minecraft:mob/wolf/classic/hurt2"
+      },
+      {
+        "name": "minecraft:mob/wolf/classic/hurt3"
       }
     ]
   },
@@ -380,7 +427,7 @@
     "subtitle": "subtitles.kindredspirits.direwolf_death",
     "sounds": [
       {
-        "name": "kindredspirits:direwolf_death"
+        "name": "minecraft:mob/wolf/classic/death"
       }
     ]
   },
@@ -388,7 +435,13 @@
     "subtitle": "subtitles.kindredspirits.direwolf_attack",
     "sounds": [
       {
-        "name": "kindredspirits:direwolf_attack"
+        "name": "minecraft:mob/wolf/classic/growl1"
+      },
+      {
+        "name": "minecraft:mob/wolf/classic/growl2"
+      },
+      {
+        "name": "minecraft:mob/wolf/classic/growl3"
       }
     ]
   },

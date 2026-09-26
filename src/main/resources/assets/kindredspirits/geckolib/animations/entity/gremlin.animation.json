@@ -2082,9 +2082,6 @@
           }
         },
         "left_arm_base": {
-          "relative_to": {
-            "rotation": "entity"
-          },
           "rotation": {
             "0.0": {
               "post": {
@@ -2195,9 +2192,6 @@
           }
         },
         "right_arm_base": {
-          "relative_to": {
-            "rotation": "entity"
-          },
           "rotation": {
             "0.0": {
               "post": {
@@ -3111,9 +3105,6 @@
           }
         },
         "left_arm_base": {
-          "relative_to": {
-            "rotation": "entity"
-          },
           "rotation": {
             "0.0": {
               "post": {
@@ -3224,9 +3215,6 @@
           }
         },
         "right_arm_base": {
-          "relative_to": {
-            "rotation": "entity"
-          },
           "rotation": {
             "0.0": {
               "post": {

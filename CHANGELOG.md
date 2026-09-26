@@ -76,6 +76,22 @@
 
 - `/kindredspirits bond <points>` and `/kindredspirits smelt`.
 
+### Sounds
+
+- The Direwolf's hurt, death and attack sounds are Minecraft's wolf hurt, death and growl.
+- The Mini Player swings with the player sword sweep, fires with the bow sound, and its hurt
+  and death sounds are a higher player hurt and a higher villager death.
+- The Quokka's death sound is the villager death.
+- The Gremlin's Snack Thief uses the eating sound.
+- New sounds for the Nightfox, Baby Dragon, Mini Player and Direwolf voices and abilities,
+  the T-Rex leap, the Gremlin's hurt, the meteor impact, and the charm's summon and revive.
+- A companion levelling up now finishes with the experience orb chime.
+
+### Fixed
+
+- Gremlin and Quokka animations failed to load, which crashed the client whenever one
+  was rendered, including the spawn eggs in any item list.
+
 ### Other
 
 - In-game guide through Oracle Index.
