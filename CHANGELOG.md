@@ -91,6 +91,11 @@
 
 - Gremlin and Quokka animations failed to load, which crashed the client whenever one
   was rendered, including the spawn eggs in any item list.
+- No companion ever played its attack, leap, dig, shoot, hurt, spawn or petting animation;
+  each one was cut off on its first frame. They now play in full.
+- The Oracle Index guide showed `oracle_index.title.kindredspirits` instead of the mod name.
+- Ability descriptions in the charm's Abilities popup ran off the screen as one long line;
+  they now wrap.
 
 ### Other
 
