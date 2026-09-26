@@ -17,13 +17,18 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.util.Mth;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -93,6 +98,9 @@ public class KindredCharmScreen extends Screen {
 
     private static final int REFRESH_INTERVAL = 20;
     private static final int MAX_SKIN_LENGTH = 16;
+    private static final int PORTRAIT_SCALE = 42;
+    private static final float PORTRAIT_REST_YAW = 25.0f;
+    private static final float PORTRAIT_DRAG_SPEED = 2.0f;
 
     private CharmView view;
     private int refreshTimer;
@@ -103,6 +111,8 @@ public class KindredCharmScreen extends Screen {
     private int left;
     private int top;
     private int panelHeight;
+    private float portraitYaw = PORTRAIT_REST_YAW;
+    private boolean draggingPortrait;
 
     private Button summonButton;
     private Button dismissButton;
@@ -426,8 +436,7 @@ public class KindredCharmScreen extends Screen {
 
         CompanionEntity entity = this.displayEntity();
         if (entity != null) {
-            InventoryScreen.extractEntityInInventoryFollowsMouse(graphics, x0 + 2, y0 + 2, x1 - 2, y1 - 2,
-                    42, 0.0f, mouseX, mouseY, entity);
+            this.renderPortraitEntity(graphics, x0 + 2, y0 + 2, x1 - 2, y1 - 2, entity);
         }
 
         graphics.text(this.font, Component.translatable(this.view.present()
@@ -436,6 +445,30 @@ public class KindredCharmScreen extends Screen {
                 x0, this.top + this.lowerY(STATE_Y), COLOUR_LABEL);
 
         this.renderEquipment(graphics, x0, this.top + this.lowerY(EQUIPMENT_Y), mouseX, mouseY);
+    }
+
+    private void renderPortraitEntity(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, CompanionEntity entity) {
+        EntityRenderState state = this.minecraft.getEntityRenderDispatcher().getRenderer(entity).createRenderState(entity, 1.0f);
+        state.shadowPieces.clear();
+        state.outlineColor = 0;
+        if (state instanceof LivingEntityRenderState living) {
+            living.bodyRot = 180.0f + this.portraitYaw;
+            living.yRot = 0.0f;
+            living.xRot = 0.0f;
+            living.boundingBoxWidth = living.boundingBoxWidth / living.scale;
+            living.boundingBoxHeight = living.boundingBoxHeight / living.scale;
+            living.scale = 1.0f;
+        }
+
+        Vector3f translation = new Vector3f(0.0f, state.boundingBoxHeight / 2.0f, 0.0f);
+        graphics.entity(state, PORTRAIT_SCALE, translation, new Quaternionf().rotateZ((float) Math.PI), new Quaternionf(),
+                x0, y0, x1, y1);
+    }
+
+    private boolean overPortrait(double x, double y) {
+        int x0 = this.left + PAD;
+        int y0 = this.top + CONTENT_Y;
+        return x >= x0 && x < x0 + PORTRAIT_WIDTH && y >= y0 && y < this.top + this.portraitBottom();
     }
 
     private void renderEquipment(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
@@ -552,6 +585,37 @@ public class KindredCharmScreen extends Screen {
 
     private String localName() {
         return this.minecraft == null ? "" : this.minecraft.getGameProfile().name();
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (this.popup == null && event.button() == InputConstants.MOUSE_BUTTON_LEFT && this.overPortrait(event.x(), event.y())) {
+            this.setFocused(null);
+            if (doubleClick) {
+                this.portraitYaw = PORTRAIT_REST_YAW;
+            }
+            this.draggingPortrait = true;
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (this.draggingPortrait) {
+            this.portraitYaw = Mth.wrapDegrees(this.portraitYaw + (float) dx * PORTRAIT_DRAG_SPEED);
+            return true;
+        }
+        return super.mouseDragged(event, dx, dy);
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (this.draggingPortrait) {
+            this.draggingPortrait = false;
+            return true;
+        }
+        return super.mouseReleased(event);
     }
 
     @Override

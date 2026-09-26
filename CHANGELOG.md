@@ -38,6 +38,7 @@
 
 - Companions gain half of the experience their owner picks up, with a saturation limit
   that resets when you move 3 chunks, and rested experience after 5 idle minutes.
+- Experience from Bottles o' Enchanting is not shared with companions.
 - Armour and speed now grow with level alongside health and attack.
 - Prestige at level 30 for a star (up to 5). Stars raise growth and add attributes.
 
@@ -71,6 +72,8 @@
 - Stats panel on the left showing current and base values.
 - Abilities panel on the right with per-ability toggles.
 - Equipment row with a remove button, Prestige button at level 30, active ability button.
+- The portrait holds still instead of following the cursor. Drag it to turn the
+  companion, double-click to reset.
 
 ### Commands
 

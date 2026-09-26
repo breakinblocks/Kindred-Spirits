@@ -5,11 +5,14 @@ import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownExperienceBottle;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerXpEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
@@ -18,6 +21,7 @@ import java.util.Optional;
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class CompanionProgressEvents {
     private static final int GUARD_INTERVAL = 20;
+    private static final double BOTTLE_REACH = 2.0;
     private static final AttributeModifier BOND_GUARD = new AttributeModifier(
             KindredSpirits.id("bond_guard"), CompanionBondMath.GUARD_ARMOUR, AttributeModifier.Operation.ADD_VALUE);
 
@@ -55,8 +59,32 @@ public final class CompanionProgressEvents {
     }
 
     @SubscribeEvent
+    public static void onEntityJoin(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide() || !(event.getEntity() instanceof ExperienceOrb orb)) {
+            return;
+        }
+
+        if (!event.getLevel().getEntitiesOfClass(ThrownExperienceBottle.class, orb.getBoundingBox().inflate(BOTTLE_REACH),
+                bottle -> !bottle.isRemoved()).isEmpty()) {
+            orb.setData(KindredAttachments.BOTTLE_XP, true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPickupExperience(PlayerXpEvent.PickupXp event) {
+        if (event.getEntity() instanceof ServerPlayer player && event.getOrb().getData(KindredAttachments.BOTTLE_XP)) {
+            player.setData(KindredAttachments.BOTTLE_XP_PICKUP, player.level().getGameTime());
+        }
+    }
+
+    @SubscribeEvent
     public static void onExperienceChange(PlayerXpEvent.XpChange event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || event.getAmount() <= 0) {
+            return;
+        }
+
+        if (player.getData(KindredAttachments.BOTTLE_XP_PICKUP) == player.level().getGameTime()) {
+            player.setData(KindredAttachments.BOTTLE_XP_PICKUP, -1L);
             return;
         }
 

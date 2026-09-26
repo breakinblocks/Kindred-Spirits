@@ -153,6 +153,12 @@ public final class KindredAttachments {
     public static final Supplier<AttachmentType<Long>> SNACK_SCALE = ATTACHMENT_TYPES.register(
             "snack_scale", () -> AttachmentType.builder(() -> 0L).build());
 
+    public static final Supplier<AttachmentType<Boolean>> BOTTLE_XP = ATTACHMENT_TYPES.register(
+            "bottle_xp", () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL.fieldOf("bottle")).build());
+
+    public static final Supplier<AttachmentType<Long>> BOTTLE_XP_PICKUP = ATTACHMENT_TYPES.register(
+            "bottle_xp_pickup", () -> AttachmentType.builder(() -> -1L).build());
+
     public static final Supplier<AttachmentType<Optional<UUID>>> RABBIT_FED_BY = ATTACHMENT_TYPES.register(
             "rabbit_fed_by", () -> AttachmentType.<Optional<UUID>>builder(() -> Optional.empty())
                     .serialize(UUIDUtil.CODEC.optionalFieldOf("player"))
