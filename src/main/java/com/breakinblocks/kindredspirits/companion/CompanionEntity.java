@@ -1840,7 +1840,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         addTriggerable(action, CompanionAnimations.INTERACT, INTERACT);
 
         controllers.add(new AnimationController<CompanionEntity>(MAIN_CONTROLLER, 5, this::animateMain));
-        controllers.add(action.receiveTriggeredAnimations());
+        controllers.add(action);
     }
 
     private void addTriggerable(AnimationController<CompanionEntity> controller, String name, RawAnimation animation) {

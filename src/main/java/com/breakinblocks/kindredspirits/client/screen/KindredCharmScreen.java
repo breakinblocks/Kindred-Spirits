@@ -86,6 +86,7 @@ public class KindredCharmScreen extends Screen {
     private static final int ABILITY_ROW_HEIGHT = 22;
     private static final int TOGGLE_WIDTH = 32;
     private static final int TOGGLE_HEIGHT = 14;
+    private static final int TOOLTIP_WIDTH = 200;
     private static final int SCROLL_STEP = ABILITY_ROW_HEIGHT;
     private static final int COLOUR_BOOSTED = 0xFF7FD46B;
     private static final int COLOUR_POPUP_BACKDROP = 0xA0000000;
@@ -912,7 +913,7 @@ public class KindredCharmScreen extends Screen {
                 graphics.text(font, requirement, requirementRight - font.width(requirement), y + textY, COLOUR_LABEL);
 
                 if (mouseX >= x && mouseX < requirementRight && mouseY >= y && mouseY < y + ABILITY_ROW_HEIGHT) {
-                    graphics.setTooltipForNextFrame(font, ability.description(), mouseX, mouseY);
+                    graphics.setTooltipForNextFrame(font, font.split(ability.description(), TOOLTIP_WIDTH), mouseX, mouseY);
                 }
 
                 y += ABILITY_ROW_HEIGHT;
