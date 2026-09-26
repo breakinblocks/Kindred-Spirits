@@ -93,7 +93,7 @@ public final class KindredCommands {
     }
 
     private static int withCompanion(CommandSourceStack source, ToIntBiFunction<ServerPlayer, CompanionEntity> body) {
-        return withPlayer(source, player -> CompanionEntity.nearestOwned(player, SEARCH_RANGE)
+        return withPlayer(source, player -> CompanionEntity.bondedNear(player, SEARCH_RANGE)
                 .map(companion -> body.applyAsInt(player, companion))
                 .orElseGet(() -> {
                     source.sendFailure(Component.translatable("command.kindredspirits.no_companion"));

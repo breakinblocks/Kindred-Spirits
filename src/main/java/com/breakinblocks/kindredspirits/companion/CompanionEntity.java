@@ -1108,13 +1108,6 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                 this.getDisplayName(), command.displayName()));
     }
 
-    public static Optional<CompanionEntity> nearestOwned(Player player, double range) {
-        return player.level().getEntitiesOfClass(CompanionEntity.class,
-                        player.getBoundingBox().inflate(range),
-                        companion -> companion.isTame() && companion.isOwnedBy(player)).stream()
-                .min(Comparator.comparingDouble(companion -> companion.distanceToSqr(player)));
-    }
-
     public static Optional<CompanionEntity> bondedNear(Player player, double range) {
         return player.level().getEntitiesOfClass(CompanionEntity.class, player.getBoundingBox().inflate(range),
                         companion -> companion.isAlive() && companion.isBonded() && companion.isOwnedBy(player)

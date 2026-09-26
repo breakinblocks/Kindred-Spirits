@@ -96,6 +96,9 @@
 - The Oracle Index guide showed `oracle_index.title.kindredspirits` instead of the mod name.
 - Ability descriptions in the charm's Abilities popup ran off the screen as one long line;
   they now wrap.
+- The Cycle Companion Orders key and `/kindredspirits info`, `xp` and `bond` acted on the
+  nearest companion you own rather than your bonded one.
+- Breaking a Wisplight light showed missing-texture particles.
 
 ### Other
 

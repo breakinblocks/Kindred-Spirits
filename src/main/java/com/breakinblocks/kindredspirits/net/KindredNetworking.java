@@ -152,7 +152,7 @@ public final class KindredNetworking {
         public static void handleOnServer(CycleCommandPayload payload, IPayloadContext context) {
             context.enqueueWork(() -> {
                 if (context.player() instanceof ServerPlayer player) {
-                    CompanionEntity.nearestOwned(player, COMMAND_RANGE)
+                    CompanionEntity.bondedNear(player, COMMAND_RANGE)
                             .ifPresent(companion -> companion.cycleCommandBy(player));
                 }
             });

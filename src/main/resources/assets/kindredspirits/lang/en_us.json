@@ -68,7 +68,7 @@
   "command.kindredspirits.mode.stay": "Stay",
   "command.kindredspirits.mode.wander": "Wander",
   "command.kindredspirits.player_only": "This command has to be run by a player.",
-  "command.kindredspirits.no_companion": "No companion of yours is nearby.",
+  "command.kindredspirits.no_companion": "Your bonded companion is not nearby.",
   "command.kindredspirits.info": "%s - level %s (%s stars), %s/%s xp, bond %s (%s/%s), saturation %s, rested %s, gear %s, abilities: %s",
   "command.kindredspirits.xp_granted": "Granted %s experience to %s, now level %s",
   "command.kindredspirits.bond_granted": "Granted %s bond points to %s, now bond level %s",
