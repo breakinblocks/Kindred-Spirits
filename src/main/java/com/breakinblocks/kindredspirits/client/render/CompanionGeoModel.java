@@ -13,7 +13,8 @@ class CompanionGeoModel extends DefaultedEntityGeoModel<CompanionEntity> {
 
     @Override
     public final Identifier getTextureResource(GeoRenderState state) {
-        return CompanionSkins.skinned(this.baseTexture(state), state.getOrDefaultGeckolibData(CompanionRenderer.SKIN, ""));
+        return CompanionSkins.skinned(
+                this.baseTexture(state), state.getOrDefaultGeckolibData(CompanionRenderer.SKIN, ""));
     }
 
     protected Identifier baseTexture(GeoRenderState state) {

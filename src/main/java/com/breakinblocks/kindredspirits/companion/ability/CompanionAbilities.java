@@ -1,6 +1,5 @@
 package com.breakinblocks.kindredspirits.companion.ability;
 
-import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionAnimations;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
@@ -12,18 +11,27 @@ import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredBlocks;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
+import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import com.breakinblocks.kindredspirits.registry.KindredTags;
 import com.breakinblocks.kindredspirits.util.BlockPosUtil;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -48,15 +56,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.Tags;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-
 public final class CompanionAbilities {
     private static final Map<Identifier, CompanionAbility> REGISTRY = new LinkedHashMap<>();
     private static final double OWNER_RANGE_SQR = 144.0;
@@ -65,87 +64,111 @@ public final class CompanionAbilities {
     private static final double OWNER_RANGE_SHORT_SQR = 64.0;
     private static final double OWNER_RANGE_FIRE_SQR = 100.0;
 
-    public static final CompanionAbility BRIGHTER_SIDE = register(new SimpleAbility(KindredSpirits.id("brighter_side"), 100,
-            (companion, owner) -> {
+    public static final CompanionAbility BRIGHTER_SIDE =
+            register(new SimpleAbility(KindredSpirits.id("brighter_side"), 100, (companion, owner) -> {
                 if (ownerEffect(companion, owner, OWNER_RANGE_LONG_SQR, MobEffects.LUCK, 120, 0))
                     companion.burst(KindredParticles.HAPPY_BLOOM.get(), 1);
             }));
-    public static final CompanionAbility SMILE = register(new SimpleAbility(KindredSpirits.id("smile"), 20,
-            com.breakinblocks.kindredspirits.companion.QuokkaSupport::smile));
-    public static final CompanionAbility ALWAYS_HAPPY = register(new SimpleAbility(KindredSpirits.id("always_happy"), 20,
-            com.breakinblocks.kindredspirits.companion.QuokkaSupport::breed));
+    public static final CompanionAbility SMILE = register(new SimpleAbility(
+            KindredSpirits.id("smile"), 20, com.breakinblocks.kindredspirits.companion.QuokkaSupport::smile));
+    public static final CompanionAbility ALWAYS_HAPPY = register(new SimpleAbility(
+            KindredSpirits.id("always_happy"), 20, com.breakinblocks.kindredspirits.companion.QuokkaSupport::breed));
 
-    public static final CompanionAbility SWIFT_STEP = register(new SimpleAbility(KindredSpirits.id("swift_step"), 40,
-            (companion, owner) -> ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.SPEED, 60,
+    public static final CompanionAbility SWIFT_STEP = register(new SimpleAbility(
+            KindredSpirits.id("swift_step"),
+            40,
+            (companion, owner) -> ownerEffect(
+                    companion,
+                    owner,
+                    OWNER_RANGE_SQR,
+                    MobEffects.SPEED,
+                    60,
                     companion.hasEquipment(KindredItems.RUNNING_SHOES.get()) ? 1 : 0)));
 
-    public static final CompanionAbility MENDING_PRESENCE = register(new SimpleAbility(KindredSpirits.id("mending_presence"), 200,
-            (companion, owner) -> {
+    public static final CompanionAbility MENDING_PRESENCE =
+            register(new SimpleAbility(KindredSpirits.id("mending_presence"), 200, (companion, owner) -> {
                 if (companion.ownerWithin(owner, OWNER_RANGE_SHORT_SQR) && owner.getHealth() < owner.getMaxHealth()) {
                     owner.heal(1.0f);
                 }
             }));
 
-    public static final CompanionAbility NIGHT_WARD = register(new SimpleAbility(KindredSpirits.id("night_ward"), 40,
-            (companion, owner) -> {
+    public static final CompanionAbility NIGHT_WARD =
+            register(new SimpleAbility(KindredSpirits.id("night_ward"), 40, (companion, owner) -> {
                 if (companion.ownerWithin(owner, OWNER_RANGE_FIRE_SQR) && owner.isOnFire()) {
                     owner.clearFire();
                 }
             }));
 
-    public static final CompanionAbility KINDLED_VIGOUR = register(new SimpleAbility(KindredSpirits.id("kindled_vigour"), 100,
-            (companion, owner) -> {
+    public static final CompanionAbility KINDLED_VIGOUR =
+            register(new SimpleAbility(KindredSpirits.id("kindled_vigour"), 100, (companion, owner) -> {
                 if (companion.getHealth() < companion.getMaxHealth()) {
                     companion.heal(1.0f);
                 }
             }));
 
-    public static final CompanionAbility SHADOW_BALL = register(new ShadowBallAbility(KindredSpirits.id("shadow_ball")));
+    public static final CompanionAbility SHADOW_BALL =
+            register(new ShadowBallAbility(KindredSpirits.id("shadow_ball")));
 
-    public static final CompanionAbility SAVAGE_LEAP = register(new SavageLeapAbility(KindredSpirits.id("savage_leap")));
+    public static final CompanionAbility SAVAGE_LEAP =
+            register(new SavageLeapAbility(KindredSpirits.id("savage_leap")));
 
-    public static final CompanionAbility CRUSHING_MIGHT = register(new SimpleAbility(KindredSpirits.id("crushing_might"), 100,
-            (companion, owner) -> {
+    public static final CompanionAbility CRUSHING_MIGHT =
+            register(new SimpleAbility(KindredSpirits.id("crushing_might"), 100, (companion, owner) -> {
                 if (companion.level() instanceof ServerLevel level
-                        && OreCrushing.crushAround(level, companion, CRUSHING_RADIUS, KindredConfig.COMMON.crushingMightDust.get()) > 0) {
+                        && OreCrushing.crushAround(
+                                        level, companion, CRUSHING_RADIUS, KindredConfig.COMMON.crushingMightDust.get())
+                                > 0) {
                     companion.burst(KindredParticles.CRUSHING_MIGHT.get(), 1);
                     companion.playSound(KindredSounds.TREX_CRUSH.get(), 0.6f, 1.0f);
                 }
             }));
 
-    public static final CompanionAbility DRAGON_BREATH = register(new DragonBreathAbility(KindredSpirits.id("dragon_breath")));
+    public static final CompanionAbility DRAGON_BREATH =
+            register(new DragonBreathAbility(KindredSpirits.id("dragon_breath")));
 
-    public static final CompanionAbility FORGE_DRAFT = register(new ForgeDraftAbility(KindredSpirits.id("forge_draft")));
+    public static final CompanionAbility FORGE_DRAFT =
+            register(new ForgeDraftAbility(KindredSpirits.id("forge_draft")));
 
     public static final CompanionAbility MIRROR_STRIKE =
             register(new MirrorStrikeAbility(KindredSpirits.id("mirror_strike")));
 
     public static final CompanionAbility ALPHA = register(new PassiveAbility(KindredSpirits.id("alpha"), List.of()));
 
-    public static final CompanionAbility ALPHA_BOOST = register(new PassiveAbility(KindredSpirits.id("alpha_boost"),
-            List.of(new AttributeBonus(Attributes.ATTACK_DAMAGE, new AttributeModifier(
-                    KindredSpirits.id("alpha_boost"), 0.15, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)))));
+    public static final CompanionAbility ALPHA_BOOST = register(new PassiveAbility(
+            KindredSpirits.id("alpha_boost"),
+            List.of(new AttributeBonus(
+                    Attributes.ATTACK_DAMAGE,
+                    new AttributeModifier(
+                            KindredSpirits.id("alpha_boost"),
+                            0.15,
+                            AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)))));
 
-    public static final CompanionAbility DRAGONFIRE = register(new PassiveAbility(KindredSpirits.id("dragonfire"), List.of()));
+    public static final CompanionAbility DRAGONFIRE =
+            register(new PassiveAbility(KindredSpirits.id("dragonfire"), List.of()));
 
-    public static final CompanionAbility EAT_THAT = register(new PassiveAbility(KindredSpirits.id("eat_that"), List.of()));
+    public static final CompanionAbility EAT_THAT =
+            register(new PassiveAbility(KindredSpirits.id("eat_that"), List.of()));
 
-    public static final CompanionAbility HELPING_HAND = register(new PassiveAbility(KindredSpirits.id("helping_hand"), List.of()));
+    public static final CompanionAbility HELPING_HAND =
+            register(new PassiveAbility(KindredSpirits.id("helping_hand"), List.of()));
 
     public static final CompanionAbility WISPLIGHT = register(new WisplightAbility(KindredSpirits.id("wisplight")));
 
-    public static final CompanionAbility NIGHT_LIGHT = register(new NightLightAbility(KindredSpirits.id("night_light")));
+    public static final CompanionAbility NIGHT_LIGHT =
+            register(new NightLightAbility(KindredSpirits.id("night_light")));
 
     public static final CompanionAbility XRAY_STOMP = register(new XrayStompAbility(KindredSpirits.id("xray_stomp")));
 
-    public static final CompanionAbility KILN_BREATH = register(new KilnBreathAbility(KindredSpirits.id("kiln_breath")));
+    public static final CompanionAbility KILN_BREATH =
+            register(new KilnBreathAbility(KindredSpirits.id("kiln_breath")));
 
-    public static final CompanionAbility FRIENDLY_FACE = register(ownerBuff("friendly_face", 600,
-            OWNER_RANGE_LONG_SQR, MobEffects.HERO_OF_THE_VILLAGE, 1200, 0));
+    public static final CompanionAbility FRIENDLY_FACE =
+            register(ownerBuff("friendly_face", 600, OWNER_RANGE_LONG_SQR, MobEffects.HERO_OF_THE_VILLAGE, 1200, 0));
 
     public static final CompanionAbility TINKER = register(new TinkerAbility(KindredSpirits.id("tinker")));
 
-    public static final CompanionAbility SNACK_THIEF = register(new SnackThiefAbility(KindredSpirits.id("snack_thief")));
+    public static final CompanionAbility SNACK_THIEF =
+            register(new SnackThiefAbility(KindredSpirits.id("snack_thief")));
 
     public static final CompanionAbility ENERGIZED_CHAOS =
             register(new EnergizedChaosAbility(KindredSpirits.id("energized_chaos")));
@@ -153,13 +176,14 @@ public final class CompanionAbilities {
     public static final CompanionAbility NOT_ANOTHER_HOLE =
             register(new NotAnotherHoleAbility(KindredSpirits.id("not_another_hole")));
 
-    public static final CompanionAbility BEST_FRIEND = register(new PassiveAbility(KindredSpirits.id("best_friend"), List.of()));
+    public static final CompanionAbility BEST_FRIEND =
+            register(new PassiveAbility(KindredSpirits.id("best_friend"), List.of()));
 
     public static final CompanionAbility LEADER_OF_THE_PACK =
             register(new LeaderOfThePackAbility(KindredSpirits.id("leader_of_the_pack")));
 
-    public static final CompanionAbility ONE_WITH_THE_NIGHT = register(new SimpleAbility(KindredSpirits.id("one_with_the_night"), 40,
-            (companion, owner) -> {
+    public static final CompanionAbility ONE_WITH_THE_NIGHT =
+            register(new SimpleAbility(KindredSpirits.id("one_with_the_night"), 40, (companion, owner) -> {
                 if (!ownerEffect(companion, owner, OWNER_RANGE_LONG_SQR, MobEffects.NIGHT_VISION, 400, 0)) {
                     return;
                 }
@@ -175,8 +199,13 @@ public final class CompanionAbilities {
         return BASE_BUFFS.contains(ability);
     }
 
-    public static boolean ownerEffect(CompanionEntity companion, @Nullable ServerPlayer owner, double rangeSqr,
-                                      Holder<MobEffect> effect, int duration, int amplifier) {
+    public static boolean ownerEffect(
+            CompanionEntity companion,
+            @Nullable ServerPlayer owner,
+            double rangeSqr,
+            Holder<MobEffect> effect,
+            int duration,
+            int amplifier) {
         if (!companion.ownerWithin(owner, rangeSqr)) {
             return false;
         }
@@ -185,16 +214,19 @@ public final class CompanionAbilities {
         return true;
     }
 
-    private static CompanionAbility ownerBuff(String path, int interval, double rangeSqr,
-                                              Holder<MobEffect> effect, int duration, int amplifier) {
-        return new SimpleAbility(KindredSpirits.id(path), interval,
+    private static CompanionAbility ownerBuff(
+            String path, int interval, double rangeSqr, Holder<MobEffect> effect, int duration, int amplifier) {
+        return new SimpleAbility(
+                KindredSpirits.id(path),
+                interval,
                 (companion, owner) -> ownerEffect(companion, owner, rangeSqr, effect, duration, amplifier));
     }
 
     private static @Nullable LivingEntity attackableTarget(CompanionEntity companion, double maxRangeSqr) {
         LivingEntity target = companion.getTarget();
 
-        if (target == null || !target.isAlive()
+        if (target == null
+                || !target.isAlive()
                 || companion.distanceToSqr(target) > maxRangeSqr
                 || !companion.hasLineOfSight(target)) {
             return null;
@@ -203,8 +235,15 @@ public final class CompanionAbilities {
         return target;
     }
 
-    private static void breathTrail(ServerLevel level, CompanionEntity companion, LivingEntity target,
-                                    ParticleOptions particle, int steps, int count, double spread, double speed) {
+    private static void breathTrail(
+            ServerLevel level,
+            CompanionEntity companion,
+            LivingEntity target,
+            ParticleOptions particle,
+            int steps,
+            int count,
+            double spread,
+            double speed) {
         Vec3 from = companion.getEyePosition();
         Vec3 step = target.getBoundingBox().getCenter().subtract(from).scale(1.0 / steps);
 
@@ -214,16 +253,31 @@ public final class CompanionAbilities {
         }
     }
 
-    public static void hitParticles(ServerLevel level, LivingEntity target, ParticleOptions particle, int count,
-                                    double height, double spread, double speed) {
-        level.sendParticles(particle, target.getX(), target.getY(height), target.getZ(),
-                count, spread, spread, spread, speed);
+    public static void hitParticles(
+            ServerLevel level,
+            LivingEntity target,
+            ParticleOptions particle,
+            int count,
+            double height,
+            double spread,
+            double speed) {
+        level.sendParticles(
+                particle, target.getX(), target.getY(height), target.getZ(), count, spread, spread, spread, speed);
     }
 
-    private static void breathStrike(ServerLevel level, CompanionEntity companion, LivingEntity target,
-                                     ParticleOptions trail, int trailSteps, int trailCount, double trailSpread,
-                                     double trailSpeed, ParticleOptions hit, int hitCount,
-                                     float damageMultiplier, Consumer<LivingEntity> onHit) {
+    private static void breathStrike(
+            ServerLevel level,
+            CompanionEntity companion,
+            LivingEntity target,
+            ParticleOptions trail,
+            int trailSteps,
+            int trailCount,
+            double trailSpread,
+            double trailSpeed,
+            ParticleOptions hit,
+            int hitCount,
+            float damageMultiplier,
+            Consumer<LivingEntity> onHit) {
         breathTrail(level, companion, target, trail, trailSteps, trailCount, trailSpread, trailSpeed);
         hitParticles(level, target, hit, hitCount, 0.5, 0.25, 0.02);
         companion.magicHurt(level, target, companion.attackDamage() * damageMultiplier);
@@ -272,15 +326,17 @@ public final class CompanionAbilities {
 
             LivingEntity target = attackableTarget(companion, MAX_RANGE_SQR);
 
-            if (target == null || !companion.onGround()
-                    || companion.distanceToSqr(target) < MIN_RANGE_SQR) {
+            if (target == null || !companion.onGround() || companion.distanceToSqr(target) < MIN_RANGE_SQR) {
                 return;
             }
 
             companion.setAbilityCooldown(this.id, COOLDOWN_TICKS);
             companion.faceInstantly(target);
-            companion.playAction(CompanionAnimations.JUMP_ATTACK,
-                    companion.species().sounds().specialAttack().get(), 1.0f, 1.0f);
+            companion.playAction(
+                    CompanionAnimations.JUMP_ATTACK,
+                    companion.species().sounds().specialAttack().get(),
+                    1.0f,
+                    1.0f);
 
             Vec3 leap = target.position().subtract(companion.position()).normalize();
             companion.setDeltaMovement(new Vec3(leap.x * 0.85, 0.45, leap.z * 0.85));
@@ -312,8 +368,18 @@ public final class CompanionAbilities {
             }
 
             companion.playSpecialAttack(0.8f, 1.6f);
-            breathStrike(level, companion, target, KindredParticles.SHADOW_FLAME.get(), TRAIL_STEPS, 2, 0.06, 0.0,
-                    KindredParticles.SHADOW_BURST.get(), 10, DAMAGE_MULTIPLIER,
+            breathStrike(
+                    level,
+                    companion,
+                    target,
+                    KindredParticles.SHADOW_FLAME.get(),
+                    TRAIL_STEPS,
+                    2,
+                    0.06,
+                    0.0,
+                    KindredParticles.SHADOW_BURST.get(),
+                    10,
+                    DAMAGE_MULTIPLIER,
                     hit -> hit.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 40, 0, false, true, true)));
         }
     }
@@ -329,7 +395,10 @@ public final class CompanionAbilities {
         private static final float CLOUD_RADIUS = 1.5f;
         private static final int CLOUD_TICKS = 100;
         private static final int CLOUD_WAIT = 5;
-        static ParticleOptions breathParticle() { return KindredParticles.DRAGON_FLAME.get(); }
+
+        static ParticleOptions breathParticle() {
+            return KindredParticles.DRAGON_FLAME.get();
+        }
 
         @Override
         public int intervalTicks() {
@@ -356,8 +425,19 @@ public final class CompanionAbilities {
                 return;
             }
 
-            breathStrike(level, companion, target, breathParticle(), TRAIL_STEPS, 3, 0.08, 0.01,
-                    breathParticle(), 8, DAMAGE_MULTIPLIER, hit -> {
+            breathStrike(
+                    level,
+                    companion,
+                    target,
+                    breathParticle(),
+                    TRAIL_STEPS,
+                    3,
+                    0.08,
+                    0.01,
+                    breathParticle(),
+                    8,
+                    DAMAGE_MULTIPLIER,
+                    hit -> {
                         hit.igniteForSeconds(FIRE_SECONDS);
                         spawnBreathCloud(level, companion, hit);
                     });
@@ -414,8 +494,16 @@ public final class CompanionAbilities {
                     AbstractFurnaceBlockEntity.serverTick(level, pos, state, furnace);
                 }
 
-                level.sendParticles(KindredParticles.FORGE_EMBER.get(),
-                        pos.getX() + 0.5, pos.getY() + 1.05, pos.getZ() + 0.5, 2, 0.15, 0.02, 0.15, 0.0);
+                level.sendParticles(
+                        KindredParticles.FORGE_EMBER.get(),
+                        pos.getX() + 0.5,
+                        pos.getY() + 1.05,
+                        pos.getZ() + 0.5,
+                        2,
+                        0.15,
+                        0.02,
+                        0.15,
+                        0.0);
             }
         }
     }
@@ -453,15 +541,25 @@ public final class CompanionAbilities {
                         companion.getRandom().nextInt(RADIUS * 2 + 1) - RADIUS,
                         companion.getRandom().nextInt(RADIUS * 2 + 1) - RADIUS);
 
-                if (!level.isLoaded(pos) || !level.getBlockState(pos).isAir()
+                if (!level.isLoaded(pos)
+                        || !level.getBlockState(pos).isAir()
                         || !level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)
                         || level.getBrightness(LightLayer.BLOCK, pos) > MAX_LIGHT) {
                     continue;
                 }
 
-                if (lights.place(level, this.id, pos, KindredBlocks.WISP_LIGHT.get().defaultBlockState(), MAX_WISPS)) {
-                    level.sendParticles(KindredParticles.SPIRIT_WISP.get(), pos.getX() + 0.5, pos.getY() + 0.3, pos.getZ() + 0.5,
-                            6, 0.2, 0.2, 0.2, 0.01);
+                if (lights.place(
+                        level, this.id, pos, KindredBlocks.WISP_LIGHT.get().defaultBlockState(), MAX_WISPS)) {
+                    level.sendParticles(
+                            KindredParticles.SPIRIT_WISP.get(),
+                            pos.getX() + 0.5,
+                            pos.getY() + 0.3,
+                            pos.getZ() + 0.5,
+                            6,
+                            0.2,
+                            0.2,
+                            0.2,
+                            0.01);
                     return;
                 }
             }
@@ -493,7 +591,8 @@ public final class CompanionAbilities {
 
             lights.sweep(level, this.id, pos.getCenter(), CompanionLights.NO_EXPIRY, MAX_DISTANCE);
             if (!lights.holds(this.id, pos)) {
-                lights.place(level, this.id, pos, Blocks.LIGHT.defaultBlockState().setValue(LightBlock.LEVEL, LEVEL), 1);
+                lights.place(
+                        level, this.id, pos, Blocks.LIGHT.defaultBlockState().setValue(LightBlock.LEVEL, LEVEL), 1);
             }
         }
     }
@@ -512,7 +611,8 @@ public final class CompanionAbilities {
         @Override
         public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
             if (!(companion.level() instanceof ServerLevel level)
-                    || !companion.ownerWithin(owner, OWNER_RANGE_SQR) || !companion.onGround()) {
+                    || !companion.ownerWithin(owner, OWNER_RANGE_SQR)
+                    || !companion.onGround()) {
                 return;
             }
 
@@ -549,7 +649,8 @@ public final class CompanionAbilities {
 
         @Override
         public boolean activate(CompanionEntity companion, ServerPlayer owner) {
-            if (!(companion.level() instanceof ServerLevel level) || !companion.isAbilityReady(this.id)
+            if (!(companion.level() instanceof ServerLevel level)
+                    || !companion.isAbilityReady(this.id)
                     || !companion.ownerWithin(owner, OWNER_RANGE_SQR)) {
                 return false;
             }
@@ -564,7 +665,8 @@ public final class CompanionAbilities {
                 }
 
                 SingleRecipeInput input = new SingleRecipeInput(stack);
-                Optional<RecipeHolder<SmeltingRecipe>> recipe = level.recipeAccess().getRecipeFor(RecipeType.SMELTING, input, level);
+                Optional<RecipeHolder<SmeltingRecipe>> recipe =
+                        level.recipeAccess().getRecipeFor(RecipeType.SMELTING, input, level);
                 if (recipe.isEmpty()) {
                     continue;
                 }
@@ -578,8 +680,11 @@ public final class CompanionAbilities {
                 ItemStack replacement = result.copyWithCount(Math.min(total, result.getMaxStackSize()));
                 inventory.setItem(slot, replacement);
 
-                for (int remaining = total - replacement.getCount(); remaining > 0; remaining -= result.getMaxStackSize()) {
-                    inventory.placeItemBackInInventory(result.copyWithCount(Math.min(remaining, result.getMaxStackSize())));
+                for (int remaining = total - replacement.getCount();
+                        remaining > 0;
+                        remaining -= result.getMaxStackSize()) {
+                    inventory.placeItemBackInInventory(
+                            result.copyWithCount(Math.min(remaining, result.getMaxStackSize())));
                 }
                 smelted += stack.getCount();
             }
@@ -593,14 +698,22 @@ public final class CompanionAbilities {
             companion.faceInstantly(owner);
             companion.playSpecialAttack(1.0f, 0.9f);
             breathTrail(level, companion, owner, DragonBreathAbility.breathParticle(), 10, 3, 0.1, 0.01);
-            level.sendParticles(KindredParticles.FORGE_EMBER.get(), owner.getX(), owner.getY(1.0), owner.getZ(), 20, 0.4, 0.5, 0.4, 0.02);
+            level.sendParticles(
+                    KindredParticles.FORGE_EMBER.get(),
+                    owner.getX(),
+                    owner.getY(1.0),
+                    owner.getZ(),
+                    20,
+                    0.4,
+                    0.5,
+                    0.4,
+                    0.02);
             owner.sendSystemMessage(Component.translatable("message.kindredspirits.kiln_smelted", smelted));
             return true;
         }
 
         @Override
-        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
-        }
+        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {}
     }
 
     private record TinkerAbility(Identifier id) implements CompanionAbility {
@@ -621,8 +734,8 @@ public final class CompanionAbilities {
                 return;
             }
 
-            BlockPos accelerated = CompanionTinkering.accelerateNearby(level, companion.blockPosition(),
-                    RADIUS, EXTRA_TICKS, companion.getRandom());
+            BlockPos accelerated = CompanionTinkering.accelerateNearby(
+                    level, companion.blockPosition(), RADIUS, EXTRA_TICKS, companion.getRandom());
 
             if (accelerated != null) {
                 CompanionTinkering.sparks(level, accelerated);
@@ -665,7 +778,8 @@ public final class CompanionAbilities {
             List<Integer> slots = new ArrayList<>();
 
             for (int slot = 0; slot < inventory.getNonEquipmentItems().size(); slot++) {
-                if (slot != inventory.getSelectedSlot() && inventory.getItem(slot).has(DataComponents.FOOD)) {
+                if (slot != inventory.getSelectedSlot()
+                        && inventory.getItem(slot).has(DataComponents.FOOD)) {
                     slots.add(slot);
                 }
             }
@@ -736,9 +850,11 @@ public final class CompanionAbilities {
             BlockPos pick = targets.get(companion.getRandom().nextInt(targets.size()));
             boolean deepslate = level.getBlockState(pick).is(Blocks.DEEPSLATE);
 
-            level.setBlockAndUpdate(pick, deepslate
-                    ? Blocks.DEEPSLATE_REDSTONE_ORE.defaultBlockState()
-                    : Blocks.REDSTONE_ORE.defaultBlockState());
+            level.setBlockAndUpdate(
+                    pick,
+                    deepslate
+                            ? Blocks.DEEPSLATE_REDSTONE_ORE.defaultBlockState()
+                            : Blocks.REDSTONE_ORE.defaultBlockState());
             companion.playSpecialAttack(0.8f, 1.4f);
             CompanionTinkering.sparks(level, pick);
         }
@@ -765,7 +881,8 @@ public final class CompanionAbilities {
 
         @Override
         public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
-            if (!(companion.level() instanceof ServerLevel level) || !companion.isAbilityReady(this.id)
+            if (!(companion.level() instanceof ServerLevel level)
+                    || !companion.isAbilityReady(this.id)
                     || !companion.isIdle()) {
                 return;
             }
@@ -793,16 +910,20 @@ public final class CompanionAbilities {
         @Override
         public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
             if (!(companion.level() instanceof ServerLevel level)
-                    || !ownerEffect(companion, owner, OWNER_RANGE_SHORT_SQR, MobEffects.RESISTANCE, RESISTANCE_TICKS, 1)) {
+                    || !ownerEffect(
+                            companion, owner, OWNER_RANGE_SHORT_SQR, MobEffects.RESISTANCE, RESISTANCE_TICKS, 1)) {
                 return;
             }
 
             companion.playSpecialAttack(1.0f, 0.8f);
             companion.burst(KindredParticles.PACK_CALL.get(), 12);
 
-            List<Integer> hostiles = level.getEntitiesOfClass(LivingEntity.class,
+            List<Integer> hostiles = level
+                    .getEntitiesOfClass(
+                            LivingEntity.class,
                             companion.getBoundingBox().inflate(GLOW_RADIUS),
-                            entity -> entity.isAlive() && CompanionEntity.isHostile(entity)).stream()
+                            entity -> entity.isAlive() && CompanionEntity.isHostile(entity))
+                    .stream()
                     .map(LivingEntity::getId)
                     .toList();
             if (!hostiles.isEmpty() && owner != null) {
@@ -818,8 +939,7 @@ public final class CompanionAbilities {
         }
 
         @Override
-        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
-        }
+        public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {}
     }
 
     private record SimpleAbility(Identifier id, int intervalTicks, Effect effect) implements CompanionAbility {
@@ -834,6 +954,5 @@ public final class CompanionAbilities {
         void apply(CompanionEntity companion, @Nullable ServerPlayer owner);
     }
 
-    private CompanionAbilities() {
-    }
+    private CompanionAbilities() {}
 }

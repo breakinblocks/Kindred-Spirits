@@ -31,7 +31,8 @@ public class BeachSuspiciousSandFeature extends Feature<NoneFeatureConfiguration
 
         WorldGenLevel level = context.level();
         BlockPos pos = context.origin().below(1 + context.random().nextInt(MAX_DEPTH));
-        if (!level.getBlockState(pos).is(Blocks.SAND) || !level.getBlockState(pos.below()).isSolid()) {
+        if (!level.getBlockState(pos).is(Blocks.SAND)
+                || !level.getBlockState(pos.below()).isSolid()) {
             return false;
         }
 

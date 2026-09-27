@@ -16,11 +16,18 @@ public final class KindredLootModifiers {
     public static final DeferredRegister<MapCodec<? extends IGlobalLootModifier>> TYPES =
             DeferredRegister.create(NeoForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS, KindredSpirits.MOD_ID);
     public static final MapCodec<TrexEgg> TREX_EGG = TrexEgg.CODEC;
-    static { TYPES.register("trex_egg", () -> TREX_EGG); }
+
+    static {
+        TYPES.register("trex_egg", () -> TREX_EGG);
+    }
 
     public static final class TrexEgg extends LootModifier {
-        private static final MapCodec<TrexEgg> CODEC = RecordCodecBuilder.mapCodec(i -> codecStart(i).apply(i, TrexEgg::new));
-        public TrexEgg(LootItemCondition[] conditions, int priority) { super(conditions, priority); }
+        private static final MapCodec<TrexEgg> CODEC =
+                RecordCodecBuilder.mapCodec(i -> codecStart(i).apply(i, TrexEgg::new));
+
+        public TrexEgg(LootItemCondition[] conditions, int priority) {
+            super(conditions, priority);
+        }
 
         @Override
         protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> loot, LootContext context) {
@@ -33,8 +40,10 @@ public final class KindredLootModifiers {
         }
 
         @Override
-        public MapCodec<? extends IGlobalLootModifier> codec() { return TREX_EGG; }
+        public MapCodec<? extends IGlobalLootModifier> codec() {
+            return TREX_EGG;
+        }
     }
 
-    private KindredLootModifiers() { }
+    private KindredLootModifiers() {}
 }

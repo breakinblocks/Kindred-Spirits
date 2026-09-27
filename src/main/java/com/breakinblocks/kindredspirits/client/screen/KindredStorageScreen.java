@@ -28,10 +28,28 @@ public class KindredStorageScreen extends AbstractContainerScreen<KindredStorage
         int x0 = (this.width - this.imageWidth) / 2;
         int y0 = (this.height - this.imageHeight) / 2;
 
-        graphics.blit(RenderPipelines.GUI_TEXTURED, CONTAINER_BACKGROUND, x0, y0,
-                0.0f, 0.0f, this.imageWidth, this.rows * 18 + 17, 256, 256);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, CONTAINER_BACKGROUND, x0, y0 + this.rows * 18 + 17,
-                0.0f, 126.0f, this.imageWidth, 96, 256, 256);
+        graphics.blit(
+                RenderPipelines.GUI_TEXTURED,
+                CONTAINER_BACKGROUND,
+                x0,
+                y0,
+                0.0f,
+                0.0f,
+                this.imageWidth,
+                this.rows * 18 + 17,
+                256,
+                256);
+        graphics.blit(
+                RenderPipelines.GUI_TEXTURED,
+                CONTAINER_BACKGROUND,
+                x0,
+                y0 + this.rows * 18 + 17,
+                0.0f,
+                126.0f,
+                this.imageWidth,
+                96,
+                256,
+                256);
 
         for (int index = this.menu.accessibleSlots(); index < this.rows * 9; index++) {
             int slotX = x0 + 8 + (index % 9) * 18;

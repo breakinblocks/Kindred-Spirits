@@ -1,11 +1,9 @@
 package com.breakinblocks.kindredspirits;
 
-import com.breakinblocks.kindredspirits.registry.KindredParticles;
-import com.breakinblocks.kindredspirits.registry.KindredLootModifiers;
-import com.breakinblocks.kindredspirits.companion.CompanionWorldData;
 import com.breakinblocks.kindredspirits.client.KindredSpiritsClient;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
+import com.breakinblocks.kindredspirits.companion.CompanionWorldData;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredBlocks;
@@ -13,7 +11,9 @@ import com.breakinblocks.kindredspirits.registry.KindredCreativeTabs;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredFeatures;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
+import com.breakinblocks.kindredspirits.registry.KindredLootModifiers;
 import com.breakinblocks.kindredspirits.registry.KindredMenus;
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import com.breakinblocks.kindredspirits.registry.KindredTriggers;
 import com.mojang.logging.LogUtils;
@@ -67,13 +67,15 @@ public class KindredSpirits {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> LOGGER.debug("Kindred Spirits loaded {} companion species", CompanionSpecies.values().length));
+        event.enqueueWork(
+                () -> LOGGER.debug("Kindred Spirits loaded {} companion species", CompanionSpecies.values().length));
     }
 
     private void createAttributes(EntityAttributeCreationEvent event) {
         for (CompanionSpecies species : CompanionSpecies.values()) {
-            event.put(KindredEntities.type(species), CompanionEntity.createCompanionAttributes(species).build());
+            event.put(
+                    KindredEntities.type(species),
+                    CompanionEntity.createCompanionAttributes(species).build());
         }
     }
-
 }

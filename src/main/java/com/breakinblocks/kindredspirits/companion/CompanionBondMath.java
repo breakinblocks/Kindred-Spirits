@@ -22,8 +22,8 @@ public final class CompanionBondMath {
         }
 
         // Reserve room for every configured level, even at extreme growth rates.
-        double cost = KindredConfig.COMMON.bondBaseCost.get()
-                * Math.pow(KindredConfig.COMMON.bondGrowth.get(), level - 1);
+        double cost =
+                KindredConfig.COMMON.bondBaseCost.get() * Math.pow(KindredConfig.COMMON.bondGrowth.get(), level - 1);
         return (int) Math.clamp(Math.round(cost), 1L, Integer.MAX_VALUE / maxLevel());
     }
 
@@ -118,6 +118,5 @@ public final class CompanionBondMath {
         return KindredConfig.COMMON.afkSeconds.get() * 20;
     }
 
-    private CompanionBondMath() {
-    }
+    private CompanionBondMath() {}
 }

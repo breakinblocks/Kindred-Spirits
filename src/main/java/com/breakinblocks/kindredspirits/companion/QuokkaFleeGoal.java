@@ -14,16 +14,19 @@ final class QuokkaFleeGoal extends PanicGoal {
     }
 
     @Override
-    protected boolean shouldPanic() { return this.companion.isQuokkaFleeing(); }
+    protected boolean shouldPanic() {
+        return this.companion.isQuokkaFleeing();
+    }
 
     @Override
-    public boolean canContinueToUse() { return this.shouldPanic() && super.canContinueToUse(); }
+    public boolean canContinueToUse() {
+        return this.shouldPanic() && super.canContinueToUse();
+    }
 
     @Override
     protected boolean findRandomPosition() {
         var attacker = this.companion.getLastHurtByMob();
-        Vec3 away = attacker == null ? null
-                : DefaultRandomPos.getPosAway(this.companion, 10, 4, attacker.position());
+        Vec3 away = attacker == null ? null : DefaultRandomPos.getPosAway(this.companion, 10, 4, attacker.position());
         if (away == null) return super.findRandomPosition();
         this.posX = away.x;
         this.posY = away.y;

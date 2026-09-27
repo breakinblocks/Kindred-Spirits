@@ -2,6 +2,8 @@ package com.breakinblocks.kindredspirits.companion;
 
 import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.util.BlockPosUtil;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -10,14 +12,11 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public final class CompanionTinkering {
     private static final int SPARK_COUNT = 8;
 
-    public static @Nullable BlockPos accelerateNearby(ServerLevel level, BlockPos center, int radius,
-                                                      int extraTicks, RandomSource random) {
+    public static @Nullable BlockPos accelerateNearby(
+            ServerLevel level, BlockPos center, int radius, int extraTicks, RandomSource random) {
         List<BlockPos> targets = new ArrayList<>();
 
         for (BlockPos pos : BlockPosUtil.cube(center, radius)) {
@@ -57,10 +56,17 @@ public final class CompanionTinkering {
     }
 
     public static void sparks(ServerLevel level, BlockPos pos) {
-        level.sendParticles(KindredParticles.GREMLIN_SPARK.get(),
-                pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, SPARK_COUNT, 0.3, 0.3, 0.3, 0.05);
+        level.sendParticles(
+                KindredParticles.GREMLIN_SPARK.get(),
+                pos.getX() + 0.5,
+                pos.getY() + 0.6,
+                pos.getZ() + 0.5,
+                SPARK_COUNT,
+                0.3,
+                0.3,
+                0.3,
+                0.05);
     }
 
-    private CompanionTinkering() {
-    }
+    private CompanionTinkering() {}
 }

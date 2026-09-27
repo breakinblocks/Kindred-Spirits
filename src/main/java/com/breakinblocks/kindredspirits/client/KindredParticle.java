@@ -11,8 +11,16 @@ public final class KindredParticle extends SingleQuadParticle {
     private final SpriteSet sprites;
     private final boolean emissive;
 
-    private KindredParticle(ClientLevel level, double x, double y, double z, double dx, double dy, double dz,
-                            SpriteSet sprites, KindredParticles.Effect effect) {
+    private KindredParticle(
+            ClientLevel level,
+            double x,
+            double y,
+            double z,
+            double dx,
+            double dy,
+            double dz,
+            SpriteSet sprites,
+            KindredParticles.Effect effect) {
         super(level, x, y, z, sprites.first());
         this.sprites = sprites;
         this.emissive = effect.emissive();
@@ -26,7 +34,9 @@ public final class KindredParticle extends SingleQuadParticle {
     }
 
     @Override
-    public Layer getLayer() { return Layer.TRANSLUCENT; }
+    public Layer getLayer() {
+        return Layer.TRANSLUCENT;
+    }
 
     @Override
     public void tick() {
@@ -43,8 +53,9 @@ public final class KindredParticle extends SingleQuadParticle {
 
     public static void register(RegisterParticleProvidersEvent event) {
         for (var effect : KindredParticles.effects()) {
-            event.registerSpriteSet(effect.type().get(), sprites ->
-                    (options, level, x, y, z, dx, dy, dz, random) ->
+            event.registerSpriteSet(
+                    effect.type().get(),
+                    sprites -> (options, level, x, y, z, dx, dy, dz, random) ->
                             new KindredParticle(level, x, y, z, dx, dy, dz, sprites, effect));
         }
     }

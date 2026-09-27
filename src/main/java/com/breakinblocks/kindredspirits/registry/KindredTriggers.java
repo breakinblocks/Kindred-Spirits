@@ -14,6 +14,5 @@ public final class KindredTriggers {
     public static final DeferredHolder<CriterionTrigger<?>, CompanionTrigger> COMPANION =
             TRIGGERS.register("companion", CompanionTrigger::new);
 
-    private KindredTriggers() {
-    }
+    private KindredTriggers() {}
 }

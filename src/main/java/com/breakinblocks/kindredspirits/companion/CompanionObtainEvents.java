@@ -1,13 +1,15 @@
 package com.breakinblocks.kindredspirits.companion;
 
-import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
+import java.util.Optional;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -24,15 +26,12 @@ import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import org.jspecify.annotations.Nullable;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
-
-import java.util.Optional;
-import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class CompanionObtainEvents {
@@ -46,12 +45,12 @@ public final class CompanionObtainEvents {
     private static final int GREMLIN_HOUR_START = 18000;
     private static final int GREMLIN_HOUR_END = 23000;
 
-    private CompanionObtainEvents() {
-    }
+    private CompanionObtainEvents() {}
 
     @SubscribeEvent
     public static void onNeighborNotify(BlockEvent.NeighborNotifyEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel level) || !event.getState().is(Blocks.LAVA)) {
+        if (!(event.getLevel() instanceof ServerLevel level)
+                || !event.getState().is(Blocks.LAVA)) {
             return;
         }
 
@@ -66,11 +65,15 @@ public final class CompanionObtainEvents {
     }
 
     private static void hatchDragonEgg(ServerLevel level, BlockPos eggPos) {
-        CompanionEntity dragon = CompanionSpawns.spawnWild(level, CompanionSpecies.BABY_DRAGON,
-                eggPos.getCenter(), level.getRandom().nextFloat() * 360.0f);
+        CompanionEntity dragon = CompanionSpawns.spawnWild(
+                level,
+                CompanionSpecies.BABY_DRAGON,
+                eggPos.getCenter(),
+                level.getRandom().nextFloat() * 360.0f);
         if (dragon != null) {
             level.destroyBlock(eggPos, false);
-            dragon.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, HATCH_FIRE_IMMUNITY_TICKS, 0, false, false, true));
+            dragon.addEffect(new MobEffectInstance(
+                    MobEffects.FIRE_RESISTANCE, HATCH_FIRE_IMMUNITY_TICKS, 0, false, false, true));
             dragon.burst(KindredParticles.METEOR_BURST.get(), HATCH_PARTICLES);
         }
     }
@@ -81,14 +84,15 @@ public final class CompanionObtainEvents {
             return;
         }
 
-        ItemStack egg = new ItemStack(KindredItems.spawnEggs().get(CompanionSpecies.MINI_PLAYER).get());
+        ItemStack egg = new ItemStack(
+                KindredItems.spawnEggs().get(CompanionSpecies.MINI_PLAYER).get());
         MerchantOffers offers = trader.getOffers();
         if (offers.stream().anyMatch(offer -> ItemStack.isSameItem(offer.getResult(), egg))) {
             return;
         }
 
-        offers.add(new MerchantOffer(new ItemCost(Items.EMERALD, TRADER_PRICE), egg,
-                TRADER_MAX_USES, TRADER_XP, TRADER_PRICE_MULTIPLIER));
+        offers.add(new MerchantOffer(
+                new ItemCost(Items.EMERALD, TRADER_PRICE), egg, TRADER_MAX_USES, TRADER_XP, TRADER_PRICE_MULTIPLIER));
     }
 
     @SubscribeEvent
@@ -138,14 +142,17 @@ public final class CompanionObtainEvents {
     private static void interactRabbit(PlayerInteractEvent.EntityInteract event, Rabbit rabbit, ItemStack stack) {
         if (stack.is(Items.CARROT)) {
             if (!event.getLevel().isClientSide()) {
-                rabbit.setData(KindredAttachments.RABBIT_FED_BY, Optional.of(event.getEntity().getUUID()));
+                rabbit.setData(
+                        KindredAttachments.RABBIT_FED_BY,
+                        Optional.of(event.getEntity().getUUID()));
             }
             return;
         }
 
         UUID fedBy = rabbit.getData(KindredAttachments.RABBIT_FED_BY).orElse(null);
 
-        if (!stack.is(Items.COOKED_CHICKEN) || !event.getEntity().getUUID().equals(fedBy)
+        if (!stack.is(Items.COOKED_CHICKEN)
+                || !event.getEntity().getUUID().equals(fedBy)
                 || !isWitchingHour(event.getLevel())) {
             return;
         }
@@ -158,8 +165,8 @@ public final class CompanionObtainEvents {
         return timeOfDay >= GREMLIN_HOUR_START && timeOfDay < GREMLIN_HOUR_END;
     }
 
-    private static @Nullable CompanionEntity transform(PlayerInteractEvent.EntityInteract event, Mob source,
-                                                       CompanionSpecies species, ParticleOptions particle) {
+    private static @Nullable CompanionEntity transform(
+            PlayerInteractEvent.EntityInteract event, Mob source, CompanionSpecies species, ParticleOptions particle) {
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
 

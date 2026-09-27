@@ -8,7 +8,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 
 public final class KindredTags {
-    public static final TagKey<Item> COMPANION_FOOD = TagKey.create(Registries.ITEM, KindredSpirits.id("companion_food"));
+    public static final TagKey<Item> COMPANION_FOOD =
+            TagKey.create(Registries.ITEM, KindredSpirits.id("companion_food"));
 
     public static final TagKey<Item> COMPANION_HEALING =
             TagKey.create(Registries.ITEM, KindredSpirits.id("companion_healing"));
@@ -22,6 +23,5 @@ public final class KindredTags {
     public static final TagKey<Block> DIREWOLF_DIGGABLE =
             TagKey.create(Registries.BLOCK, KindredSpirits.id("direwolf_diggable"));
 
-    private KindredTags() {
-    }
+    private KindredTags() {}
 }

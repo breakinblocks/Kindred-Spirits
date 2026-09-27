@@ -8,7 +8,9 @@ import net.minecraft.resources.Identifier;
 final class QuokkaGeoModel extends CompanionGeoModel {
     private static final Identifier SMILE = KindredSpirits.id("textures/entity/quokka_smile.png");
 
-    QuokkaGeoModel() { super(KindredSpirits.id("quokka")); }
+    QuokkaGeoModel() {
+        super(KindredSpirits.id("quokka"));
+    }
 
     @Override
     protected Identifier baseTexture(GeoRenderState state) {

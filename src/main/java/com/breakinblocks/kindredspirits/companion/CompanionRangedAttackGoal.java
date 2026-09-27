@@ -1,9 +1,8 @@
 package com.breakinblocks.kindredspirits.companion;
 
+import java.util.EnumSet;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
-
-import java.util.EnumSet;
 
 public class CompanionRangedAttackGoal extends Goal {
     private static final double PREFERRED_RANGE = 8.0;
@@ -31,7 +30,8 @@ public class CompanionRangedAttackGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return this.canUse() && this.companion.distanceToSqr(this.companion.getTarget()) < MAXIMUM_RANGE * MAXIMUM_RANGE;
+        return this.canUse()
+                && this.companion.distanceToSqr(this.companion.getTarget()) < MAXIMUM_RANGE * MAXIMUM_RANGE;
     }
 
     @Override

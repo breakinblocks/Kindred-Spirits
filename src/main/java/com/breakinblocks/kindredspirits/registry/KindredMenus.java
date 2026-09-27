@@ -15,6 +15,5 @@ public final class KindredMenus {
     public static final DeferredHolder<MenuType<?>, MenuType<KindredStorageMenu>> COMPANION_STORAGE =
             MENUS.register("companion_storage", () -> IMenuTypeExtension.create(KindredStorageMenu::client));
 
-    private KindredMenus() {
-    }
+    private KindredMenus() {}
 }

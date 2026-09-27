@@ -1,14 +1,13 @@
 package com.breakinblocks.kindredspirits.item;
 
 import com.breakinblocks.kindredspirits.companion.CompanionLevels.AttributeBonus;
+import java.util.List;
+import java.util.function.Consumer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
-
-import java.util.List;
-import java.util.function.Consumer;
 
 public class KindredEquipmentItem extends Item {
     private final List<AttributeBonus> bonuses;
@@ -23,8 +22,12 @@ public class KindredEquipmentItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display,
-                                Consumer<Component> builder, TooltipFlag flag) {
+    public void appendHoverText(
+            ItemStack stack,
+            TooltipContext context,
+            TooltipDisplay display,
+            Consumer<Component> builder,
+            TooltipFlag flag) {
         builder.accept(Component.translatable(this.descriptionId + ".desc"));
     }
 }

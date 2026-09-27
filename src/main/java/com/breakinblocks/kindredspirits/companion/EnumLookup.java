@@ -1,8 +1,7 @@
 package com.breakinblocks.kindredspirits.companion;
 
-import net.minecraft.util.StringRepresentable;
-
 import java.util.Optional;
+import net.minecraft.util.StringRepresentable;
 
 public final class EnumLookup {
     public static <E extends Enum<E>> E byOrdinal(E[] values, int ordinal) {
@@ -22,6 +21,5 @@ public final class EnumLookup {
         return Optional.empty();
     }
 
-    private EnumLookup() {
-    }
+    private EnumLookup() {}
 }

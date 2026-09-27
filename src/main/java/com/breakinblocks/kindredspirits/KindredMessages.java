@@ -8,6 +8,5 @@ public final class KindredMessages {
         player.sendSystemMessage(Component.translatable("message.kindredspirits." + key, args));
     }
 
-    private KindredMessages() {
-    }
+    private KindredMessages() {}
 }

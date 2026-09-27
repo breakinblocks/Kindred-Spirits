@@ -2,10 +2,9 @@ package com.breakinblocks.kindredspirits.client;
 
 import com.breakinblocks.kindredspirits.client.screen.KindredCharmScreen;
 import com.breakinblocks.kindredspirits.net.CharmView;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-
-import java.util.List;
 
 public final class KindredClientHooks {
 
@@ -31,6 +30,5 @@ public final class KindredClientHooks {
         PackGlowOverlay.show(entityIds, ticks);
     }
 
-    private KindredClientHooks() {
-    }
+    private KindredClientHooks() {}
 }

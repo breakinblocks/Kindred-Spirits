@@ -1,12 +1,11 @@
 package com.breakinblocks.kindredspirits.client;
 
-import net.minecraft.client.multiplayer.ClientLevel;
+import java.util.List;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
-
-import java.util.List;
 
 public final class OreRevealOverlay {
     private static final GizmoStyle STYLE = GizmoStyle.strokeAndFill(0xCCFFD24A, 1.5f, 0x30FFD24A);
@@ -41,6 +40,5 @@ public final class OreRevealOverlay {
         }
     }
 
-    private OreRevealOverlay() {
-    }
+    private OreRevealOverlay() {}
 }

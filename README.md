@@ -25,12 +25,14 @@ animations, stat curve and ability set.
 
 Output jar: `build/libs/kindredspirits-26.1.2-<version>.jar`
 
-Numbered development versions use `mod_version=1.0.0-SNAPSHOT.<n>` in
-`gradle.properties`; increment the final snapshot number for the next development
-build. These versions automatically publish to the BreakInBlocks snapshots Maven
-repository with `./gradlew publishMaven`, using `MAVEN_USER` and `MAVEN_TOKEN` from
-the environment. The Maven version includes the Minecraft prefix, for example
-`26.1.2-1.0.0-SNAPSHOT.<n>`; the in-game mod version is `1.0.0-SNAPSHOT.<n>`.
+Releases use a plain version, `mod_version=1.0.0` in `gradle.properties`, and
+publish to the BreakInBlocks releases Maven repository with `./gradlew publishMaven`,
+using `MAVEN_USER` and `MAVEN_TOKEN` from the environment. Development builds between
+releases use a numbered snapshot of the next version, for example
+`mod_version=1.0.1-SNAPSHOT.<n>`, which publishes to the snapshots repository instead;
+increment the final snapshot number for each development build. The Maven version
+includes the Minecraft prefix, for example `26.1.2-1.0.0`; the in-game mod version is
+`1.0.0`.
 
 Run the dev client with `./gradlew runClient`.
 

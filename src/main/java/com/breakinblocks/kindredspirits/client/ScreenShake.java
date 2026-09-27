@@ -38,12 +38,14 @@ public final class ScreenShake {
         }
 
         double fade = 1.0 - age / DURATION_TICKS;
-        float amount = (float) (STRENGTH_DEGREES * fade * fade * minecraft.options.screenEffectScale().get());
+        float amount = (float) (STRENGTH_DEGREES
+                * fade
+                * fade
+                * minecraft.options.screenEffectScale().get());
         event.setPitch(event.getPitch() + amount * (float) Math.sin(age * 2.9));
         event.setYaw(event.getYaw() + amount * 0.6f * (float) Math.sin(age * 2.3 + 1.0));
         event.setRoll(event.getRoll() + amount * 0.8f * (float) Math.sin(age * 3.7 + 2.0));
     }
 
-    private ScreenShake() {
-    }
+    private ScreenShake() {}
 }

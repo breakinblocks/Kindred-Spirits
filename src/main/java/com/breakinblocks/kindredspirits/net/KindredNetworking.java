@@ -1,17 +1,18 @@
 package com.breakinblocks.kindredspirits.net;
 
-import io.netty.handler.codec.DecoderException;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.KindredClientHooks;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
+import com.breakinblocks.kindredspirits.registry.KindredSounds;
+import io.netty.handler.codec.DecoderException;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
-import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -19,9 +20,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-
-import java.util.List;
-
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class KindredNetworking {
@@ -32,33 +30,20 @@ public final class KindredNetworking {
         var registrar = event.registrar("3");
 
         registrar.playToServer(
-                CycleCommandPayload.TYPE,
-                CycleCommandPayload.STREAM_CODEC,
-                CycleCommandPayload::handleOnServer);
+                CycleCommandPayload.TYPE, CycleCommandPayload.STREAM_CODEC, CycleCommandPayload::handleOnServer);
 
         registrar.playToClient(
                 CompanionLevelUpPayload.TYPE,
                 CompanionLevelUpPayload.STREAM_CODEC,
                 CompanionLevelUpPayload::handleOnClient);
 
-        registrar.playToClient(
-                CharmViewPayload.TYPE,
-                CharmViewPayload.STREAM_CODEC,
-                CharmViewPayload::handleOnClient);
+        registrar.playToClient(CharmViewPayload.TYPE, CharmViewPayload.STREAM_CODEC, CharmViewPayload::handleOnClient);
 
         registrar.playToServer(
-                CharmActionPayload.TYPE,
-                CharmActionPayload.STREAM_CODEC,
-                CharmActionPayload::handleOnServer);
+                CharmActionPayload.TYPE, CharmActionPayload.STREAM_CODEC, CharmActionPayload::handleOnServer);
 
-        registrar.playToClient(
-                OreRevealPayload.TYPE,
-                OreRevealPayload.STREAM_CODEC,
-                OreRevealPayload::handleOnClient);
-        registrar.playToClient(
-                PackGlowPayload.TYPE,
-                PackGlowPayload.STREAM_CODEC,
-                PackGlowPayload::handleOnClient);
+        registrar.playToClient(OreRevealPayload.TYPE, OreRevealPayload.STREAM_CODEC, OreRevealPayload::handleOnClient);
+        registrar.playToClient(PackGlowPayload.TYPE, PackGlowPayload.STREAM_CODEC, PackGlowPayload::handleOnClient);
     }
 
     public static void sendOreReveal(ServerPlayer player, List<BlockPos> ores, int ticks) {
@@ -79,11 +64,12 @@ public final class KindredNetworking {
 
     public record CharmViewPayload(CharmView view, boolean open) implements CustomPacketPayload {
         public static final Type<CharmViewPayload> TYPE = new Type<>(KindredSpirits.id("charm_view"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, CharmViewPayload> STREAM_CODEC =
-                StreamCodec.composite(
-                        CharmView.STREAM_CODEC, CharmViewPayload::view,
-                        ByteBufCodecs.BOOL, CharmViewPayload::open,
-                        CharmViewPayload::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, CharmViewPayload> STREAM_CODEC = StreamCodec.composite(
+                CharmView.STREAM_CODEC,
+                CharmViewPayload::view,
+                ByteBufCodecs.BOOL,
+                CharmViewPayload::open,
+                CharmViewPayload::new);
 
         @Override
         public Type<? extends CustomPacketPayload> type() {
@@ -103,8 +89,10 @@ public final class KindredNetworking {
                 StreamCodec.composite(
                         ByteBufCodecs.idMapper(Action::decode, Action::ordinal),
                         CharmActionPayload::action,
-                        ByteBufCodecs.VAR_INT, CharmActionPayload::value,
-                        ByteBufCodecs.stringUtf8(MAX_NAME_LENGTH), CharmActionPayload::text,
+                        ByteBufCodecs.VAR_INT,
+                        CharmActionPayload::value,
+                        ByteBufCodecs.stringUtf8(MAX_NAME_LENGTH),
+                        CharmActionPayload::text,
                         CharmActionPayload::new);
 
         public CharmActionPayload(Action action, int value) {
@@ -140,7 +128,8 @@ public final class KindredNetworking {
             REFRESH;
 
             private static Action decode(int ordinal) {
-                if (ordinal < 0 || ordinal >= values().length) throw new DecoderException("Invalid charm action: " + ordinal);
+                if (ordinal < 0 || ordinal >= values().length)
+                    throw new DecoderException("Invalid charm action: " + ordinal);
                 return values()[ordinal];
             }
         }
@@ -169,11 +158,12 @@ public final class KindredNetworking {
 
     public record OreRevealPayload(List<BlockPos> ores, int ticks) implements CustomPacketPayload {
         public static final Type<OreRevealPayload> TYPE = new Type<>(KindredSpirits.id("ore_reveal"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, OreRevealPayload> STREAM_CODEC =
-                StreamCodec.composite(
-                        BlockPos.STREAM_CODEC.apply(ByteBufCodecs.list()), OreRevealPayload::ores,
-                        ByteBufCodecs.VAR_INT, OreRevealPayload::ticks,
-                        OreRevealPayload::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, OreRevealPayload> STREAM_CODEC = StreamCodec.composite(
+                BlockPos.STREAM_CODEC.apply(ByteBufCodecs.list()),
+                OreRevealPayload::ores,
+                ByteBufCodecs.VAR_INT,
+                OreRevealPayload::ticks,
+                OreRevealPayload::new);
 
         @Override
         public Type<? extends CustomPacketPayload> type() {
@@ -187,11 +177,12 @@ public final class KindredNetworking {
 
     public record PackGlowPayload(List<Integer> entityIds, int ticks) implements CustomPacketPayload {
         public static final Type<PackGlowPayload> TYPE = new Type<>(KindredSpirits.id("pack_glow"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, PackGlowPayload> STREAM_CODEC =
-                StreamCodec.composite(
-                        ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list()), PackGlowPayload::entityIds,
-                        ByteBufCodecs.VAR_INT, PackGlowPayload::ticks,
-                        PackGlowPayload::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, PackGlowPayload> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list()),
+                PackGlowPayload::entityIds,
+                ByteBufCodecs.VAR_INT,
+                PackGlowPayload::ticks,
+                PackGlowPayload::new);
 
         @Override
         public Type<? extends CustomPacketPayload> type() {
@@ -207,8 +198,10 @@ public final class KindredNetworking {
         public static final Type<CompanionLevelUpPayload> TYPE = new Type<>(KindredSpirits.id("companion_level_up"));
         public static final StreamCodec<RegistryFriendlyByteBuf, CompanionLevelUpPayload> STREAM_CODEC =
                 StreamCodec.composite(
-                        ByteBufCodecs.VAR_INT, CompanionLevelUpPayload::entityId,
-                        ByteBufCodecs.VAR_INT, CompanionLevelUpPayload::level,
+                        ByteBufCodecs.VAR_INT,
+                        CompanionLevelUpPayload::entityId,
+                        ByteBufCodecs.VAR_INT,
+                        CompanionLevelUpPayload::level,
                         CompanionLevelUpPayload::new);
 
         @Override
@@ -227,6 +220,5 @@ public final class KindredNetworking {
         }
     }
 
-    private KindredNetworking() {
-    }
+    private KindredNetworking() {}
 }

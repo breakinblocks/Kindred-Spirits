@@ -11,6 +11,5 @@ public final class CompanionSkin {
         return VALID.matcher(skin).matches();
     }
 
-    private CompanionSkin() {
-    }
+    private CompanionSkin() {}
 }

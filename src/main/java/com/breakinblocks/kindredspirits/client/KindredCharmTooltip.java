@@ -1,10 +1,10 @@
 package com.breakinblocks.kindredspirits.client;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
-import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.companion.CompanionSnapshot;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
+import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
 import net.minecraft.ChatFormatting;
@@ -26,8 +26,9 @@ public final class KindredCharmTooltip {
         CompanionBond bond = KindredAttachments.bond(event.getEntity());
 
         if (!bond.isBound()) {
-            event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_unbound")
-                    .withStyle(ChatFormatting.GRAY));
+            event.getToolTip()
+                    .add(Component.translatable("tooltip.kindredspirits.charm_unbound")
+                            .withStyle(ChatFormatting.GRAY));
             return;
         }
 
@@ -35,38 +36,49 @@ public final class KindredCharmTooltip {
         var progress = event.getEntity().getData(KindredAttachments.TOOLTIP_PROGRESS);
         if (progress.bondMaxLevel() == 0) return;
 
-        event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_species",
-                snapshot.displayName()).withStyle(ChatFormatting.GOLD));
-        event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_level",
-                snapshot.level(), progress.experienceToNext())
-                .withStyle(ChatFormatting.GRAY));
+        event.getToolTip()
+                .add(Component.translatable("tooltip.kindredspirits.charm_species", snapshot.displayName())
+                        .withStyle(ChatFormatting.GOLD));
+        event.getToolTip()
+                .add(Component.translatable(
+                                "tooltip.kindredspirits.charm_level", snapshot.level(), progress.experienceToNext())
+                        .withStyle(ChatFormatting.GRAY));
         if (snapshot.stars() > 0) {
-            event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_stars",
-                    CharmView.starText(snapshot.stars())).withStyle(ChatFormatting.YELLOW));
+            event.getToolTip()
+                    .add(Component.translatable(
+                                    "tooltip.kindredspirits.charm_stars", CharmView.starText(snapshot.stars()))
+                            .withStyle(ChatFormatting.YELLOW));
         }
-        event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_bond",
-                progress.bondLevel(), progress.bondMaxLevel()).withStyle(ChatFormatting.GRAY));
+        event.getToolTip()
+                .add(Component.translatable(
+                                "tooltip.kindredspirits.charm_bond", progress.bondLevel(), progress.bondMaxLevel())
+                        .withStyle(ChatFormatting.GRAY));
 
         snapshot.resolveSpecies().ifPresent(species -> {
             for (CompanionSpecies.Unlock unlock : species.unlocks()) {
                 boolean unlocked = unlock.isMet(snapshot.level(), progress.bondLevel());
-                event.getToolTip().add(Component.literal("  ")
-                        .append(unlock.label(unlock.ability().displayName(), snapshot.level(), progress.bondLevel()))
-                        .withStyle(unlocked ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
+                event.getToolTip()
+                        .add(Component.literal("  ")
+                                .append(unlock.label(
+                                        unlock.ability().displayName(), snapshot.level(), progress.bondLevel()))
+                                .withStyle(unlocked ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
             }
         });
 
         int reviveSeconds = bond.reviveSecondsLeft(event.getEntity().level().getGameTime());
         if (reviveSeconds > 0) {
-            event.getToolTip().add(Component.translatable("tooltip.kindredspirits.charm_recovering",
-                    reviveSeconds).withStyle(ChatFormatting.RED));
+            event.getToolTip()
+                    .add(Component.translatable("tooltip.kindredspirits.charm_recovering", reviveSeconds)
+                            .withStyle(ChatFormatting.RED));
         } else {
-            event.getToolTip().add(Component.translatable(bond.stored()
-                    ? "tooltip.kindredspirits.charm_resting"
-                    : "tooltip.kindredspirits.charm_out").withStyle(ChatFormatting.DARK_GRAY));
+            event.getToolTip()
+                    .add(Component.translatable(
+                                    bond.stored()
+                                            ? "tooltip.kindredspirits.charm_resting"
+                                            : "tooltip.kindredspirits.charm_out")
+                            .withStyle(ChatFormatting.DARK_GRAY));
         }
     }
 
-    private KindredCharmTooltip() {
-    }
+    private KindredCharmTooltip() {}
 }

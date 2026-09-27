@@ -31,13 +31,17 @@ public enum CompanionStatusProvider implements IEntityComponentProvider {
             return;
         }
 
-        tooltip.add(Component.translatable("jade.kindredspirits.level",
-                companion.getLevel(), companion.configuredMaxLevel()).withStyle(ChatFormatting.GOLD)
-                .append(companion.getStars() > 0
-                        ? Component.literal(" ").append(CharmView.starText(companion.getStars()))
-                                .withStyle(ChatFormatting.YELLOW)
-                        : Component.empty()));
-        tooltip.add(Component.translatable("jade.kindredspirits.bond",
-                companion.getBondLevel(), companion.configuredMaxBond()).withStyle(ChatFormatting.LIGHT_PURPLE));
+        tooltip.add(Component.translatable(
+                        "jade.kindredspirits.level", companion.getLevel(), companion.configuredMaxLevel())
+                .withStyle(ChatFormatting.GOLD)
+                .append(
+                        companion.getStars() > 0
+                                ? Component.literal(" ")
+                                        .append(CharmView.starText(companion.getStars()))
+                                        .withStyle(ChatFormatting.YELLOW)
+                                : Component.empty()));
+        tooltip.add(Component.translatable(
+                        "jade.kindredspirits.bond", companion.getBondLevel(), companion.configuredMaxBond())
+                .withStyle(ChatFormatting.LIGHT_PURPLE));
     }
 }

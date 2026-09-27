@@ -5,11 +5,11 @@ import com.breakinblocks.kindredspirits.client.render.CompanionRenderer;
 import com.breakinblocks.kindredspirits.client.render.MeteorRenderer;
 import com.breakinblocks.kindredspirits.client.render.MiniPlayerRenderer;
 import com.breakinblocks.kindredspirits.client.render.SpiritArrowRenderer;
-import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.client.screen.KindredStorageScreen;
+import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
-import com.breakinblocks.kindredspirits.registry.KindredMenus;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
+import com.breakinblocks.kindredspirits.registry.KindredMenus;
 import com.google.common.reflect.TypeToken;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
@@ -20,8 +20,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
@@ -42,8 +42,8 @@ public final class KindredSpiritsClient {
     }
 
     private static void registerRenderStateModifiers(RegisterRenderStateModifiersEvent event) {
-        event.registerEntityModifier(new TypeToken<EntityRenderer<Entity, EntityRenderState>>() {
-        }, PackGlowOverlay::outline);
+        event.registerEntityModifier(
+                new TypeToken<EntityRenderer<Entity, EntityRenderState>>() {}, PackGlowOverlay::outline);
     }
 
     private static void clientSetup(FMLClientSetupEvent event) {
@@ -55,15 +55,17 @@ public final class KindredSpiritsClient {
     }
 
     private static void registerReloadListeners(AddClientReloadListenersEvent event) {
-        event.addListener(KindredSpirits.id("companion_skins"),
-                (ResourceManagerReloadListener) resourceManager -> CompanionSkins.clear());
+        event.addListener(KindredSpirits.id("companion_skins"), (ResourceManagerReloadListener)
+                resourceManager -> CompanionSkins.clear());
     }
 
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         for (CompanionSpecies species : CompanionSpecies.values()) {
-            event.registerEntityRenderer(KindredEntities.type(species), context -> species.usesPlayerSkin()
-                    ? new MiniPlayerRenderer(context, species)
-                    : new CompanionRenderer(context, species));
+            event.registerEntityRenderer(
+                    KindredEntities.type(species),
+                    context -> species.usesPlayerSkin()
+                            ? new MiniPlayerRenderer(context, species)
+                            : new CompanionRenderer(context, species));
         }
         event.registerEntityRenderer(KindredEntities.METEOR.get(), MeteorRenderer::new);
         event.registerEntityRenderer(KindredEntities.SPIRIT_ARROW.get(), SpiritArrowRenderer::new);
@@ -83,6 +85,5 @@ public final class KindredSpiritsClient {
         ScreenShake.apply(event);
     }
 
-    private KindredSpiritsClient() {
-    }
+    private KindredSpiritsClient() {}
 }

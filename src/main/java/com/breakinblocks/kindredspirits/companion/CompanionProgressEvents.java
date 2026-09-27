@@ -4,6 +4,7 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
+import java.util.Optional;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -15,8 +16,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerXpEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-
-import java.util.Optional;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class CompanionProgressEvents {
@@ -47,9 +46,10 @@ public final class CompanionProgressEvents {
             return;
         }
 
-        boolean guarded = KindredConfig.COMMON.abilitiesEnabled.get() && bondedCompanionNear(player, CompanionBondMath.GUARD_RANGE)
-                .map(companion -> CompanionBondMath.grantsGuard(companion.getBondLevel()))
-                .orElse(false);
+        boolean guarded = KindredConfig.COMMON.abilitiesEnabled.get()
+                && bondedCompanionNear(player, CompanionBondMath.GUARD_RANGE)
+                        .map(companion -> CompanionBondMath.grantsGuard(companion.getBondLevel()))
+                        .orElse(false);
 
         if (guarded && !armour.hasModifier(BOND_GUARD.id())) {
             armour.addTransientModifier(BOND_GUARD);
@@ -64,8 +64,12 @@ public final class CompanionProgressEvents {
             return;
         }
 
-        if (!event.getLevel().getEntitiesOfClass(ThrownExperienceBottle.class, orb.getBoundingBox().inflate(BOTTLE_REACH),
-                bottle -> !bottle.isRemoved()).isEmpty()) {
+        if (!event.getLevel()
+                .getEntitiesOfClass(
+                        ThrownExperienceBottle.class,
+                        orb.getBoundingBox().inflate(BOTTLE_REACH),
+                        bottle -> !bottle.isRemoved())
+                .isEmpty()) {
             orb.setData(KindredAttachments.BOTTLE_XP, true);
         }
     }
@@ -83,7 +87,8 @@ public final class CompanionProgressEvents {
             return;
         }
 
-        if (player.getData(KindredAttachments.BOTTLE_XP_PICKUP) == player.level().getGameTime()) {
+        if (player.getData(KindredAttachments.BOTTLE_XP_PICKUP)
+                == player.level().getGameTime()) {
             player.setData(KindredAttachments.BOTTLE_XP_PICKUP, -1L);
             return;
         }
@@ -102,6 +107,5 @@ public final class CompanionProgressEvents {
         return KindredAttachments.activity(player).isAfk(player.level().getGameTime(), CompanionBondMath.afkTicks());
     }
 
-    private CompanionProgressEvents() {
-    }
+    private CompanionProgressEvents() {}
 }

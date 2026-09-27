@@ -3,16 +3,18 @@ package com.breakinblocks.kindredspirits.client.screen;
 import com.breakinblocks.kindredspirits.client.CompanionSkins;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
+import com.breakinblocks.kindredspirits.companion.CompanionSpecies.Unlock;
+import com.breakinblocks.kindredspirits.companion.CompanionStats;
+import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.net.KindredNetworking.CharmActionPayload;
 import com.breakinblocks.kindredspirits.net.KindredNetworking.CharmActionPayload.Action;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.mojang.blaze3d.platform.InputConstants;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import com.breakinblocks.kindredspirits.companion.CompanionSpecies.Unlock;
-import com.breakinblocks.kindredspirits.companion.CompanionStats;
-import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -22,18 +24,15 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.util.Mth;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class KindredCharmScreen extends Screen {
     private static final int PANEL_WIDTH = 288;
@@ -174,7 +173,8 @@ public class KindredCharmScreen extends Screen {
     }
 
     private boolean wantsSkinRow() {
-        return this.view.bound() && (this.view.usesPlayerSkin() || !this.skinChoices().isEmpty());
+        return this.view.bound()
+                && (this.view.usesPlayerSkin() || !this.skinChoices().isEmpty());
     }
 
     private List<String> skinChoices() {
@@ -182,7 +182,8 @@ public class KindredCharmScreen extends Screen {
     }
 
     private Component skinLabel() {
-        Component name = this.view.resolveSpecies()
+        Component name = this.view
+                .resolveSpecies()
                 .map(species -> CompanionSkins.displayName(species, this.view.skin()))
                 .orElse(Component.empty());
         return Component.translatable("screen.kindredspirits.skin_variant", name);
@@ -229,34 +230,52 @@ public class KindredCharmScreen extends Screen {
         int buttonX = this.left + COLUMN_X;
         int y = this.top + this.buttonStart();
 
-        this.summonButton = this.columnButton(0, this.summonLabel(),
-                () -> this.send(this.view.stored() ? Action.SUMMON : Action.RECALL, 0));
-        this.dismissButton = this.columnButton(1, Component.translatable("screen.kindredspirits.dismiss"),
-                () -> this.send(Action.DISMISS, 0));
-        this.commandButton = this.columnButton(2, this.commandLabel(),
-                () -> this.send(Action.SET_COMMAND, this.view.commandValue().next().ordinal()));
-        this.aggressionButton = this.columnButton(3, this.aggressionLabel(),
-                () -> this.send(Action.SET_AGGRESSION, this.view.aggressionValue().next().ordinal()));
-        this.releaseButton = this.columnButton(4,
+        this.summonButton = this.columnButton(
+                0, this.summonLabel(), () -> this.send(this.view.stored() ? Action.SUMMON : Action.RECALL, 0));
+        this.dismissButton = this.columnButton(
+                1, Component.translatable("screen.kindredspirits.dismiss"), () -> this.send(Action.DISMISS, 0));
+        this.commandButton = this.columnButton(
+                2,
+                this.commandLabel(),
+                () -> this.send(
+                        Action.SET_COMMAND, this.view.commandValue().next().ordinal()));
+        this.aggressionButton = this.columnButton(
+                3,
+                this.aggressionLabel(),
+                () -> this.send(
+                        Action.SET_AGGRESSION,
+                        this.view.aggressionValue().next().ordinal()));
+        this.releaseButton = this.columnButton(
+                4,
                 Component.translatable("screen.kindredspirits.release").withStyle(ChatFormatting.RED),
                 () -> this.send(Action.RELEASE, 0));
-        this.prestigeButton = this.columnButton(5,
+        this.prestigeButton = this.columnButton(
+                5,
                 Component.translatable("screen.kindredspirits.prestige").withStyle(ChatFormatting.GOLD),
                 () -> this.send(Action.PRESTIGE, 0));
 
-        this.abilityButton = this.addRenderableWidget(Button.builder(this.abilityLabel(),
-                        button -> this.send(Action.USE_ABILITY, 0))
-                .bounds(this.left + PAD, this.top + this.lowerY(ABILITY_BUTTON_Y), PORTRAIT_WIDTH, BUTTON_HEIGHT).build());
+        this.abilityButton = this.addRenderableWidget(Button.builder(
+                        this.abilityLabel(), button -> this.send(Action.USE_ABILITY, 0))
+                .bounds(this.left + PAD, this.top + this.lowerY(ABILITY_BUTTON_Y), PORTRAIT_WIDTH, BUTTON_HEIGHT)
+                .build());
 
-        this.unequipButton = this.addRenderableWidget(Button.builder(Component.literal("x"),
-                        button -> this.send(Action.UNEQUIP, 0))
-                .bounds(this.left + PAD + PORTRAIT_WIDTH - UNEQUIP_WIDTH, this.top + this.lowerY(EQUIPMENT_Y),
-                        UNEQUIP_WIDTH, EQUIPMENT_ICON).build());
-        this.unequipButton.setTooltip(Tooltip.create(
-                Component.translatable("screen.kindredspirits.unequip")));
+        this.unequipButton =
+                this.addRenderableWidget(Button.builder(Component.literal("x"), button -> this.send(Action.UNEQUIP, 0))
+                        .bounds(
+                                this.left + PAD + PORTRAIT_WIDTH - UNEQUIP_WIDTH,
+                                this.top + this.lowerY(EQUIPMENT_Y),
+                                UNEQUIP_WIDTH,
+                                EQUIPMENT_ICON)
+                        .build());
+        this.unequipButton.setTooltip(Tooltip.create(Component.translatable("screen.kindredspirits.unequip")));
 
-        EditBox nameBox = new EditBox(this.font, this.left + PAD, this.top + this.nameBoxY(),
-                PORTRAIT_WIDTH, NAME_BOX_HEIGHT, Component.translatable("screen.kindredspirits.name"));
+        EditBox nameBox = new EditBox(
+                this.font,
+                this.left + PAD,
+                this.top + this.nameBoxY(),
+                PORTRAIT_WIDTH,
+                NAME_BOX_HEIGHT,
+                Component.translatable("screen.kindredspirits.name"));
         nameBox.setMaxLength(CharmActionPayload.MAX_NAME_LENGTH);
         nameBox.setHint(this.speciesName().copy().withStyle(ChatFormatting.DARK_GRAY));
         nameBox.setValue(this.view.name().orElse(""));
@@ -265,27 +284,39 @@ public class KindredCharmScreen extends Screen {
         this.skinField = null;
         this.skinButton = null;
         if (this.skinRow && this.view.usesPlayerSkin()) {
-            EditBox skinBox = new EditBox(this.font, this.left + PAD, this.top + this.lowerY(SKIN_BOX_Y),
-                    PORTRAIT_WIDTH, NAME_BOX_HEIGHT, Component.translatable("screen.kindredspirits.skin"));
+            EditBox skinBox = new EditBox(
+                    this.font,
+                    this.left + PAD,
+                    this.top + this.lowerY(SKIN_BOX_Y),
+                    PORTRAIT_WIDTH,
+                    NAME_BOX_HEIGHT,
+                    Component.translatable("screen.kindredspirits.skin"));
             skinBox.setMaxLength(MAX_SKIN_LENGTH);
-            skinBox.setHint(Component.translatable("screen.kindredspirits.skin_hint")
-                    .withStyle(ChatFormatting.DARK_GRAY));
+            skinBox.setHint(
+                    Component.translatable("screen.kindredspirits.skin_hint").withStyle(ChatFormatting.DARK_GRAY));
             skinBox.setValue(this.view.skin());
             this.skinField = new TextField(Action.SET_SKIN, this.addRenderableWidget(skinBox));
         } else if (this.skinRow) {
             this.skinButton = this.addRenderableWidget(Button.builder(this.skinLabel(), button -> this.cycleSkin())
-                    .bounds(this.left + PAD, this.top + this.lowerY(SKIN_BOX_Y), PORTRAIT_WIDTH, NAME_BOX_HEIGHT).build());
+                    .bounds(this.left + PAD, this.top + this.lowerY(SKIN_BOX_Y), PORTRAIT_WIDTH, NAME_BOX_HEIGHT)
+                    .build());
         }
 
         int halfWidth = COLUMN_WIDTH / 2 - 2;
         this.statsButton = this.addRenderableWidget(Button.builder(
                         Component.translatable("screen.kindredspirits.stats"),
                         button -> this.openPopup(new StatsPopup()))
-                .bounds(buttonX, y + this.buttonSpacing() * 6, halfWidth, this.buttonHeight()).build());
+                .bounds(buttonX, y + this.buttonSpacing() * 6, halfWidth, this.buttonHeight())
+                .build());
         this.abilitiesButton = this.addRenderableWidget(Button.builder(
                         Component.translatable("screen.kindredspirits.abilities"),
                         button -> this.openPopup(new AbilitiesPopup()))
-                .bounds(buttonX + COLUMN_WIDTH - halfWidth, y + this.buttonSpacing() * 6, halfWidth, this.buttonHeight()).build());
+                .bounds(
+                        buttonX + COLUMN_WIDTH - halfWidth,
+                        y + this.buttonSpacing() * 6,
+                        halfWidth,
+                        this.buttonHeight())
+                .build());
 
         if (this.popup != null) {
             this.popup.open();
@@ -296,12 +327,23 @@ public class KindredCharmScreen extends Screen {
 
     private Button columnButton(int row, Component label, Runnable onPress) {
         return this.addRenderableWidget(Button.builder(label, button -> onPress.run())
-                .bounds(this.left + COLUMN_X, this.top + this.buttonStart() + this.buttonSpacing() * row, COLUMN_WIDTH, this.buttonHeight())
+                .bounds(
+                        this.left + COLUMN_X,
+                        this.top + this.buttonStart() + this.buttonSpacing() * row,
+                        COLUMN_WIDTH,
+                        this.buttonHeight())
                 .build());
     }
 
-    private void drawPanel(GuiGraphicsExtractor graphics, int left, int top, int width, int height,
-                           Component title, int titleX, int titleY) {
+    private void drawPanel(
+            GuiGraphicsExtractor graphics,
+            int left,
+            int top,
+            int width,
+            int height,
+            Component title,
+            int titleX,
+            int titleY) {
         graphics.fill(left - 1, top - 1, left + width + 1, top + height + 1, COLOUR_EDGE);
         graphics.fill(left, top, left + width, top + height, COLOUR_PANEL);
         graphics.fill(left, top, left + width, top + 2, COLOUR_ACCENT);
@@ -324,9 +366,17 @@ public class KindredCharmScreen extends Screen {
     }
 
     private List<AbstractWidget> mainWidgets() {
-        List<AbstractWidget> widgets = new ArrayList<>(List.of(this.summonButton, this.dismissButton,
-                this.commandButton, this.aggressionButton, this.releaseButton, this.prestigeButton,
-                this.abilityButton, this.unequipButton, this.statsButton, this.abilitiesButton));
+        List<AbstractWidget> widgets = new ArrayList<>(List.of(
+                this.summonButton,
+                this.dismissButton,
+                this.commandButton,
+                this.aggressionButton,
+                this.releaseButton,
+                this.prestigeButton,
+                this.abilityButton,
+                this.unequipButton,
+                this.statsButton,
+                this.abilitiesButton));
         for (TextField field : this.fields()) {
             widgets.add(field.box);
         }
@@ -334,16 +384,20 @@ public class KindredCharmScreen extends Screen {
     }
 
     private Component abilityLabel() {
-        return this.view.resolveActiveAbility()
+        return this.view
+                .resolveActiveAbility()
                 .map(ability -> this.view.activeCooldownSeconds() > 0
-                        ? Component.translatable("screen.kindredspirits.ability_cooldown",
-                                ability.displayName(), this.view.activeCooldownSeconds())
+                        ? Component.translatable(
+                                "screen.kindredspirits.ability_cooldown",
+                                ability.displayName(),
+                                this.view.activeCooldownSeconds())
                         : ability.displayName())
                 .orElse(Component.empty());
     }
 
     private Component speciesName() {
-        return this.view.resolveSpecies()
+        return this.view
+                .resolveSpecies()
                 .map(species -> (Component) Component.translatable(species.translationKey()))
                 .orElse(Component.empty());
     }
@@ -400,17 +454,18 @@ public class KindredCharmScreen extends Screen {
         if (this.view.reviveSeconds() > 0) {
             return Component.translatable("screen.kindredspirits.recovering", this.view.reviveSeconds());
         }
-        return Component.translatable(this.view.stored()
-                ? "screen.kindredspirits.summon"
-                : "screen.kindredspirits.recall");
+        return Component.translatable(
+                this.view.stored() ? "screen.kindredspirits.summon" : "screen.kindredspirits.recall");
     }
 
     private Component commandLabel() {
-        return Component.translatable("screen.kindredspirits.orders", this.view.commandValue().displayName());
+        return Component.translatable(
+                "screen.kindredspirits.orders", this.view.commandValue().displayName());
     }
 
     private Component aggressionLabel() {
-        return Component.translatable("screen.kindredspirits.aggression", this.view.aggressionValue().displayName());
+        return Component.translatable(
+                "screen.kindredspirits.aggression", this.view.aggressionValue().displayName());
     }
 
     private void send(Action action, int value) {
@@ -421,28 +476,50 @@ public class KindredCharmScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, COLOUR_BACKDROP);
 
-        this.drawPanel(graphics, this.left, this.top, PANEL_WIDTH, this.panelHeight,
-                this.title, this.left + 10, this.top + 9);
+        this.drawPanel(
+                graphics, this.left, this.top, PANEL_WIDTH, this.panelHeight, this.title, this.left + 10, this.top + 9);
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         if (!this.view.bound()) {
-            graphics.text(this.font, Component.translatable("screen.kindredspirits.unbound"),
-                    this.left + PAD, this.top + CONTENT_Y, COLOUR_VALUE);
-            graphics.textWithWordWrap(this.font, Component.translatable("screen.kindredspirits.unbound_hint"),
-                    this.left + PAD, this.top + CONTENT_Y + TEXT_HEIGHT + 5, PANEL_WIDTH - PAD * 2, COLOUR_LABEL);
+            graphics.text(
+                    this.font,
+                    Component.translatable("screen.kindredspirits.unbound"),
+                    this.left + PAD,
+                    this.top + CONTENT_Y,
+                    COLOUR_VALUE);
+            graphics.textWithWordWrap(
+                    this.font,
+                    Component.translatable("screen.kindredspirits.unbound_hint"),
+                    this.left + PAD,
+                    this.top + CONTENT_Y + TEXT_HEIGHT + 5,
+                    PANEL_WIDTH - PAD * 2,
+                    COLOUR_LABEL);
 
             if (this.view.companionsBonded() > 0) {
-                graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_bonded",
-                        this.view.companionsBonded()), this.left + PAD, this.top + this.lowerY(STATE_Y) - 12, COLOUR_LABEL);
+                graphics.text(
+                        this.font,
+                        Component.translatable("screen.kindredspirits.stat_bonded", this.view.companionsBonded()),
+                        this.left + PAD,
+                        this.top + this.lowerY(STATE_Y) - 12,
+                        COLOUR_LABEL);
             }
             if (this.view.highestLevel() > 0) {
-                graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_highest_level",
-                        this.view.highestLevel()), this.left + PAD, this.top + this.lowerY(STATE_Y), COLOUR_LABEL);
+                graphics.text(
+                        this.font,
+                        Component.translatable("screen.kindredspirits.stat_highest_level", this.view.highestLevel()),
+                        this.left + PAD,
+                        this.top + this.lowerY(STATE_Y),
+                        COLOUR_LABEL);
             }
             if (this.view.highestStars() > 0) {
-                graphics.text(this.font, Component.translatable("screen.kindredspirits.stat_highest_stars",
-                        CharmView.starText(this.view.highestStars())), this.left + PAD, this.top + this.lowerY(STATE_Y) + 12,
+                graphics.text(
+                        this.font,
+                        Component.translatable(
+                                "screen.kindredspirits.stat_highest_stars",
+                                CharmView.starText(this.view.highestStars())),
+                        this.left + PAD,
+                        this.top + this.lowerY(STATE_Y) + 12,
                         COLOUR_STARS);
             }
             return;
@@ -470,16 +547,23 @@ public class KindredCharmScreen extends Screen {
             this.renderPortraitEntity(graphics, x0 + 2, y0 + 2, x1 - 2, y1 - 2, entity);
         }
 
-        graphics.text(this.font, Component.translatable(this.view.present()
-                        ? "screen.kindredspirits.state_out"
-                        : "screen.kindredspirits.state_resting"),
-                x0, this.top + this.lowerY(STATE_Y), COLOUR_LABEL);
+        graphics.text(
+                this.font,
+                Component.translatable(
+                        this.view.present()
+                                ? "screen.kindredspirits.state_out"
+                                : "screen.kindredspirits.state_resting"),
+                x0,
+                this.top + this.lowerY(STATE_Y),
+                COLOUR_LABEL);
 
         this.renderEquipment(graphics, x0, this.top + this.lowerY(EQUIPMENT_Y), mouseX, mouseY);
     }
 
-    private void renderPortraitEntity(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, CompanionEntity entity) {
-        EntityRenderState state = this.minecraft.getEntityRenderDispatcher().getRenderer(entity).createRenderState(entity, 1.0f);
+    private void renderPortraitEntity(
+            GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, CompanionEntity entity) {
+        EntityRenderState state =
+                this.minecraft.getEntityRenderDispatcher().getRenderer(entity).createRenderState(entity, 1.0f);
         state.shadowPieces.clear();
         state.outlineColor = 0;
         if (state instanceof LivingEntityRenderState living) {
@@ -492,8 +576,16 @@ public class KindredCharmScreen extends Screen {
         }
 
         Vector3f translation = new Vector3f(0.0f, state.boundingBoxHeight / 2.0f, 0.0f);
-        graphics.entity(state, PORTRAIT_SCALE, translation, new Quaternionf().rotateZ((float) Math.PI), new Quaternionf(),
-                x0, y0, x1, y1);
+        graphics.entity(
+                state,
+                PORTRAIT_SCALE,
+                translation,
+                new Quaternionf().rotateZ((float) Math.PI),
+                new Quaternionf(),
+                x0,
+                y0,
+                x1,
+                y1);
     }
 
     private boolean overPortrait(double x, double y) {
@@ -506,15 +598,23 @@ public class KindredCharmScreen extends Screen {
         ItemStack equipment = this.view.equipment();
 
         if (equipment.isEmpty()) {
-            graphics.text(this.font, Component.translatable("screen.kindredspirits.no_equipment"),
-                    x, y + (EQUIPMENT_ICON - TEXT_HEIGHT) / 2, COLOUR_LABEL);
+            graphics.text(
+                    this.font,
+                    Component.translatable("screen.kindredspirits.no_equipment"),
+                    x,
+                    y + (EQUIPMENT_ICON - TEXT_HEIGHT) / 2,
+                    COLOUR_LABEL);
             return;
         }
 
         graphics.item(equipment, x, y);
-        graphics.text(this.font, this.font.plainSubstrByWidth(equipment.getHoverName().getString(),
-                        PORTRAIT_WIDTH - EQUIPMENT_ICON - UNEQUIP_WIDTH - 8), x + EQUIPMENT_ICON + 4,
-                y + (EQUIPMENT_ICON - TEXT_HEIGHT) / 2, COLOUR_VALUE);
+        graphics.text(
+                this.font,
+                this.font.plainSubstrByWidth(
+                        equipment.getHoverName().getString(), PORTRAIT_WIDTH - EQUIPMENT_ICON - UNEQUIP_WIDTH - 8),
+                x + EQUIPMENT_ICON + 4,
+                y + (EQUIPMENT_ICON - TEXT_HEIGHT) / 2,
+                COLOUR_VALUE);
 
         if (mouseX >= x && mouseX < x + PORTRAIT_WIDTH - UNEQUIP_WIDTH && mouseY >= y && mouseY < y + EQUIPMENT_ICON) {
             graphics.setTooltipForNextFrame(this.font, equipment, mouseX, mouseY);
@@ -524,41 +624,77 @@ public class KindredCharmScreen extends Screen {
     private void renderStats(GuiGraphicsExtractor graphics) {
         int x = this.left + COLUMN_X;
 
-        graphics.text(this.font, Component.translatable("screen.kindredspirits.level", this.view.level()),
-                x, this.top + LEVEL_Y, COLOUR_VALUE);
+        graphics.text(
+                this.font,
+                Component.translatable("screen.kindredspirits.level", this.view.level()),
+                x,
+                this.top + LEVEL_Y,
+                COLOUR_VALUE);
         if (this.view.stars() > 0) {
-            graphics.text(this.font, CharmView.starText(this.view.stars()),
+            graphics.text(
+                    this.font,
+                    CharmView.starText(this.view.stars()),
                     x + COLUMN_WIDTH - this.font.width(CharmView.starText(this.view.stars())),
-                    this.top + LEVEL_Y, COLOUR_STARS);
+                    this.top + LEVEL_Y,
+                    COLOUR_STARS);
         }
 
-        this.bar(graphics, x, this.top + EXPERIENCE_BAR_Y, this.view.experience(),
-                this.view.experienceToNext(), COLOUR_EXPERIENCE);
-        graphics.text(this.font, Component.literal(this.view.experience() + " / " + this.view.experienceToNext()),
-                x, this.top + EXPERIENCE_BAR_Y + BAR_LABEL_OFFSET, COLOUR_LABEL);
+        this.bar(
+                graphics,
+                x,
+                this.top + EXPERIENCE_BAR_Y,
+                this.view.experience(),
+                this.view.experienceToNext(),
+                COLOUR_EXPERIENCE);
+        graphics.text(
+                this.font,
+                Component.literal(this.view.experience() + " / " + this.view.experienceToNext()),
+                x,
+                this.top + EXPERIENCE_BAR_Y + BAR_LABEL_OFFSET,
+                COLOUR_LABEL);
 
         boolean maxBond = this.view.bondLevel() >= this.view.bondMaxLevel();
-        this.bar(graphics, x, this.top + BOND_BAR_Y, maxBond ? 1 : this.view.bondProgress(),
-                maxBond ? 1 : this.view.bondCost(), COLOUR_BOND);
-        Component bondLabel = Component.translatable("screen.kindredspirits.bond",
-                this.view.bondLevel(), this.view.bondMaxLevel());
+        this.bar(
+                graphics,
+                x,
+                this.top + BOND_BAR_Y,
+                maxBond ? 1 : this.view.bondProgress(),
+                maxBond ? 1 : this.view.bondCost(),
+                COLOUR_BOND);
+        Component bondLabel =
+                Component.translatable("screen.kindredspirits.bond", this.view.bondLevel(), this.view.bondMaxLevel());
         if (this.view.feedSeconds() > 0) {
-            bondLabel = bondLabel.copy().append(Component.translatable("screen.kindredspirits.bond_feed_wait",
-                    formatDuration(this.view.feedSeconds())));
+            bondLabel = bondLabel
+                    .copy()
+                    .append(Component.translatable(
+                            "screen.kindredspirits.bond_feed_wait", formatDuration(this.view.feedSeconds())));
         }
         graphics.text(this.font, bondLabel, x, this.top + BOND_BAR_Y + BAR_LABEL_OFFSET, COLOUR_LABEL);
 
         if (!this.view.present()) {
-            graphics.text(this.font, Component.translatable("screen.kindredspirits.stats_unavailable"),
-                    x, this.top + HEALTH_BAR_Y + BAR_LABEL_OFFSET, COLOUR_LABEL);
+            graphics.text(
+                    this.font,
+                    Component.translatable("screen.kindredspirits.stats_unavailable"),
+                    x,
+                    this.top + HEALTH_BAR_Y + BAR_LABEL_OFFSET,
+                    COLOUR_LABEL);
             return;
         }
 
-        this.bar(graphics, x, this.top + HEALTH_BAR_Y, (int) this.view.health(), (int) this.view.maxHealth(),
+        this.bar(
+                graphics,
+                x,
+                this.top + HEALTH_BAR_Y,
+                (int) this.view.health(),
+                (int) this.view.maxHealth(),
                 COLOUR_HEALTH);
-        graphics.text(this.font, Component.translatable("screen.kindredspirits.health",
-                        format(this.view.health()), format(this.view.maxHealth())),
-                x, this.top + HEALTH_BAR_Y + BAR_LABEL_OFFSET, COLOUR_LABEL);
+        graphics.text(
+                this.font,
+                Component.translatable(
+                        "screen.kindredspirits.health", format(this.view.health()), format(this.view.maxHealth())),
+                x,
+                this.top + HEALTH_BAR_Y + BAR_LABEL_OFFSET,
+                COLOUR_LABEL);
     }
 
     private void bar(GuiGraphicsExtractor graphics, int x, int y, int value, int max, int colour) {
@@ -623,7 +759,9 @@ public class KindredCharmScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (this.popup == null && event.button() == InputConstants.MOUSE_BUTTON_LEFT && this.overPortrait(event.x(), event.y())) {
+        if (this.popup == null
+                && event.button() == InputConstants.MOUSE_BUTTON_LEFT
+                && this.overPortrait(event.x(), event.y())) {
             this.setFocused(null);
             if (doubleClick) {
                 this.portraitYaw = PORTRAIT_REST_YAW;
@@ -727,7 +865,7 @@ public class KindredCharmScreen extends Screen {
         private Button closeButton;
         private int left;
         private int top;
-    private int panelHeight;
+        private int panelHeight;
         private int width;
         private int height;
         private int contentHeight;
@@ -742,15 +880,18 @@ public class KindredCharmScreen extends Screen {
             int titleWidth = screen.font.width(this.title) + POPUP_CLOSE_SIZE + POPUP_PAD;
             this.width = Math.max(this.contentWidth(), titleWidth) + POPUP_PAD * 2;
             this.contentHeight = this.contentHeight();
-            this.height = Math.min(this.contentHeight + POPUP_CONTENT_Y + POPUP_PAD,
-                    screen.height - POPUP_MARGIN * 2);
+            this.height = Math.min(this.contentHeight + POPUP_CONTENT_Y + POPUP_PAD, screen.height - POPUP_MARGIN * 2);
             this.left = (screen.width - this.width) / 2;
             this.top = (screen.height - this.height) / 2;
             this.scroll = 0;
 
             this.closeButton = this.add(Button.builder(Component.literal("x"), button -> screen.closePopup())
-                    .bounds(this.left + this.width - POPUP_PAD - POPUP_CLOSE_SIZE + 4, this.top + 4,
-                            POPUP_CLOSE_SIZE, POPUP_CLOSE_SIZE).build());
+                    .bounds(
+                            this.left + this.width - POPUP_PAD - POPUP_CLOSE_SIZE + 4,
+                            this.top + 4,
+                            POPUP_CLOSE_SIZE,
+                            POPUP_CLOSE_SIZE)
+                    .build());
             this.buildWidgets();
             this.layout();
         }
@@ -793,22 +934,38 @@ public class KindredCharmScreen extends Screen {
         }
 
         private void layout() {
-            this.layoutWidgets(this.contentLeft(), this.contentTop() - this.scroll,
-                    this.contentTop(), this.contentBottom());
+            this.layoutWidgets(
+                    this.contentLeft(), this.contentTop() - this.scroll, this.contentTop(), this.contentBottom());
         }
 
         private void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
             KindredCharmScreen screen = KindredCharmScreen.this;
             graphics.fill(0, 0, screen.width, screen.height, COLOUR_POPUP_BACKDROP);
-            screen.drawPanel(graphics, this.left, this.top, this.width, this.height,
-                    this.title, this.contentLeft(), this.top + POPUP_TITLE_Y);
+            screen.drawPanel(
+                    graphics,
+                    this.left,
+                    this.top,
+                    this.width,
+                    this.height,
+                    this.title,
+                    this.contentLeft(),
+                    this.top + POPUP_TITLE_Y);
 
-            boolean inside = mouseX >= this.contentLeft() && mouseX < this.contentLeft() + this.innerWidth()
-                    && mouseY >= this.contentTop() && mouseY < this.contentBottom();
-            graphics.enableScissor(this.contentLeft(), this.contentTop(),
-                    this.contentLeft() + this.innerWidth(), this.contentBottom());
-            this.renderContent(graphics, this.contentLeft(), this.contentTop() - this.scroll,
-                    inside ? mouseX : -1, inside ? mouseY : -1);
+            boolean inside = mouseX >= this.contentLeft()
+                    && mouseX < this.contentLeft() + this.innerWidth()
+                    && mouseY >= this.contentTop()
+                    && mouseY < this.contentBottom();
+            graphics.enableScissor(
+                    this.contentLeft(),
+                    this.contentTop(),
+                    this.contentLeft() + this.innerWidth(),
+                    this.contentBottom());
+            this.renderContent(
+                    graphics,
+                    this.contentLeft(),
+                    this.contentTop() - this.scroll,
+                    inside ? mouseX : -1,
+                    inside ? mouseY : -1);
             graphics.disableScissor();
 
             for (AbstractWidget widget : this.widgets) {
@@ -818,14 +975,11 @@ public class KindredCharmScreen extends Screen {
             }
         }
 
-        protected void updateState() {
-        }
+        protected void updateState() {}
 
-        protected void buildWidgets() {
-        }
+        protected void buildWidgets() {}
 
-        protected void layoutWidgets(int x, int y, int visibleTop, int visibleBottom) {
-        }
+        protected void layoutWidgets(int x, int y, int visibleTop, int visibleBottom) {}
 
         protected abstract int contentWidth();
 
@@ -849,18 +1003,21 @@ public class KindredCharmScreen extends Screen {
 
         private String value(int index) {
             CompanionStats stats = this.stats();
-            return formatStat(index, stats.modified().get(index)) + " (" + formatStat(index, stats.base().get(index)) + ")";
+            return formatStat(index, stats.modified().get(index)) + " ("
+                    + formatStat(index, stats.base().get(index)) + ")";
         }
 
         private List<Component> derivedLabels() {
-            return List.of(Component.translatable("screen.kindredspirits.stat.xp_multiplier"),
+            return List.of(
+                    Component.translatable("screen.kindredspirits.stat.xp_multiplier"),
                     Component.translatable("screen.kindredspirits.stat.storage"),
                     Component.translatable("screen.kindredspirits.stat.revive"));
         }
 
         private List<String> derivedValues() {
             CompanionStats stats = this.stats();
-            return List.of(String.format("x%.2f", stats.experienceMultiplier()),
+            return List.of(
+                    String.format("x%.2f", stats.experienceMultiplier()),
                     stats.storageSlots() + " / " + stats.storageMax(),
                     formatDuration(stats.reviveSeconds()));
         }
@@ -882,8 +1039,10 @@ public class KindredCharmScreen extends Screen {
 
         @Override
         protected int contentHeight() {
-            return STAT_ROW_HEIGHT * (CompanionStats.KEYS.size() + this.derivedLabels().size())
-                    + STAT_GROUP_GAP * 2 + TEXT_HEIGHT;
+            return STAT_ROW_HEIGHT
+                            * (CompanionStats.KEYS.size() + this.derivedLabels().size())
+                    + STAT_GROUP_GAP * 2
+                    + TEXT_HEIGHT;
         }
 
         @Override
@@ -907,14 +1066,23 @@ public class KindredCharmScreen extends Screen {
             }
 
             y += STAT_GROUP_GAP;
-            graphics.text(KindredCharmScreen.this.font, Component.translatable("screen.kindredspirits.stat_hint"),
-                    x, y, COLOUR_LABEL);
+            graphics.text(
+                    KindredCharmScreen.this.font,
+                    Component.translatable("screen.kindredspirits.stat_hint"),
+                    x,
+                    y,
+                    COLOUR_LABEL);
         }
 
-        private void row(GuiGraphicsExtractor graphics, int x, int y, int right, Component label, String value, int colour) {
+        private void row(
+                GuiGraphicsExtractor graphics, int x, int y, int right, Component label, String value, int colour) {
             graphics.text(KindredCharmScreen.this.font, label, x, y, COLOUR_LABEL);
-            graphics.text(KindredCharmScreen.this.font, Component.literal(value),
-                    right - KindredCharmScreen.this.font.width(value), y, colour);
+            graphics.text(
+                    KindredCharmScreen.this.font,
+                    Component.literal(value),
+                    right - KindredCharmScreen.this.font.width(value),
+                    y,
+                    colour);
         }
     }
 
@@ -924,8 +1092,11 @@ public class KindredCharmScreen extends Screen {
 
         private AbilitiesPopup() {
             super(Component.translatable("screen.kindredspirits.abilities"));
-            this.unlocks = KindredCharmScreen.this.view.resolveSpecies()
-                    .map(CompanionSpecies::unlocks).orElse(List.of());
+            this.unlocks = KindredCharmScreen.this
+                    .view
+                    .resolveSpecies()
+                    .map(CompanionSpecies::unlocks)
+                    .orElse(List.of());
         }
 
         private boolean unlocked(Unlock unlock) {
@@ -934,8 +1105,11 @@ public class KindredCharmScreen extends Screen {
         }
 
         private Component requirement(Unlock unlock) {
-            return this.unlocked(unlock) ? unlock.requirement()
-                    : unlock.requirement().copy().append(" ")
+            return this.unlocked(unlock)
+                    ? unlock.requirement()
+                    : unlock.requirement()
+                            .copy()
+                            .append(" ")
                             .append(Component.translatable("screen.kindredspirits.ability_locked"));
         }
 
@@ -961,10 +1135,12 @@ public class KindredCharmScreen extends Screen {
             this.toggles.clear();
             for (Unlock unlock : this.unlocks) {
                 String id = unlock.ability().id().getPath();
-                this.toggles.add(this.add(Button.builder(Component.empty(), button ->
-                                ClientPacketDistributor.sendToServer(
+                this.toggles.add(this.add(Button.builder(
+                                Component.empty(),
+                                button -> ClientPacketDistributor.sendToServer(
                                         new CharmActionPayload(Action.TOGGLE_ABILITY, 0, id)))
-                        .bounds(0, 0, TOGGLE_WIDTH, TOGGLE_HEIGHT).build()));
+                        .bounds(0, 0, TOGGLE_WIDTH, TOGGLE_HEIGHT)
+                        .build()));
             }
             this.updateState();
         }
@@ -974,9 +1150,13 @@ public class KindredCharmScreen extends Screen {
             CharmView view = KindredCharmScreen.this.view;
             for (int i = 0; i < this.unlocks.size(); i++) {
                 boolean enabled = !view.isDisabled(this.unlocks.get(i).ability());
-                this.toggles.get(i).setMessage(Component.translatable(enabled
-                                ? "screen.kindredspirits.ability_on" : "screen.kindredspirits.ability_off")
-                        .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY));
+                this.toggles
+                        .get(i)
+                        .setMessage(Component.translatable(
+                                        enabled
+                                                ? "screen.kindredspirits.ability_on"
+                                                : "screen.kindredspirits.ability_off")
+                                .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY));
             }
         }
 
@@ -989,8 +1169,10 @@ public class KindredCharmScreen extends Screen {
                 toggle.setX(buttonX);
                 toggle.setY(rowY);
                 toggle.visible = this.unlocked(this.unlocks.get(i))
-                        && rowY >= visibleTop && rowY + TOGGLE_HEIGHT <= visibleBottom;
-                toggle.active = toggle.visible && (KindredCharmScreen.this.view.stored() || KindredCharmScreen.this.view.present());
+                        && rowY >= visibleTop
+                        && rowY + TOGGLE_HEIGHT <= visibleBottom;
+                toggle.active = toggle.visible
+                        && (KindredCharmScreen.this.view.stored() || KindredCharmScreen.this.view.present());
             }
         }
 
@@ -1011,7 +1193,8 @@ public class KindredCharmScreen extends Screen {
                 graphics.text(font, requirement, requirementRight - font.width(requirement), y + textY, COLOUR_LABEL);
 
                 if (mouseX >= x && mouseX < requirementRight && mouseY >= y && mouseY < y + ABILITY_ROW_HEIGHT) {
-                    graphics.setTooltipForNextFrame(font, font.split(ability.description(), TOOLTIP_WIDTH), mouseX, mouseY);
+                    graphics.setTooltipForNextFrame(
+                            font, font.split(ability.description(), TOOLTIP_WIDTH), mouseX, mouseY);
                 }
 
                 y += ABILITY_ROW_HEIGHT;

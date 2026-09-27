@@ -7,6 +7,5 @@ public final class BlockPosUtil {
         return BlockPos.betweenClosed(center.offset(-radius, -radius, -radius), center.offset(radius, radius, radius));
     }
 
-    private BlockPosUtil() {
-    }
+    private BlockPosUtil() {}
 }

@@ -11,15 +11,13 @@ import net.minecraft.resources.Identifier;
 public class MiniPlayerGeoModel extends DefaultedEntityGeoModel<CompanionEntity> {
     public static final DataTicket<Identifier> SKIN_TEXTURE =
             DataTicket.create("kindredspirits:skin_texture", Identifier.class);
-    public static final DataTicket<Boolean> SLIM_ARMS =
-            DataTicket.create("kindredspirits:slim_arms", Boolean.class);
+    public static final DataTicket<Boolean> SLIM_ARMS = DataTicket.create("kindredspirits:slim_arms", Boolean.class);
 
     private final Identifier slimModel;
 
     public MiniPlayerGeoModel(Identifier assetSubpath) {
         super(assetSubpath);
-        this.slimModel = this.buildFormattedModelPath(
-                KindredSpirits.id(assetSubpath.getPath() + "_slim"));
+        this.slimModel = this.buildFormattedModelPath(KindredSpirits.id(assetSubpath.getPath() + "_slim"));
     }
 
     @Override
@@ -31,6 +29,7 @@ public class MiniPlayerGeoModel extends DefaultedEntityGeoModel<CompanionEntity>
 
     @Override
     public Identifier getTextureResource(GeoRenderState renderState) {
-        return renderState.getOrDefaultGeckolibData(SKIN_TEXTURE, KindredSkins.steve().body().texturePath());
+        return renderState.getOrDefaultGeckolibData(
+                SKIN_TEXTURE, KindredSkins.steve().body().texturePath());
     }
 }

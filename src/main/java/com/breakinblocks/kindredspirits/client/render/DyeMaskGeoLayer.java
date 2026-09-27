@@ -20,7 +20,8 @@ final class DyeMaskGeoLayer extends GeoRenderLayer<CompanionEntity, Void, Living
 
     @Override
     protected Identifier getTextureResource(LivingEntityRenderState renderState) {
-        return this.getGeoModel().getTextureResource(renderState)
+        return this.getGeoModel()
+                .getTextureResource(renderState)
                 .withPath(path -> path.replace(".png", "_dyemask.png"));
     }
 
@@ -39,7 +40,8 @@ final class DyeMaskGeoLayer extends GeoRenderLayer<CompanionEntity, Void, Living
         RenderType renderType = this.renderer.getRenderType(renderPass.renderState(), mask);
         int light = renderPass.packedLight();
         int overlay = renderPass.packedOverlay();
-        int colour = ARGB.multiply(renderPass.renderColor(), ARGB.opaque(DyeColor.byId(dye).getTextureDiffuseColor()));
+        int colour = ARGB.multiply(
+                renderPass.renderColor(), ARGB.opaque(DyeColor.byId(dye).getTextureDiffuseColor()));
         collector.order(1).submitCustomGeometry(renderPass.poseStack(), renderType, (pose, buffer) -> {
             PoseStack poseStack = renderPass.poseStack();
             poseStack.pushPose();

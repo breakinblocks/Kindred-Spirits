@@ -13,33 +13,84 @@ import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.BondRecord;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
+import java.util.List;
+import java.util.Optional;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
-import java.util.List;
-import java.util.Optional;
-
-public record CharmView(boolean bound, String species, Optional<String> name,
-                        int level, int experience, int experienceToNext,
-                        int bondLevel, int bondMaxLevel, int bondProgress, int bondCost, int feedSeconds,
-                        int stars, boolean canPrestige,
-                        float health, float maxHealth, float armour, float attackDamage,
-                        int command, int aggression, boolean stored, int reviveSeconds, boolean present,
-                        String skin, int companionsBonded, int highestLevel, int highestStars,
-                        String activeAbility, int activeCooldownSeconds, ItemStack equipment,
-                        CompanionStats stats, List<String> disabledAbilities, int dye) {
+public record CharmView(
+        boolean bound,
+        String species,
+        Optional<String> name,
+        int level,
+        int experience,
+        int experienceToNext,
+        int bondLevel,
+        int bondMaxLevel,
+        int bondProgress,
+        int bondCost,
+        int feedSeconds,
+        int stars,
+        boolean canPrestige,
+        float health,
+        float maxHealth,
+        float armour,
+        float attackDamage,
+        int command,
+        int aggression,
+        boolean stored,
+        int reviveSeconds,
+        boolean present,
+        String skin,
+        int companionsBonded,
+        int highestLevel,
+        int highestStars,
+        String activeAbility,
+        int activeCooldownSeconds,
+        ItemStack equipment,
+        CompanionStats stats,
+        List<String> disabledAbilities,
+        int dye) {
 
     public static CharmView unbound(BondRecord record) {
-        return new CharmView(false, "", Optional.empty(),
-                0, 0, 1, 0, 1, 0, 1, 0, 0, false,
-                0.0f, 0.0f, 0.0f, 0.0f, 0, 1, true, 0, false, "",
-                record.companionsBonded(), record.highestLevelReached(), record.highestStars(), "", 0, ItemStack.EMPTY,
-                CompanionStats.EMPTY, List.of(), CompanionEntity.NO_DYE);
+        return new CharmView(
+                false,
+                "",
+                Optional.empty(),
+                0,
+                0,
+                1,
+                0,
+                1,
+                0,
+                1,
+                0,
+                0,
+                false,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                0,
+                1,
+                true,
+                0,
+                false,
+                "",
+                record.companionsBonded(),
+                record.highestLevelReached(),
+                record.highestStars(),
+                "",
+                0,
+                ItemStack.EMPTY,
+                CompanionStats.EMPTY,
+                List.of(),
+                CompanionEntity.NO_DYE);
     }
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CharmView> STREAM_CODEC = new StreamCodec<>() {
@@ -138,11 +189,13 @@ public record CharmView(boolean bound, String species, Optional<String> name,
     }
 
     public static CharmView of(CompanionBond bond, @Nullable CompanionEntity live, long gameTime, BondRecord record) {
-        CompanionSnapshot snapshot = live != null ? CompanionSnapshot.of(live) : bond.snapshot().orElseThrow();
+        CompanionSnapshot snapshot =
+                live != null ? CompanionSnapshot.of(live) : bond.snapshot().orElseThrow();
         int bondPoints = snapshot.bondPoints();
         Optional<CompanionAbility> active = live != null ? live.activeAbility() : Optional.empty();
 
-        return new CharmView(true,
+        return new CharmView(
+                true,
                 snapshot.species(),
                 snapshot.name(),
                 snapshot.level(),
@@ -165,12 +218,17 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                 bond.reviveSecondsLeft(gameTime),
                 live != null,
                 snapshot.skin().orElse(""),
-                record.companionsBonded(), record.highestLevelReached(), record.highestStars(),
+                record.companionsBonded(),
+                record.highestLevelReached(),
+                record.highestStars(),
                 active.map(ability -> ability.id().getPath()).orElse(""),
-                active.map(ability -> cooldownSeconds(live.abilityCooldownTicks(ability.id()))).orElse(0),
+                active.map(ability -> cooldownSeconds(live.abilityCooldownTicks(ability.id())))
+                        .orElse(0),
                 snapshot.equipment(),
-                live != null ? CompanionStats.of(live)
-                        : snapshot.resolveSpecies().map(species -> CompanionStats.of(species, snapshot))
+                live != null
+                        ? CompanionStats.of(live)
+                        : snapshot.resolveSpecies()
+                                .map(species -> CompanionStats.of(species, snapshot))
                                 .orElse(CompanionStats.EMPTY),
                 snapshot.disabledAbilities(),
                 snapshot.dye());
@@ -181,7 +239,8 @@ public record CharmView(boolean bound, String species, Optional<String> name,
     }
 
     public Optional<CompanionAbility> resolveActiveAbility() {
-        return this.activeAbility.isEmpty() ? Optional.empty()
+        return this.activeAbility.isEmpty()
+                ? Optional.empty()
                 : Optional.ofNullable(CompanionAbilities.get(KindredSpirits.id(this.activeAbility)));
     }
 

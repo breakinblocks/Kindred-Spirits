@@ -2,6 +2,8 @@ package com.breakinblocks.kindredspirits.companion;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
+import java.util.Collection;
+import java.util.List;
 import net.minecraft.core.Holder;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -9,28 +11,32 @@ import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
-import java.util.Collection;
-import java.util.List;
-
 public final class CompanionLevels {
     public static final int MIN_LEVEL = 1;
     public static final int MAX_STORAGE_ROWS = 3;
     public static final int MAX_STORAGE_SLOTS = MAX_STORAGE_ROWS * 9;
 
-    public record AttributeBonus(Holder<Attribute> attribute, AttributeModifier modifier) {
-    }
+    public record AttributeBonus(Holder<Attribute> attribute, AttributeModifier modifier) {}
 
     private static final List<AttributeBonus> STAR_BONUSES = List.of(
-            new AttributeBonus(Attributes.MAX_HEALTH, new AttributeModifier(KindredSpirits.id("star_1"),
-                    0.1, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)),
-            new AttributeBonus(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier(KindredSpirits.id("star_2"),
-                    0.1, AttributeModifier.Operation.ADD_VALUE)),
-            new AttributeBonus(Attributes.MOVEMENT_SPEED, new AttributeModifier(KindredSpirits.id("star_3"),
-                    0.05, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)),
-            new AttributeBonus(Attributes.ARMOR, new AttributeModifier(KindredSpirits.id("star_4"),
-                    2.0, AttributeModifier.Operation.ADD_VALUE)),
-            new AttributeBonus(Attributes.ATTACK_DAMAGE, new AttributeModifier(KindredSpirits.id("star_5"),
-                    0.1, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)));
+            new AttributeBonus(
+                    Attributes.MAX_HEALTH,
+                    new AttributeModifier(
+                            KindredSpirits.id("star_1"), 0.1, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)),
+            new AttributeBonus(
+                    Attributes.KNOCKBACK_RESISTANCE,
+                    new AttributeModifier(KindredSpirits.id("star_2"), 0.1, AttributeModifier.Operation.ADD_VALUE)),
+            new AttributeBonus(
+                    Attributes.MOVEMENT_SPEED,
+                    new AttributeModifier(
+                            KindredSpirits.id("star_3"), 0.05, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)),
+            new AttributeBonus(
+                    Attributes.ARMOR,
+                    new AttributeModifier(KindredSpirits.id("star_4"), 2.0, AttributeModifier.Operation.ADD_VALUE)),
+            new AttributeBonus(
+                    Attributes.ATTACK_DAMAGE,
+                    new AttributeModifier(
+                            KindredSpirits.id("star_5"), 0.1, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)));
 
     public static int maxLevel() {
         return KindredConfig.COMMON.maxLevel.get();
@@ -95,8 +101,11 @@ public final class CompanionLevels {
         }
     }
 
-    public static void applyBonuses(AttributeMap attributes, Collection<AttributeBonus> all,
-                                    Collection<AttributeBonus> active, boolean permanent) {
+    public static void applyBonuses(
+            AttributeMap attributes,
+            Collection<AttributeBonus> all,
+            Collection<AttributeBonus> active,
+            boolean permanent) {
         for (AttributeBonus bonus : all) {
             AttributeInstance instance = attributes.getInstance(bonus.attribute());
             if (instance != null) {
@@ -129,6 +138,5 @@ public final class CompanionLevels {
         return CompanionBondMath.storageSlots(species, bondLevel);
     }
 
-    private CompanionLevels() {
-    }
+    private CompanionLevels() {}
 }

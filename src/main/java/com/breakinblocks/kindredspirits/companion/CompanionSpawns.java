@@ -13,10 +13,10 @@ import org.jetbrains.annotations.Nullable;
 public final class CompanionSpawns {
     private static final int TRANSFORM_PARTICLES = 20;
 
-    private CompanionSpawns() {
-    }
+    private CompanionSpawns() {}
 
-    public static @Nullable CompanionEntity spawnWild(ServerLevel level, CompanionSpecies species, Vec3 pos, float yaw) {
+    public static @Nullable CompanionEntity spawnWild(
+            ServerLevel level, CompanionSpecies species, Vec3 pos, float yaw) {
         CompanionEntity companion = KindredEntities.type(species).create(level, EntitySpawnReason.EVENT);
         if (companion == null) {
             return null;
@@ -24,11 +24,13 @@ public final class CompanionSpawns {
 
         companion.snapTo(pos.x(), pos.y(), pos.z(), Mth.wrapDegrees(yaw), 0.0f);
         if (!level.addFreshEntity(companion)) return null;
-        level.playSound(null, pos.x(), pos.y(), pos.z(), species.sounds().interact().get(), SoundSource.NEUTRAL, 1.0f, 1.0f);
+        level.playSound(
+                null, pos.x(), pos.y(), pos.z(), species.sounds().interact().get(), SoundSource.NEUTRAL, 1.0f, 1.0f);
         return companion;
     }
 
-    public static @Nullable CompanionEntity transform(Entity source, CompanionSpecies species, ParticleOptions particle) {
+    public static @Nullable CompanionEntity transform(
+            Entity source, CompanionSpecies species, ParticleOptions particle) {
         if (!(source.level() instanceof ServerLevel level)) {
             return null;
         }

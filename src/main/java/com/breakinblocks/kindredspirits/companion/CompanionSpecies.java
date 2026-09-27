@@ -1,41 +1,50 @@
 package com.breakinblocks.kindredspirits.companion;
 
+import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
-import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import com.breakinblocks.kindredspirits.config.KindredConfig.SpeciesStat;
-import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.registry.KindredSounds;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.tags.TagKey;
-import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.Item;
 
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.Optional;
-import java.util.Set;
-
 public enum CompanionSpecies implements StringRepresentable {
-    NIGHTFOX("nightfox",
+    NIGHTFOX(
+            "nightfox",
             new Size(0.7f, 0.8f, 1.0f, 0.0f),
             new Stats(14.0, 0.32, 3.0, 2.0, 0.0, 1.0),
-            CombatStyle.RANGED, true,
-            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK,
-                    CompanionAnimations.SPECIAL_ATTACK, CompanionAnimations.INTERACT),
-            new SoundSet(KindredSounds.NIGHTFOX_AMBIENT, KindredSounds.NIGHTFOX_HURT, KindredSounds.NIGHTFOX_DEATH,
-                    KindredSounds.NIGHTFOX_SPECIAL_ATTACK, KindredSounds.NIGHTFOX_SPECIAL_ATTACK, KindredSounds.NIGHTFOX_INTERACT),
+            CombatStyle.RANGED,
+            true,
+            Set.of(
+                    CompanionAnimations.IDLE,
+                    CompanionAnimations.WALK,
+                    CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.INTERACT),
+            new SoundSet(
+                    KindredSounds.NIGHTFOX_AMBIENT,
+                    KindredSounds.NIGHTFOX_HURT,
+                    KindredSounds.NIGHTFOX_DEATH,
+                    KindredSounds.NIGHTFOX_SPECIAL_ATTACK,
+                    KindredSounds.NIGHTFOX_SPECIAL_ATTACK,
+                    KindredSounds.NIGHTFOX_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.SWIFT_STEP),
                     Unlock.level(1, CompanionAbilities.SHADOW_BALL),
@@ -45,16 +54,31 @@ public enum CompanionSpecies implements StringRepresentable {
                     Unlock.level(16, CompanionAbilities.KINDLED_VIGOUR),
                     Unlock.level(30, CompanionAbilities.ONE_WITH_THE_NIGHT))),
 
-    TREX("trex",
+    TREX(
+            "trex",
             new Size(1.2f, 1.7f, 0.6f, 0.5f),
             new Stats(30.0, 0.25, 4.0, 2.0, 0.9, 1.0),
-            CombatStyle.MELEE, false,
-            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
-                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
-                    CompanionAnimations.JUMP_ATTACK, CompanionAnimations.SPAWN, CompanionAnimations.DEATH,
-                    CompanionAnimations.HURT, CompanionAnimations.INTERACT),
-            new SoundSet(KindredSounds.TREX_AMBIENT, KindredSounds.TREX_HURT, KindredSounds.TREX_DEATH,
-                    KindredSounds.TREX_ATTACK, KindredSounds.TREX_SPECIAL_ATTACK, KindredSounds.TREX_INTERACT),
+            CombatStyle.MELEE,
+            false,
+            Set.of(
+                    CompanionAnimations.IDLE,
+                    CompanionAnimations.WALK,
+                    CompanionAnimations.RUN,
+                    CompanionAnimations.SIT,
+                    CompanionAnimations.ATTACK,
+                    CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.JUMP_ATTACK,
+                    CompanionAnimations.SPAWN,
+                    CompanionAnimations.DEATH,
+                    CompanionAnimations.HURT,
+                    CompanionAnimations.INTERACT),
+            new SoundSet(
+                    KindredSounds.TREX_AMBIENT,
+                    KindredSounds.TREX_HURT,
+                    KindredSounds.TREX_DEATH,
+                    KindredSounds.TREX_ATTACK,
+                    KindredSounds.TREX_SPECIAL_ATTACK,
+                    KindredSounds.TREX_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.SAVAGE_LEAP),
                     Unlock.level(1, CompanionAbilities.CRUSHING_MIGHT),
@@ -63,16 +87,31 @@ public enum CompanionSpecies implements StringRepresentable {
                     Unlock.level(10, CompanionAbilities.KINDLED_VIGOUR),
                     Unlock.level(30, CompanionAbilities.XRAY_STOMP))),
 
-    MINI_PLAYER("mini_player",
+    MINI_PLAYER(
+            "mini_player",
             new Size(0.4f, 1.2f, 0.6f, 0.0f),
             new Stats(18.0, 0.30, 4.0, 2.0, 0.0, 0.5),
-            CombatStyle.HYBRID, true,
-            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
-                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SHOOT,
-                    CompanionAnimations.SPECIAL_ATTACK, CompanionAnimations.INTERACT,
-                    CompanionAnimations.HURT, CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
-            new SoundSet(KindredSounds.MINI_PLAYER_AMBIENT, KindredSounds.MINI_PLAYER_HURT, KindredSounds.MINI_PLAYER_DEATH,
-                    KindredSounds.MINI_PLAYER_ATTACK, KindredSounds.MINI_PLAYER_SPECIAL_ATTACK, KindredSounds.MINI_PLAYER_INTERACT),
+            CombatStyle.HYBRID,
+            true,
+            Set.of(
+                    CompanionAnimations.IDLE,
+                    CompanionAnimations.WALK,
+                    CompanionAnimations.RUN,
+                    CompanionAnimations.SIT,
+                    CompanionAnimations.ATTACK,
+                    CompanionAnimations.SHOOT,
+                    CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.INTERACT,
+                    CompanionAnimations.HURT,
+                    CompanionAnimations.SPAWN,
+                    CompanionAnimations.DEATH),
+            new SoundSet(
+                    KindredSounds.MINI_PLAYER_AMBIENT,
+                    KindredSounds.MINI_PLAYER_HURT,
+                    KindredSounds.MINI_PLAYER_DEATH,
+                    KindredSounds.MINI_PLAYER_ATTACK,
+                    KindredSounds.MINI_PLAYER_SPECIAL_ATTACK,
+                    KindredSounds.MINI_PLAYER_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.MIRROR_STRIKE),
                     Unlock.level(1, CompanionAbilities.EAT_THAT),
@@ -80,63 +119,121 @@ public enum CompanionSpecies implements StringRepresentable {
                     Unlock.level(12, CompanionAbilities.MENDING_PRESENCE),
                     Unlock.level(30, CompanionAbilities.FRIENDLY_FACE))),
 
-    BABY_DRAGON("baby_dragon",
+    BABY_DRAGON(
+            "baby_dragon",
             new Size(0.7f, 1.2f, 0.6f, 0.0f),
             new Stats(10.0, 0.36, 7.0, 2.0, 0.0, 1.5),
-            CombatStyle.RANGED, true,
-            Set.of(CompanionAnimations.IDLE, CompanionAnimations.FLY, CompanionAnimations.SIT,
-                    CompanionAnimations.SIT_STILL, CompanionAnimations.SIT_RARE,
-                    CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
-                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH, CompanionAnimations.HURT,
+            CombatStyle.RANGED,
+            true,
+            Set.of(
+                    CompanionAnimations.IDLE,
+                    CompanionAnimations.FLY,
+                    CompanionAnimations.SIT,
+                    CompanionAnimations.SIT_STILL,
+                    CompanionAnimations.SIT_RARE,
+                    CompanionAnimations.ATTACK,
+                    CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.SPAWN,
+                    CompanionAnimations.DEATH,
+                    CompanionAnimations.HURT,
                     CompanionAnimations.INTERACT),
-            new SoundSet(KindredSounds.BABY_DRAGON_AMBIENT, KindredSounds.BABY_DRAGON_HURT, KindredSounds.BABY_DRAGON_DEATH,
-                    KindredSounds.BABY_DRAGON_SPECIAL_ATTACK, KindredSounds.BABY_DRAGON_SPECIAL_ATTACK, KindredSounds.BABY_DRAGON_INTERACT),
+            new SoundSet(
+                    KindredSounds.BABY_DRAGON_AMBIENT,
+                    KindredSounds.BABY_DRAGON_HURT,
+                    KindredSounds.BABY_DRAGON_DEATH,
+                    KindredSounds.BABY_DRAGON_SPECIAL_ATTACK,
+                    KindredSounds.BABY_DRAGON_SPECIAL_ATTACK,
+                    KindredSounds.BABY_DRAGON_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.DRAGON_BREATH),
                     Unlock.level(1, CompanionAbilities.FORGE_DRAFT),
                     Unlock.bond(5, CompanionAbilities.DRAGONFIRE),
                     Unlock.level(30, CompanionAbilities.KILN_BREATH))),
 
-    QUOKKA("quokka",
+    QUOKKA(
+            "quokka",
             new Size(0.5f, 0.65f, 1.0f, 0.0f),
             new Stats(18.0, 0.36, 2.0, 6.0, 0.0, 0.5),
-            CombatStyle.MELEE, false,
-            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
-                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
-                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH, CompanionAnimations.HURT,
+            CombatStyle.MELEE,
+            false,
+            Set.of(
+                    CompanionAnimations.IDLE,
+                    CompanionAnimations.WALK,
+                    CompanionAnimations.RUN,
+                    CompanionAnimations.SIT,
+                    CompanionAnimations.ATTACK,
+                    CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.SPAWN,
+                    CompanionAnimations.DEATH,
+                    CompanionAnimations.HURT,
                     CompanionAnimations.INTERACT),
-            new SoundSet(KindredSounds.QUOKKA_AMBIENT, KindredSounds.QUOKKA_HURT, KindredSounds.QUOKKA_DEATH,
-                    KindredSounds.QUOKKA_ATTACK, KindredSounds.QUOKKA_SPECIAL_ATTACK, KindredSounds.QUOKKA_INTERACT),
-            List.of(Unlock.level(1, CompanionAbilities.SMILE),
+            new SoundSet(
+                    KindredSounds.QUOKKA_AMBIENT,
+                    KindredSounds.QUOKKA_HURT,
+                    KindredSounds.QUOKKA_DEATH,
+                    KindredSounds.QUOKKA_ATTACK,
+                    KindredSounds.QUOKKA_SPECIAL_ATTACK,
+                    KindredSounds.QUOKKA_INTERACT),
+            List.of(
+                    Unlock.level(1, CompanionAbilities.SMILE),
                     Unlock.bond(5, CompanionAbilities.BRIGHTER_SIDE),
                     Unlock.level(30, CompanionAbilities.ALWAYS_HAPPY))),
 
-    GREMLIN("gremlin",
+    GREMLIN(
+            "gremlin",
             new Size(0.5f, 0.8f, 0.8f, 0.0f),
             new Stats(10.0, 0.40, 2.0, 2.0, 0.0, 1.5),
-            CombatStyle.MELEE, false,
-            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
-                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
-                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH, CompanionAnimations.HURT,
+            CombatStyle.MELEE,
+            false,
+            Set.of(
+                    CompanionAnimations.IDLE,
+                    CompanionAnimations.WALK,
+                    CompanionAnimations.RUN,
+                    CompanionAnimations.SIT,
+                    CompanionAnimations.ATTACK,
+                    CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.SPAWN,
+                    CompanionAnimations.DEATH,
+                    CompanionAnimations.HURT,
                     CompanionAnimations.INTERACT),
-            new SoundSet(KindredSounds.GREMLIN_AMBIENT, KindredSounds.GREMLIN_HURT, KindredSounds.GREMLIN_DEATH,
-                    KindredSounds.GREMLIN_ATTACK, KindredSounds.GREMLIN_SPECIAL_ATTACK, KindredSounds.GREMLIN_INTERACT),
+            new SoundSet(
+                    KindredSounds.GREMLIN_AMBIENT,
+                    KindredSounds.GREMLIN_HURT,
+                    KindredSounds.GREMLIN_DEATH,
+                    KindredSounds.GREMLIN_ATTACK,
+                    KindredSounds.GREMLIN_SPECIAL_ATTACK,
+                    KindredSounds.GREMLIN_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.TINKER),
                     Unlock.bond(5, CompanionAbilities.SNACK_THIEF),
                     Unlock.level(12, CompanionAbilities.SWIFT_STEP),
                     Unlock.level(30, CompanionAbilities.ENERGIZED_CHAOS))),
 
-    DIREWOLF("direwolf",
+    DIREWOLF(
+            "direwolf",
             new Size(1.0f, 1.1f, 1.3f, 0.0f),
             new Stats(18.0, 0.32, 5.0, 4.0, 0.2, 1.0),
-            CombatStyle.MELEE, false,
-            Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
-                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
-                    CompanionAnimations.DIG, CompanionAnimations.HURT, CompanionAnimations.INTERACT,
-                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
-            new SoundSet(KindredSounds.DIREWOLF_AMBIENT, KindredSounds.DIREWOLF_HURT, KindredSounds.DIREWOLF_DEATH,
-                    KindredSounds.DIREWOLF_ATTACK, KindredSounds.DIREWOLF_SPECIAL_ATTACK, KindredSounds.DIREWOLF_INTERACT),
+            CombatStyle.MELEE,
+            false,
+            Set.of(
+                    CompanionAnimations.IDLE,
+                    CompanionAnimations.WALK,
+                    CompanionAnimations.RUN,
+                    CompanionAnimations.SIT,
+                    CompanionAnimations.ATTACK,
+                    CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.DIG,
+                    CompanionAnimations.HURT,
+                    CompanionAnimations.INTERACT,
+                    CompanionAnimations.SPAWN,
+                    CompanionAnimations.DEATH),
+            new SoundSet(
+                    KindredSounds.DIREWOLF_AMBIENT,
+                    KindredSounds.DIREWOLF_HURT,
+                    KindredSounds.DIREWOLF_DEATH,
+                    KindredSounds.DIREWOLF_ATTACK,
+                    KindredSounds.DIREWOLF_SPECIAL_ATTACK,
+                    KindredSounds.DIREWOLF_INTERACT),
             List.of(
                     Unlock.level(1, CompanionAbilities.NOT_ANOTHER_HOLE),
                     Unlock.bond(5, CompanionAbilities.BEST_FRIEND),
@@ -156,9 +253,15 @@ public enum CompanionSpecies implements StringRepresentable {
     private TagKey<Item> tamingTag;
     private TagKey<Item> equipmentTag;
 
-    CompanionSpecies(String name, Size size, Stats stats,
-                     CombatStyle combatStyle, boolean huntsDangerousPrey, Set<String> animations,
-                     SoundSet sounds, List<Unlock> unlocks) {
+    CompanionSpecies(
+            String name,
+            Size size,
+            Stats stats,
+            CombatStyle combatStyle,
+            boolean huntsDangerousPrey,
+            Set<String> animations,
+            SoundSet sounds,
+            List<Unlock> unlocks) {
         this.name = name;
         this.size = size;
         this.stats = stats;
@@ -330,11 +433,12 @@ public enum CompanionSpecies implements StringRepresentable {
         return EnumLookup.byName(values(), name);
     }
 
-    public record Size(float width, float height, float renderScale, double hitboxOffset) {
-    }
+    public record Size(float width, float height, float renderScale, double hitboxOffset) {}
 
-    public record Immunities(Set<TagKey<DamageType>> damageTags, Set<ResourceKey<DamageType>> damageTypes,
-                             Set<Holder<MobEffect>> effects) {
+    public record Immunities(
+            Set<TagKey<DamageType>> damageTags,
+            Set<ResourceKey<DamageType>> damageTypes,
+            Set<Holder<MobEffect>> effects) {
         public static final Immunities NONE = new Immunities(Set.of(), Set.of(), Set.of());
 
         @SafeVarargs
@@ -357,7 +461,8 @@ public enum CompanionSpecies implements StringRepresentable {
         }
 
         public boolean blocks(DamageSource source) {
-            return this.damageTags.stream().anyMatch(source::is) || this.damageTypes.stream().anyMatch(source::is);
+            return this.damageTags.stream().anyMatch(source::is)
+                    || this.damageTypes.stream().anyMatch(source::is);
         }
 
         public boolean blocks(Holder<MobEffect> effect) {
@@ -365,9 +470,13 @@ public enum CompanionSpecies implements StringRepresentable {
         }
     }
 
-    public record Stats(double health, double moveSpeed, double attackDamage,
-                        double armour, double knockbackResistance, double growth) {
-    }
+    public record Stats(
+            double health,
+            double moveSpeed,
+            double attackDamage,
+            double armour,
+            double knockbackResistance,
+            double growth) {}
 
     public record Unlock(Gate gate, int required, CompanionAbility ability) {
         public static Unlock level(int level, CompanionAbility ability) {
@@ -387,7 +496,8 @@ public enum CompanionSpecies implements StringRepresentable {
         }
 
         public Component label(Component name, int level, int bondLevel) {
-            return this.isMet(level, bondLevel) ? name
+            return this.isMet(level, bondLevel)
+                    ? name
                     : name.copy().append(" (").append(this.requirement()).append(")");
         }
 
@@ -403,10 +513,13 @@ public enum CompanionSpecies implements StringRepresentable {
         }
     }
 
-    public record SoundSet(Supplier<SoundEvent> ambient, Supplier<SoundEvent> hurt,
-                           Supplier<SoundEvent> death, Supplier<SoundEvent> attack,
-                           Supplier<SoundEvent> specialAttack, Supplier<SoundEvent> interact) {
-    }
+    public record SoundSet(
+            Supplier<SoundEvent> ambient,
+            Supplier<SoundEvent> hurt,
+            Supplier<SoundEvent> death,
+            Supplier<SoundEvent> attack,
+            Supplier<SoundEvent> specialAttack,
+            Supplier<SoundEvent> interact) {}
 
     public enum CombatStyle {
         MELEE,

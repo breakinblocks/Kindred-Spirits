@@ -21,8 +21,13 @@ public class KindredStorageMenu extends AbstractContainerMenu {
     private final int accessibleSlots;
     private final @Nullable CompanionEntity companion;
 
-    public KindredStorageMenu(int containerId, Inventory playerInventory, Container storage,
-                              int rows, int accessibleSlots, @Nullable CompanionEntity companion) {
+    public KindredStorageMenu(
+            int containerId,
+            Inventory playerInventory,
+            Container storage,
+            int rows,
+            int accessibleSlots,
+            @Nullable CompanionEntity companion) {
         super(KindredMenus.COMPANION_STORAGE.get(), containerId);
         this.storage = storage;
         this.rows = rows;
@@ -33,20 +38,23 @@ public class KindredStorageMenu extends AbstractContainerMenu {
         for (int row = 0; row < rows; row++) {
             for (int column = 0; column < 9; column++) {
                 int index = column + row * 9;
-                this.addSlot(new StorageSlot(storage, index, 8 + column * 18, 18 + row * 18,
-                        index < accessibleSlots));
+                this.addSlot(new StorageSlot(storage, index, 8 + column * 18, 18 + row * 18, index < accessibleSlots));
             }
         }
 
         this.addStandardInventorySlots(playerInventory, 8, 18 + rows * 18 + 13);
     }
 
-    public static KindredStorageMenu client(int containerId, Inventory playerInventory,
-                                            RegistryFriendlyByteBuf data) {
+    public static KindredStorageMenu client(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf data) {
         int rows = data.readVarInt();
         int accessible = data.readVarInt();
-        return new KindredStorageMenu(containerId, playerInventory,
-                new SimpleContainer(CompanionLevels.MAX_STORAGE_SLOTS), rows, accessible, null);
+        return new KindredStorageMenu(
+                containerId,
+                playerInventory,
+                new SimpleContainer(CompanionLevels.MAX_STORAGE_SLOTS),
+                rows,
+                accessible,
+                null);
     }
 
     public int getRowCount() {
@@ -91,7 +99,8 @@ public class KindredStorageMenu extends AbstractContainerMenu {
             return true;
         }
 
-        return this.companion.isAlive() && this.companion.isBonded()
+        return this.companion.isAlive()
+                && this.companion.isBonded()
                 && player.distanceToSqr(this.companion) <= REACH_SQR;
     }
 

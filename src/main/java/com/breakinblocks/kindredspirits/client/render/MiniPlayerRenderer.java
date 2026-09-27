@@ -23,8 +23,8 @@ public class MiniPlayerRenderer extends CompanionRenderer {
     }
 
     @Override
-    public void addRenderData(CompanionEntity entity, Void relatedObject,
-                              LivingEntityRenderState renderState, float partialTick) {
+    public void addRenderData(
+            CompanionEntity entity, Void relatedObject, LivingEntityRenderState renderState, float partialTick) {
         super.addRenderData(entity, relatedObject, renderState, partialTick);
 
         PlayerSkin skin = KindredSkins.skinFor(entity);

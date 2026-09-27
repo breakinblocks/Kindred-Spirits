@@ -28,6 +28,5 @@ public final class CompanionCombatEvents {
         }
     }
 
-    private CompanionCombatEvents() {
-    }
+    private CompanionCombatEvents() {}
 }

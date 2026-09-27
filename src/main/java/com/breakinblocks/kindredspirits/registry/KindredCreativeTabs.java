@@ -12,8 +12,9 @@ public final class KindredCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, KindredSpirits.MOD_ID);
 
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> KINDRED_TAB =
-            CREATIVE_TABS.register("kindredspirits", () -> CreativeModeTab.builder()
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> KINDRED_TAB = CREATIVE_TABS.register(
+            "kindredspirits",
+            () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.kindredspirits"))
                     .icon(() -> new ItemStack(KindredItems.KINDRED_CHARM.get()))
                     .displayItems((parameters, output) -> {
@@ -26,6 +27,5 @@ public final class KindredCreativeTabs {
                     })
                     .build());
 
-    private KindredCreativeTabs() {
-    }
+    private KindredCreativeTabs() {}
 }

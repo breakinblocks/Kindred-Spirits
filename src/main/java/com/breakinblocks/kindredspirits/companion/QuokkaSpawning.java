@@ -14,10 +14,13 @@ import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
 public final class QuokkaSpawning {
     @SubscribeEvent
     public static void placements(RegisterSpawnPlacementsEvent event) {
-        event.register(KindredEntities.type(CompanionSpecies.QUOKKA), SpawnPlacementTypes.ON_GROUND,
-                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (type, level, reason, pos, random) ->
-                        random.nextInt(3) != 0 && pos.getY() >= level.getSeaLevel()
-                                && (level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)
+        event.register(
+                KindredEntities.type(CompanionSpecies.QUOKKA),
+                SpawnPlacementTypes.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (type, level, reason, pos, random) -> random.nextInt(3) != 0
+                        && pos.getY() >= level.getSeaLevel()
+                        && (level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK)
                                 || level.getBlockState(pos.below()).is(BlockTags.LEAVES)),
                 RegisterSpawnPlacementsEvent.Operation.REPLACE);
     }

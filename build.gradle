@@ -4,6 +4,7 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.neoforged.moddev' version "${mdg_version}"
+    id 'com.diffplug.spotless' version '8.10.3'
 }
 
 def hasSnapshotVersion = mod_version ==~ /.*-SNAPSHOT(?:\.\d+)?/
@@ -372,5 +373,16 @@ publishing {
                 password = System.getenv('MAVEN_TOKEN') ?: ''
             }
         }
+    }
+}
+
+spotless {
+    java {
+        target 'src/*/java/**/*.java'
+        palantirJavaFormat()
+        importOrder()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
     }
 }

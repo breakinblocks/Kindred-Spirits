@@ -10,6 +10,13 @@ import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.ToIntBiFunction;
+import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -19,42 +26,34 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.ToIntBiFunction;
-import java.util.function.ToIntFunction;
-import java.util.stream.Collectors;
-
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class KindredCommands {
     private static final double SEARCH_RANGE = 32.0;
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal(KindredSpirits.MOD_ID)
-                .then(Commands.literal("info")
-                        .executes(context -> reportCompanion(context.getSource())))
-                .then(Commands.literal("release")
-                        .executes(context -> releaseBond(context.getSource())))
-                .then(Commands.literal("smelt")
-                        .executes(context -> useAbility(context.getSource())))
-                .then(Commands.literal("xp")
-                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                        .then(Commands.argument("amount", IntegerArgumentType.integer(1))
-                                .executes(context -> grantExperience(context.getSource(),
-                                        IntegerArgumentType.getInteger(context, "amount")))))
-                .then(Commands.literal("bond")
-                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                        .then(Commands.argument("points", IntegerArgumentType.integer(1))
-                                .executes(context -> grantBond(context.getSource(),
-                                        IntegerArgumentType.getInteger(context, "points")))))
-                .then(Commands.literal("resetrevive")
-                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                        .then(Commands.argument("players", EntityArgument.players())
-                                .executes(context -> resetRevive(context.getSource(),
-                                        EntityArgument.getPlayers(context, "players"))))));
+        event.getDispatcher()
+                .register(Commands.literal(KindredSpirits.MOD_ID)
+                        .then(Commands.literal("info").executes(context -> reportCompanion(context.getSource())))
+                        .then(Commands.literal("release").executes(context -> releaseBond(context.getSource())))
+                        .then(Commands.literal("smelt").executes(context -> useAbility(context.getSource())))
+                        .then(Commands.literal("xp")
+                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                        .executes(context -> grantExperience(
+                                                context.getSource(),
+                                                IntegerArgumentType.getInteger(context, "amount")))))
+                        .then(Commands.literal("bond")
+                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .then(Commands.argument("points", IntegerArgumentType.integer(1))
+                                        .executes(context -> grantBond(
+                                                context.getSource(),
+                                                IntegerArgumentType.getInteger(context, "points")))))
+                        .then(Commands.literal("resetrevive")
+                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .then(Commands.argument("players", EntityArgument.players())
+                                        .executes(context -> resetRevive(
+                                                context.getSource(), EntityArgument.getPlayers(context, "players"))))));
     }
 
     private static int resetRevive(CommandSourceStack source, Collection<ServerPlayer> players) {
@@ -93,12 +92,14 @@ public final class KindredCommands {
     }
 
     private static int withCompanion(CommandSourceStack source, ToIntBiFunction<ServerPlayer, CompanionEntity> body) {
-        return withPlayer(source, player -> CompanionEntity.bondedNear(player, SEARCH_RANGE)
-                .map(companion -> body.applyAsInt(player, companion))
-                .orElseGet(() -> {
-                    source.sendFailure(Component.translatable("command.kindredspirits.no_companion"));
-                    return 0;
-                }));
+        return withPlayer(
+                source,
+                player -> CompanionEntity.bondedNear(player, SEARCH_RANGE)
+                        .map(companion -> body.applyAsInt(player, companion))
+                        .orElseGet(() -> {
+                            source.sendFailure(Component.translatable("command.kindredspirits.no_companion"));
+                            return 0;
+                        }));
     }
 
     private static int releaseBond(CommandSourceStack source) {
@@ -119,7 +120,8 @@ public final class KindredCommands {
                 return 0;
             }
 
-            CompanionEntity nearest = CompanionProgressEvents.bondedCompanionNear(player, SEARCH_RANGE).orElse(null);
+            CompanionEntity nearest = CompanionProgressEvents.bondedCompanionNear(player, SEARCH_RANGE)
+                    .orElse(null);
             return KindredCharmItem.useAbility(player, bond, nearest) ? 1 : 0;
         });
     }
@@ -132,53 +134,72 @@ public final class KindredCommands {
         List<CompanionAbility> unlocked = companion.unlockedAbilities();
         String abilities = companion.species().unlocks().stream()
                 .map(unlock -> !unlocked.contains(unlock.ability())
-                        ? unlock.label(Component.literal(unlock.ability().id().getPath()),
-                                companion.getLevel(), companion.getBondLevel()).getString()
+                        ? unlock.label(
+                                        Component.literal(unlock.ability().id().getPath()),
+                                        companion.getLevel(),
+                                        companion.getBondLevel())
+                                .getString()
                         : companion.isAbilityDisabled(unlock.ability())
-                        ? unlock.ability().id().getPath() + " ("
-                                + Component.translatable("command.kindredspirits.ability_off").getString() + ")"
-                        : unlock.ability().id().getPath())
+                                ? unlock.ability().id().getPath() + " ("
+                                        + Component.translatable("command.kindredspirits.ability_off")
+                                                .getString() + ")"
+                                : unlock.ability().id().getPath())
                 .collect(Collectors.joining(", "));
 
         int bondPoints = companion.getBondPoints();
-        source.sendSuccess(() -> Component.translatable("command.kindredspirits.info",
-                companion.getDisplayName(),
-                companion.getLevel(),
-                companion.getStars(),
-                companion.getExperience(),
-                companion.experienceToNextLevel(),
-                companion.getBondLevel(),
-                CompanionBondMath.pointsIntoLevel(bondPoints),
-                CompanionBondMath.costToNext(bondPoints),
-                companion.progress().saturation(),
-                companion.progress().rested(),
-                companion.equipment().isEmpty()
-                        ? Component.translatable("command.kindredspirits.no_equipment")
-                        : companion.equipment().getHoverName(),
-                abilities.isEmpty() ? "-" : abilities), false);
+        source.sendSuccess(
+                () -> Component.translatable(
+                        "command.kindredspirits.info",
+                        companion.getDisplayName(),
+                        companion.getLevel(),
+                        companion.getStars(),
+                        companion.getExperience(),
+                        companion.experienceToNextLevel(),
+                        companion.getBondLevel(),
+                        CompanionBondMath.pointsIntoLevel(bondPoints),
+                        CompanionBondMath.costToNext(bondPoints),
+                        companion.progress().saturation(),
+                        companion.progress().rested(),
+                        companion.equipment().isEmpty()
+                                ? Component.translatable("command.kindredspirits.no_equipment")
+                                : companion.equipment().getHoverName(),
+                        abilities.isEmpty() ? "-" : abilities),
+                false);
         return companion.getLevel();
     }
 
     private static int grantExperience(CommandSourceStack source, int amount) {
-        return grant(source, amount, CompanionEntity::addExperience, "command.kindredspirits.xp_granted",
+        return grant(
+                source,
+                amount,
+                CompanionEntity::addExperience,
+                "command.kindredspirits.xp_granted",
                 CompanionEntity::getLevel);
     }
 
     private static int grantBond(CommandSourceStack source, int points) {
-        return grant(source, points, CompanionEntity::addBondPoints, "command.kindredspirits.bond_granted",
+        return grant(
+                source,
+                points,
+                CompanionEntity::addBondPoints,
+                "command.kindredspirits.bond_granted",
                 CompanionEntity::getBondLevel);
     }
 
-    private static int grant(CommandSourceStack source, int amount, BiConsumer<CompanionEntity, Integer> apply,
-                             String key, Function<CompanionEntity, Integer> result) {
+    private static int grant(
+            CommandSourceStack source,
+            int amount,
+            BiConsumer<CompanionEntity, Integer> apply,
+            String key,
+            Function<CompanionEntity, Integer> result) {
         return withCompanion(source, (player, companion) -> {
             apply.accept(companion, amount);
-            source.sendSuccess(() -> Component.translatable(key,
-                    amount, companion.getDisplayName(), result.apply(companion)), true);
+            source.sendSuccess(
+                    () -> Component.translatable(key, amount, companion.getDisplayName(), result.apply(companion)),
+                    true);
             return amount;
         });
     }
 
-    private KindredCommands() {
-    }
+    private KindredCommands() {}
 }

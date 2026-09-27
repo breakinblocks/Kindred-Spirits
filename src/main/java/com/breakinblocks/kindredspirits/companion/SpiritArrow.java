@@ -25,7 +25,15 @@ public class SpiritArrow extends AbstractArrow {
         super.tick();
         if (this.level().isClientSide()) {
             if (!this.isInGround()) {
-                this.level().addParticle(KindredParticles.CRAFT_SPARK.get(), this.getX(), this.getY(), this.getZ(), 0.0, 0.0, 0.0);
+                this.level()
+                        .addParticle(
+                                KindredParticles.CRAFT_SPARK.get(),
+                                this.getX(),
+                                this.getY(),
+                                this.getZ(),
+                                0.0,
+                                0.0,
+                                0.0);
             }
         } else if (this.isInGround() && this.inGroundTime >= FADE_TICKS) {
             this.discard();

@@ -1,28 +1,27 @@
 package com.breakinblocks.kindredspirits.client.render;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.companion.CompanionAnimations;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
+import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import com.geckolib.constant.dataticket.DataTicket;
 import com.geckolib.model.GeoModel;
 import com.geckolib.renderer.GeoEntityRenderer;
-import com.breakinblocks.kindredspirits.companion.CompanionAnimations;
 import com.geckolib.renderer.base.BoneSnapshots;
 import com.geckolib.renderer.base.GeoRenderState;
 import com.geckolib.renderer.base.RenderPassInfo;
 import com.geckolib.renderer.layer.builtin.AutoGlowingGeoLayer;
-import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.core.Direction;
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import com.breakinblocks.kindredspirits.net.CharmView;
+import java.util.List;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.neoforged.neoforge.registries.DeferredItem;
-
-import java.util.List;
 
 public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, LivingEntityRenderState> {
     static final DataTicket<String> EQUIPMENT = DataTicket.create("kindredspirits:equipment", String.class);
@@ -50,8 +49,8 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
         return item.getId().toString().equals(state.getOrDefaultGeckolibData(EQUIPMENT, ""));
     }
 
-    protected CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species,
-                                GeoModel<CompanionEntity> model) {
+    protected CompanionRenderer(
+            EntityRendererProvider.Context context, CompanionSpecies species, GeoModel<CompanionEntity> model) {
         super(context, model);
         this.species = species;
         this.withScale(species.renderScale());
@@ -59,8 +58,8 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
     }
 
     @Override
-    public void addRenderData(CompanionEntity entity, Void relatedObject,
-                              LivingEntityRenderState renderState, float partialTick) {
+    public void addRenderData(
+            CompanionEntity entity, Void relatedObject, LivingEntityRenderState renderState, float partialTick) {
         super.addRenderData(entity, relatedObject, renderState, partialTick);
         renderState.addGeckolibData(EQUIPMENT, entity.equipmentId());
         renderState.addGeckolibData(DYE, entity.getDyeId());
@@ -75,14 +74,12 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
 
     @Override
     protected float getDeathMaxRotation(GeoRenderState renderState) {
-        return this.species.hasAnimation(CompanionAnimations.DEATH)
-                ? 0.0f
-                : super.getDeathMaxRotation(renderState);
+        return this.species.hasAnimation(CompanionAnimations.DEATH) ? 0.0f : super.getDeathMaxRotation(renderState);
     }
 
     @Override
-    public void adjustModelBonesForRender(RenderPassInfo<LivingEntityRenderState> renderPass,
-                                          BoneSnapshots boneSnapshots) {
+    public void adjustModelBonesForRender(
+            RenderPassInfo<LivingEntityRenderState> renderPass, BoneSnapshots boneSnapshots) {
         super.adjustModelBonesForRender(renderPass, boneSnapshots);
 
         List<String> headBones = this.species.headBones();
@@ -116,11 +113,15 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
         if (entity.isTame() && KindredConfig.CLIENT.showLevelInName.get()) {
             int stars = entity.getStars();
             state.nameTag = stars > 0
-                    ? Component.translatable("entity.kindredspirits.name_with_stars",
-                            entity.getDisplayName(), entity.getLevel(), CharmView.starText(stars))
-                            .withStyle(stars >= entity.configuredMaxStars() ? ChatFormatting.GOLD : ChatFormatting.WHITE)
-                    : Component.translatable("entity.kindredspirits.name_with_level",
-                            entity.getDisplayName(), entity.getLevel());
+                    ? Component.translatable(
+                                    "entity.kindredspirits.name_with_stars",
+                                    entity.getDisplayName(),
+                                    entity.getLevel(),
+                                    CharmView.starText(stars))
+                            .withStyle(
+                                    stars >= entity.configuredMaxStars() ? ChatFormatting.GOLD : ChatFormatting.WHITE)
+                    : Component.translatable(
+                            "entity.kindredspirits.name_with_level", entity.getDisplayName(), entity.getLevel());
         }
     }
 }

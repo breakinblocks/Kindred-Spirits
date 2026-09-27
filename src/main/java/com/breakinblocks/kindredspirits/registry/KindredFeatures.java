@@ -8,11 +8,11 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class KindredFeatures {
-    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, KindredSpirits.MOD_ID);
+    public static final DeferredRegister<Feature<?>> FEATURES =
+            DeferredRegister.create(Registries.FEATURE, KindredSpirits.MOD_ID);
 
     public static final DeferredHolder<Feature<?>, BeachSuspiciousSandFeature> BEACH_SUSPICIOUS_SAND =
             FEATURES.register("beach_suspicious_sand", BeachSuspiciousSandFeature::new);
 
-    private KindredFeatures() {
-    }
+    private KindredFeatures() {}
 }

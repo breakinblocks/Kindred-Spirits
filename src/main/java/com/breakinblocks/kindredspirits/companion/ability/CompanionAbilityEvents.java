@@ -1,8 +1,9 @@
 package com.breakinblocks.kindredspirits.companion.ability;
 
-import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
+import java.util.Optional;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,8 +21,6 @@ import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-
-import java.util.Optional;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class CompanionAbilityEvents {
@@ -45,20 +44,28 @@ public final class CompanionAbilityEvents {
 
     @SubscribeEvent
     public static void onSpawnPositionCheck(MobSpawnEvent.PositionCheck event) {
-        if (event.getSpawnType() != EntitySpawnReason.NATURAL || !(event.getEntity() instanceof Enemy)
+        if (event.getSpawnType() != EntitySpawnReason.NATURAL
+                || !(event.getEntity() instanceof Enemy)
                 || !CompanionAbilities.enabled()) {
             return;
         }
 
         ServerLevel level = event.getLevel().getLevel();
-        AABB search = AABB.ofSize(new Vec3(event.getX(), event.getY(), event.getZ()),
-                ALPHA_SEARCH * 2, ALPHA_SEARCH * 2, ALPHA_SEARCH * 2);
+        AABB search = AABB.ofSize(
+                new Vec3(event.getX(), event.getY(), event.getZ()),
+                ALPHA_SEARCH * 2,
+                ALPHA_SEARCH * 2,
+                ALPHA_SEARCH * 2);
 
-        boolean denied = !level.getEntitiesOfClass(CompanionEntity.class, search,
-                companion -> companion.isAlive() && companion.isBonded()
-                        && companion.hasAbility(CompanionAbilities.ALPHA)
-                        && companion.distanceToSqr(event.getX(), event.getY(), event.getZ())
-                        <= square(alphaRadius(companion.getLevel()))).isEmpty();
+        boolean denied = !level.getEntitiesOfClass(
+                        CompanionEntity.class,
+                        search,
+                        companion -> companion.isAlive()
+                                && companion.isBonded()
+                                && companion.hasAbility(CompanionAbilities.ALPHA)
+                                && companion.distanceToSqr(event.getX(), event.getY(), event.getZ())
+                                        <= square(alphaRadius(companion.getLevel())))
+                .isEmpty();
 
         if (denied) {
             event.setResult(MobSpawnEvent.PositionCheck.Result.FAIL);
@@ -117,22 +124,25 @@ public final class CompanionAbilityEvents {
         companionWith(owner, CompanionAbilities.EAT_THAT).ifPresent(companion -> {
             float share = (float) (EAT_THAT_BASE_SHARE + companion.getLevel() / 100.0);
             companion.heal(food.nutrition() * share);
-            float saturation = owner.getFoodData().getSaturationLevel() + food.saturation() * companion.getLevel() / 100.0f;
-            owner.getFoodData().setSaturation(Math.min(saturation, owner.getFoodData().getFoodLevel()));
+            float saturation =
+                    owner.getFoodData().getSaturationLevel() + food.saturation() * companion.getLevel() / 100.0f;
+            owner.getFoodData()
+                    .setSaturation(Math.min(saturation, owner.getFoodData().getFoodLevel()));
             companion.burst(KindredParticles.BOND_HEART.get(), 2);
         });
     }
 
     @SubscribeEvent
     public static void onExperienceDrop(LivingExperienceDropEvent event) {
-        if (!(event.getAttackingPlayer() instanceof ServerPlayer owner) || event.getEntity() instanceof CompanionEntity
+        if (!(event.getAttackingPlayer() instanceof ServerPlayer owner)
+                || event.getEntity() instanceof CompanionEntity
                 || event.getDroppedExperience() <= 0) {
             return;
         }
 
         companionWith(owner, CompanionAbilities.BEST_FRIEND).ifPresent(companion -> {
-            event.setDroppedExperience(event.getDroppedExperience()
-                    + (int) Math.ceil(event.getDroppedExperience() * BEST_FRIEND_BONUS));
+            event.setDroppedExperience(
+                    event.getDroppedExperience() + (int) Math.ceil(event.getDroppedExperience() * BEST_FRIEND_BONUS));
             LivingEntity victim = event.getEntity();
             if (victim.level() instanceof ServerLevel level) {
                 CompanionAbilities.hitParticles(level, victim, KindredParticles.LEVEL_STAR.get(), 4, 0.5, 0.3, 0.02);
@@ -144,6 +154,5 @@ public final class CompanionAbilityEvents {
         return value * value;
     }
 
-    private CompanionAbilityEvents() {
-    }
+    private CompanionAbilityEvents() {}
 }

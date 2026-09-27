@@ -43,8 +43,15 @@ public class MeteorEntity extends AbstractHurtingProjectile implements GeoEntity
         super.tick();
         if (this.level().isClientSide() && this.isAlive()) {
             for (int i = 0; i < 2; i++) {
-                this.level().addParticle(KindredParticles.FORGE_EMBER.get(), this.getRandomX(0.8),
-                        this.getY() + 0.5 + this.random.nextDouble(), this.getRandomZ(0.8), 0.0, 0.04, 0.0);
+                this.level()
+                        .addParticle(
+                                KindredParticles.FORGE_EMBER.get(),
+                                this.getRandomX(0.8),
+                                this.getY() + 0.5 + this.random.nextDouble(),
+                                this.getRandomZ(0.8),
+                                0.0,
+                                0.04,
+                                0.0);
             }
         }
     }

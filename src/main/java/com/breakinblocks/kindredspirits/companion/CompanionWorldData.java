@@ -4,6 +4,10 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -16,38 +20,38 @@ import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Supplier;
-
 /** Persistent work that cannot depend on the companion or owner remaining loaded. */
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class CompanionWorldData {
     public record Death(UUID owner, UUID companion, CompanionSnapshot snapshot, long readyAt) {
         public static final Codec<Death> CODEC = RecordCodecBuilder.create(i -> i.group(
-                UUIDUtil.CODEC.fieldOf("owner").forGetter(Death::owner),
-                UUIDUtil.CODEC.fieldOf("companion").forGetter(Death::companion),
-                CompanionSnapshot.CODEC.fieldOf("snapshot").forGetter(Death::snapshot),
-                Codec.LONG.fieldOf("ready_at").forGetter(Death::readyAt)
-        ).apply(i, Death::new));
+                        UUIDUtil.CODEC.fieldOf("owner").forGetter(Death::owner),
+                        UUIDUtil.CODEC.fieldOf("companion").forGetter(Death::companion),
+                        CompanionSnapshot.CODEC.fieldOf("snapshot").forGetter(Death::snapshot),
+                        Codec.LONG.fieldOf("ready_at").forGetter(Death::readyAt))
+                .apply(i, Death::new));
     }
 
     public record LightRemoval(BlockPos pos, Block block) {
         public static final Codec<LightRemoval> CODEC = RecordCodecBuilder.create(i -> i.group(
-                BlockPos.CODEC.fieldOf("pos").forGetter(LightRemoval::pos),
-                BuiltInRegistries.BLOCK.byNameCodec().fieldOf("block").forGetter(LightRemoval::block)
-        ).apply(i, LightRemoval::new));
+                        BlockPos.CODEC.fieldOf("pos").forGetter(LightRemoval::pos),
+                        BuiltInRegistries.BLOCK.byNameCodec().fieldOf("block").forGetter(LightRemoval::block))
+                .apply(i, LightRemoval::new));
     }
 
     public static final Supplier<AttachmentType<List<Death>>> DEATHS = KindredAttachments.ATTACHMENT_TYPES.register(
-            "pending_deaths", () -> AttachmentType.<List<Death>>builder(() -> List.of())
-                    .serialize(Death.CODEC.listOf().fieldOf("deaths")).build());
-    public static final Supplier<AttachmentType<List<LightRemoval>>> LIGHT_REMOVALS = KindredAttachments.ATTACHMENT_TYPES.register(
-            "pending_light_removals", () -> AttachmentType.<List<LightRemoval>>builder(() -> List.of())
-                    .serialize(LightRemoval.CODEC.listOf().fieldOf("lights")).build());
+            "pending_deaths",
+            () -> AttachmentType.<List<Death>>builder(() -> List.of())
+                    .serialize(Death.CODEC.listOf().fieldOf("deaths"))
+                    .build());
+    public static final Supplier<AttachmentType<List<LightRemoval>>> LIGHT_REMOVALS =
+            KindredAttachments.ATTACHMENT_TYPES.register(
+                    "pending_light_removals",
+                    () -> AttachmentType.<List<LightRemoval>>builder(() -> List.of())
+                            .serialize(LightRemoval.CODEC.listOf().fieldOf("lights"))
+                            .build());
 
-    public static void init() { }
+    public static void init() {}
 
     public static void recordDeath(ServerLevel level, Death death) {
         ServerLevel storage = level.getServer().overworld();
@@ -63,8 +67,11 @@ public final class CompanionWorldData {
         boolean changed = deaths.removeIf(death -> {
             if (!death.owner().equals(player.getUUID())) return false;
             if (KindredAttachments.bond(player).isBoundTo(death.companion())) {
-                KindredAttachments.modifyBond(player, bond -> bond.withSnapshot(death.companion(), death.snapshot())
-                        .withStored(true).withReviveReadyAt(death.readyAt()));
+                KindredAttachments.modifyBond(
+                        player,
+                        bond -> bond.withSnapshot(death.companion(), death.snapshot())
+                                .withStored(true)
+                                .withReviveReadyAt(death.readyAt()));
             }
             return true;
         });
@@ -106,5 +113,5 @@ public final class CompanionWorldData {
         if (event.getLevel() instanceof ServerLevel level && level.getGameTime() % 20 == 0) cleanLoadedLights(level);
     }
 
-    private CompanionWorldData() { }
+    private CompanionWorldData() {}
 }

@@ -1,13 +1,13 @@
 package com.breakinblocks.kindredspirits.block;
 
-import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.companion.CompanionSpawns;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
+import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import com.breakinblocks.kindredspirits.util.BlockPosUtil;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
@@ -66,8 +66,16 @@ public class TrexEggBlock extends Block {
         }
 
         if (level instanceof ServerLevel server && isWarm(level, pos)) {
-            server.sendParticles(KindredParticles.EGG_WARMTH.get(), pos.getX() + 0.5, pos.getY() + 0.8,
-                    pos.getZ() + 0.5, 8, 0.25, 0.15, 0.25, 0.01);
+            server.sendParticles(
+                    KindredParticles.EGG_WARMTH.get(),
+                    pos.getX() + 0.5,
+                    pos.getY() + 0.8,
+                    pos.getZ() + 0.5,
+                    8,
+                    0.25,
+                    0.15,
+                    0.25,
+                    0.01);
         }
         level.gameEvent(GameEvent.BLOCK_PLACE, pos, GameEvent.Context.of(state));
         this.scheduleStage(level, pos);
@@ -76,17 +84,38 @@ public class TrexEggBlock extends Block {
     @Override
     protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         int hatch = state.getValue(HATCH);
-        level.sendParticles(KindredParticles.EGG_WARMTH.get(), pos.getX() + 0.5, pos.getY() + 0.8,
-                pos.getZ() + 0.5, hatch == MAX_HATCH ? 12 : 4, 0.25, 0.15, 0.25, 0.02);
+        level.sendParticles(
+                KindredParticles.EGG_WARMTH.get(),
+                pos.getX() + 0.5,
+                pos.getY() + 0.8,
+                pos.getZ() + 0.5,
+                hatch == MAX_HATCH ? 12 : 4,
+                0.25,
+                0.15,
+                0.25,
+                0.02);
         if (hatch < MAX_HATCH) {
-            level.playSound(null, pos, KindredSounds.TREX_EGG_CRACK.get(), SoundSource.BLOCKS, 0.7f, 0.9f + random.nextFloat() * 0.2f);
+            level.playSound(
+                    null,
+                    pos,
+                    KindredSounds.TREX_EGG_CRACK.get(),
+                    SoundSource.BLOCKS,
+                    0.7f,
+                    0.9f + random.nextFloat() * 0.2f);
             level.setBlock(pos, state.setValue(HATCH, hatch + 1), Block.UPDATE_CLIENTS);
             this.scheduleStage(level, pos);
             return;
         }
 
-        level.playSound(null, pos, KindredSounds.TREX_EGG_HATCH.get(), SoundSource.BLOCKS, 0.7f, 0.9f + random.nextFloat() * 0.2f);
-        if (CompanionSpawns.spawnWild(level, CompanionSpecies.TREX, pos.getCenter(), random.nextFloat() * 360.0f) != null) {
+        level.playSound(
+                null,
+                pos,
+                KindredSounds.TREX_EGG_HATCH.get(),
+                SoundSource.BLOCKS,
+                0.7f,
+                0.9f + random.nextFloat() * 0.2f);
+        if (CompanionSpawns.spawnWild(level, CompanionSpecies.TREX, pos.getCenter(), random.nextFloat() * 360.0f)
+                != null) {
             level.destroyBlock(pos, false);
         } else {
             this.scheduleStage(level, pos);
@@ -95,7 +124,8 @@ public class TrexEggBlock extends Block {
 
     private void scheduleStage(Level level, BlockPos pos) {
         int total = isWarm(level, pos) ? HATCH_TICKS / 2 : HATCH_TICKS;
-        level.scheduleTick(pos, this, total / (MAX_HATCH + 1) + level.getRandom().nextInt(RANDOM_OFFSET));
+        level.scheduleTick(
+                pos, this, total / (MAX_HATCH + 1) + level.getRandom().nextInt(RANDOM_OFFSET));
     }
 
     public static boolean isWarm(BlockGetter level, BlockPos pos) {

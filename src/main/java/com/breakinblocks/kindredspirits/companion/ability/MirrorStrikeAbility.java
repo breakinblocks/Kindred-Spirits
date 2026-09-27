@@ -1,14 +1,14 @@
 package com.breakinblocks.kindredspirits.companion.ability;
 
-import com.breakinblocks.kindredspirits.registry.KindredParticles;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.damagesource.DamageSource;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
+import com.breakinblocks.kindredspirits.registry.KindredParticles;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -39,8 +39,7 @@ public final class MirrorStrikeAbility implements CompanionAbility {
     }
 
     @Override
-    public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
-    }
+    public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {}
 
     @SubscribeEvent
     public static void onLivingDamaged(LivingDamageEvent.Post event) {
@@ -49,8 +48,10 @@ public final class MirrorStrikeAbility implements CompanionAbility {
         }
 
         LivingEntity target = event.getEntity();
-        if (target == owner || target instanceof CompanionEntity
-                || !target.isAlive() || !(target.level() instanceof ServerLevel level)) {
+        if (target == owner
+                || target instanceof CompanionEntity
+                || !target.isAlive()
+                || !(target.level() instanceof ServerLevel level)) {
             return;
         }
 
@@ -70,8 +71,13 @@ public final class MirrorStrikeAbility implements CompanionAbility {
         companion.setAbilityCooldown(CompanionAbilities.MIRROR_STRIKE.id(), COOLDOWN_TICKS);
         companion.playSpecialAttack(0.7f, 1.4f);
         CompanionAbilities.hitParticles(level, target, KindredParticles.MIRROR_SLASH.get(), 8, 0.6, 0.25, 0.05);
-        target.hurtServer(level, new DamageSource(
-                level.registryAccess().getOrThrow(ResourceKey.create(Registries.DAMAGE_TYPE,
-                                KindredSpirits.id("mirror_strike"))), companion), damage * SHARE);
+        target.hurtServer(
+                level,
+                new DamageSource(
+                        level.registryAccess()
+                                .getOrThrow(
+                                        ResourceKey.create(Registries.DAMAGE_TYPE, KindredSpirits.id("mirror_strike"))),
+                        companion),
+                damage * SHARE);
     }
 }

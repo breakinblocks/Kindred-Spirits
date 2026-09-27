@@ -18,6 +18,5 @@ public final class CompanionAnimations {
     public static final String SPAWN = "spawn";
     public static final String INTERACT = "interact";
 
-    private CompanionAnimations() {
-    }
+    private CompanionAnimations() {}
 }

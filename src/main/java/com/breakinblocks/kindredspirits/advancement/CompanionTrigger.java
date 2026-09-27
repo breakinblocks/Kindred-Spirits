@@ -5,14 +5,13 @@ import com.breakinblocks.kindredspirits.companion.CompanionLevels;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.Optional;
 import net.minecraft.advancements.criterion.ContextAwarePredicate;
 import net.minecraft.advancements.criterion.EntityPredicate;
 import net.minecraft.advancements.criterion.MinMaxBounds;
 import net.minecraft.advancements.criterion.SimpleCriterionTrigger;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.StringRepresentable;
-
-import java.util.Optional;
 
 public class CompanionTrigger extends SimpleCriterionTrigger<CompanionTrigger.TriggerInstance> {
     private static final Codec<CompanionSpecies> SPECIES_CODEC = StringRepresentable.fromEnum(CompanionSpecies::values);
@@ -59,14 +58,22 @@ public class CompanionTrigger extends SimpleCriterionTrigger<CompanionTrigger.Tr
         }
     }
 
-    public record TriggerInstance(Optional<ContextAwarePredicate> player, Event event, Optional<CompanionSpecies> species,
-                                  MinMaxBounds.Ints value, Optional<Boolean> atMax)
+    public record TriggerInstance(
+            Optional<ContextAwarePredicate> player,
+            Event event,
+            Optional<CompanionSpecies> species,
+            MinMaxBounds.Ints value,
+            Optional<Boolean> atMax)
             implements SimpleCriterionTrigger.SimpleInstance {
         public static final Codec<TriggerInstance> CODEC = RecordCodecBuilder.create(i -> i.group(
-                        EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(TriggerInstance::player),
+                        EntityPredicate.ADVANCEMENT_CODEC
+                                .optionalFieldOf("player")
+                                .forGetter(TriggerInstance::player),
                         Event.CODEC.fieldOf("event").forGetter(TriggerInstance::event),
                         SPECIES_CODEC.optionalFieldOf("species").forGetter(TriggerInstance::species),
-                        MinMaxBounds.Ints.CODEC.optionalFieldOf("value", MinMaxBounds.Ints.ANY).forGetter(TriggerInstance::value),
+                        MinMaxBounds.Ints.CODEC
+                                .optionalFieldOf("value", MinMaxBounds.Ints.ANY)
+                                .forGetter(TriggerInstance::value),
                         Codec.BOOL.optionalFieldOf("at_max").forGetter(TriggerInstance::atMax))
                 .apply(i, TriggerInstance::new));
 
@@ -74,7 +81,9 @@ public class CompanionTrigger extends SimpleCriterionTrigger<CompanionTrigger.Tr
             return this.event == event
                     && this.species.map(wanted -> wanted == species).orElse(true)
                     && this.value.matches(value)
-                    && this.atMax.map(wanted -> wanted == (value >= event.cap())).orElse(true);
+                    && this.atMax
+                            .map(wanted -> wanted == (value >= event.cap()))
+                            .orElse(true);
         }
     }
 }
