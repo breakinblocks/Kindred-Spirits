@@ -27,6 +27,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.TagValueOutput;
@@ -34,6 +35,7 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -73,6 +75,7 @@ public final class KindredGameTests {
         TESTS.put("direwolf_wolf_armour_and_best_friend", KindredGameTests::direwolfArmour);
         TESTS.put("trex_gloves_sync_to_the_client", KindredGameTests::trexGloves);
         TESTS.put("dragon_tablet_syncs_to_the_client", KindredGameTests::dragonTablet);
+        TESTS.put("meteor_call_drops_a_meteor_that_hits", KindredGameTests::meteorCall);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
         TESTS.put("unreachable_equipment_is_not_duplicated", KindredGameTests::unreachable);
@@ -112,7 +115,8 @@ public final class KindredGameTests {
         Holder<TestEnvironmentDefinition<?>> environment = event.registerEnvironment(KindredSpirits.id("regressions"));
         TESTS.forEach((name, test) -> event.registerTest(KindredSpirits.id(name),
                 new FunctionGameTestInstance(ResourceKey.create(Registries.TEST_FUNCTION, KindredSpirits.id(name)),
-                        new TestData<>(environment, KindredSpirits.id("empty"), name.equals("quokka_hurt_throws_once_and_flees") ? 300 : 120, 2, true))));
+                        new TestData<>(environment, KindredSpirits.id("empty"), name.equals("quokka_hurt_throws_once_and_flees") ? 300 : 120, 2, true,
+                                Rotation.NONE, false, 1, 1, name.equals("meteor_call_drops_a_meteor_that_hits"), 0))));
     }
 
     @SuppressWarnings("removal")
@@ -793,6 +797,24 @@ public final class KindredGameTests {
         h.assertTrue(summoned.equipmentId().isEmpty() && owner.getInventory().contains(new ItemStack(KindredItems.DRAGON_TABLET.get())),
                 "Taking the tablet off clears the synced id and returns it");
         finish(h, owner);
+    }
+
+    private static void meteorCall(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity dragon = pet(h, CompanionSpecies.BABY_DRAGON, owner, true);
+        dragon.setEquipment(new ItemStack(KindredItems.DRAGON_TABLET.get()));
+        var husk = h.spawnWithNoFreeWill(EntityType.HUSK, new BlockPos(4, 1, 8));
+        float before = husk.getHealth();
+        dragon.callMeteor(husk);
+        AABB column = husk.getBoundingBox().inflate(1, 16, 1);
+        var meteors = h.getLevel().getEntitiesOfClass(MeteorEntity.class, column);
+        h.assertTrue(meteors.size() == 1 && meteors.getFirst().getOwner() == dragon && meteors.getFirst().getY() > husk.getY() + 10,
+                "Meteor Call must drop one meteor, owned by the dragon, from above the target");
+        h.succeedWhen(() -> {
+            h.assertTrue(h.getLevel().getEntitiesOfClass(MeteorEntity.class, column).isEmpty(), "The meteor must reach the ground");
+            h.assertTrue(husk.getHealth() <= before - 8.0f, "The impact must deal Meteor Call's 8 damage (health " + husk.getHealth() + ")");
+            h.getLevel().getServer().getPlayerList().remove(owner);
+        });
     }
 
     private static void direwolfTransform(GameTestHelper h) {
