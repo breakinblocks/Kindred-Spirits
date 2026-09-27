@@ -11,6 +11,7 @@ import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredBlocks;
 import com.breakinblocks.kindredspirits.registry.KindredCreativeTabs;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
+import com.breakinblocks.kindredspirits.registry.KindredFeatures;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import com.breakinblocks.kindredspirits.registry.KindredMenus;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
@@ -48,6 +49,7 @@ public class KindredSpirits {
         KindredCreativeTabs.CREATIVE_TABS.register(modEventBus);
         KindredSounds.SOUND_EVENTS.register(modEventBus);
         KindredParticles.TYPES.register(modEventBus);
+        KindredFeatures.FEATURES.register(modEventBus);
         KindredMenus.MENUS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, KindredConfig.COMMON_SPEC);

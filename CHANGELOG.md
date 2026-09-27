@@ -19,6 +19,8 @@
   breath, golden carrot (`#kindredspirits:taming/<species>` tags, 33% per item).
 - T-Rex Egg turns up in desert archaeology and hatches after 5 minutes, faster next to a
   torch or campfire.
+- Beaches now hide the odd block of suspicious sand at or just under the surface, which can
+  also hold a T-Rex Egg. `beach_suspicious_sand` in the common config turns it off.
 - Lava flowing against a placed dragon egg hatches a Baby Dragon.
 - Wandering traders always sell a Mini Player egg.
 - Sculk used on a fox turns it into a Nightfox.

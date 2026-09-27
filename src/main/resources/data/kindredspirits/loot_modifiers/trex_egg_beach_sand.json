@@ -1,0 +1,9 @@
+{
+  "type": "kindredspirits:trex_egg",
+  "conditions": [
+    {
+      "condition": "neoforge:loot_table_id",
+      "loot_table_id": "kindredspirits:archaeology/beach_sand"
+    }
+  ]
+}

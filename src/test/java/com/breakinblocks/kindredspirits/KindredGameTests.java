@@ -9,6 +9,7 @@ import com.breakinblocks.kindredspirits.item.KindredCharmItem;
 import com.breakinblocks.kindredspirits.net.KindredNetworking.CharmActionPayload.Action;
 import com.breakinblocks.kindredspirits.registry.*;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
+import com.breakinblocks.kindredspirits.worldgen.BeachSuspiciousSandFeature;
 import com.mojang.serialization.JsonOps;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
@@ -32,6 +33,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
+import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -83,6 +85,7 @@ public final class KindredGameTests {
         TESTS.put("crushing_might_crushes_ore_items", KindredGameTests::crushingMight);
         TESTS.put("mini_player_fires_spirit_arrows", KindredGameTests::spiritArrow);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
+        TESTS.put("beach_suspicious_sand_generates_and_can_be_disabled", KindredGameTests::beachSuspiciousSand);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
         TESTS.put("unreachable_equipment_is_not_duplicated", KindredGameTests::unreachable);
         TESTS.put("revival_heals_and_retains_equipment", KindredGameTests::revival);
@@ -157,6 +160,63 @@ public final class KindredGameTests {
     private static CompanionEntity deployed(ServerPlayer player) {
         UUID uuid = KindredAttachments.bond(player).companion().orElseThrow();
         return (CompanionEntity) player.level().getEntity(uuid);
+    }
+
+    private static void beachSuspiciousSand(GameTestHelper h) {
+        ServerPlayer player = player(h);
+        var level = h.getLevel();
+        BlockPos top = h.absolutePos(new BlockPos(3, 3, 3));
+        for (int depth = 0; depth < 3; depth++) {
+            level.setBlockAndUpdate(top.below(depth), Blocks.SAND.defaultBlockState());
+        }
+        var generator = level.getChunkSource().getGenerator();
+        var feature = KindredFeatures.BEACH_SUSPICIOUS_SAND.get();
+        boolean previous = KindredConfig.COMMON.beachSuspiciousSand.get();
+        try {
+            KindredConfig.COMMON.beachSuspiciousSand.set(false);
+            h.assertTrue(!feature.place(NoneFeatureConfiguration.INSTANCE, level, generator, net.minecraft.util.RandomSource.create(1), top.above()),
+                    "With beach_suspicious_sand off the feature must place nothing");
+            KindredConfig.COMMON.beachSuspiciousSand.set(true);
+            h.assertTrue(feature.place(NoneFeatureConfiguration.INSTANCE, level, generator, net.minecraft.util.RandomSource.create(1), top.above()),
+                    "The feature must place into beach sand");
+        } finally {
+            KindredConfig.COMMON.beachSuspiciousSand.set(previous);
+        }
+
+        BlockPos found = null;
+        int count = 0;
+        for (int depth = 0; depth < 3; depth++) {
+            if (level.getBlockState(top.below(depth)).is(Blocks.SUSPICIOUS_SAND)) {
+                found = top.below(depth);
+                count++;
+            }
+        }
+        h.assertTrue(count == 1, "Exactly one sand block must turn suspicious (found " + count + ")");
+        String table = level.getBlockEntity(found).saveWithoutMetadata(level.registryAccess()).getStringOr("LootTable", "");
+        h.assertTrue(table.equals(BeachSuspiciousSandFeature.LOOT_TABLE.identifier().toString()),
+                "Beach suspicious sand must roll the beach table (found " + table + ")");
+
+        LootTable loot = level.getServer().reloadableRegistries().getLootTable(BeachSuspiciousSandFeature.LOOT_TABLE);
+        LootParams params = new LootParams.Builder(level)
+                .withParameter(LootContextParams.ORIGIN, player.position())
+                .withParameter(LootContextParams.THIS_ENTITY, player)
+                .withParameter(LootContextParams.TOOL, new ItemStack(Items.BRUSH))
+                .create(LootContextParamSets.ARCHAEOLOGY);
+        int eggs = 0;
+        for (long seed = 1; seed <= 256; seed++) {
+            var items = loot.getRandomItems(params, seed);
+            h.assertTrue(items.size() == 1, "The beach table must yield exactly one find");
+            if (items.getFirst().is(KindredItems.TREX_EGG.get())) {
+                eggs++;
+            }
+        }
+        h.assertTrue(eggs > 0 && eggs < 100, "Beach sand must sometimes hold a T-Rex Egg (found " + eggs + " in 256)");
+        h.assertTrue(level.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE).get(KindredSpirits.id("beach_suspicious_sand")).isPresent(),
+                "The beach placed feature must load");
+        h.assertTrue(level.registryAccess().lookupOrThrow(net.neoforged.neoforge.registries.NeoForgeRegistries.Keys.BIOME_MODIFIERS)
+                        .get(KindredSpirits.id("beach_suspicious_sand")).isPresent(),
+                "The beach biome modifier must load");
+        finish(h, player);
     }
 
     private static void archaeology(GameTestHelper h) {

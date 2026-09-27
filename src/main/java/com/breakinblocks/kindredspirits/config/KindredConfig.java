@@ -133,6 +133,7 @@ public final class KindredConfig {
         public final ModConfigSpec.IntValue bondDeathFloor;
         public final ModConfigSpec.IntValue afkSeconds;
         public final ModConfigSpec.DoubleValue tamingChance;
+        public final ModConfigSpec.BooleanValue beachSuspiciousSand;
         public final ModConfigSpec.BooleanValue abilitiesEnabled;
         public final ModConfigSpec.IntValue crushingMightDust;
         public final ModConfigSpec.IntValue reviveCooldownSeconds;
@@ -227,6 +228,12 @@ public final class KindredConfig {
             tamingChance = builder
                     .comment("Chance that one of the species' taming items tames a wild companion.")
                     .defineInRange("taming_chance", 0.33, 0.0, 1.0);
+            builder.pop();
+
+            builder.push("worldgen");
+            beachSuspiciousSand = builder
+                    .comment("Scatter the odd block of suspicious sand into beach sand as new chunks generate. Brushing it can turn up a T-Rex Egg.")
+                    .define("beach_suspicious_sand", true);
             builder.pop();
 
             builder.push("abilities");
