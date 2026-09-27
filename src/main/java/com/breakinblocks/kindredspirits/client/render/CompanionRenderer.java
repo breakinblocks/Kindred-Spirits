@@ -20,21 +20,20 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.DyeColor;
 import net.neoforged.neoforge.registries.DeferredItem;
 
 import java.util.List;
 
 public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, LivingEntityRenderState> {
     static final DataTicket<String> EQUIPMENT = DataTicket.create("kindredspirits:equipment", String.class);
-    private static final float DYE_STRENGTH = 0.55f;
+    static final DataTicket<Integer> DYE = DataTicket.create("kindredspirits:dye", Integer.class);
 
     private final CompanionSpecies species;
 
     public CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species) {
         this(context, species, modelFor(species));
+        this.withRenderLayer(new DyeMaskGeoLayer(this));
         if (species.hasGlowMask()) this.withRenderLayer(new AutoGlowingGeoLayer<>(this));
     }
 
@@ -64,17 +63,7 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
                               LivingEntityRenderState renderState, float partialTick) {
         super.addRenderData(entity, relatedObject, renderState, partialTick);
         renderState.addGeckolibData(EQUIPMENT, entity.equipmentId());
-    }
-
-    @Override
-    public int getRenderColor(CompanionEntity animatable, Void relatedObject, float partialTick) {
-        int base = super.getRenderColor(animatable, relatedObject, partialTick);
-        int dye = animatable.getDyeId();
-        if (dye == CompanionEntity.NO_DYE || this.species.usesPlayerSkin()) {
-            return base;
-        }
-        int tint = ARGB.srgbLerp(DYE_STRENGTH, 0xFFFFFFFF, ARGB.opaque(DyeColor.byId(dye).getTextureDiffuseColor()));
-        return ARGB.multiply(base, tint);
+        renderState.addGeckolibData(DYE, entity.getDyeId());
     }
 
     @Override

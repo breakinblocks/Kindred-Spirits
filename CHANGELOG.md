@@ -8,8 +8,9 @@
 - Baby Dragon is immune to fire and lava. Nightfox is immune to wither. Gremlin is immune
   to poison.
 - T-Rex knockback resistance raised from 0.6 to 0.9.
-- Use any dye on your companion to tint it; a water bucket washes it off. The Mini Player
-  keeps its player skin instead.
+- Use any dye on your companion to recolour its fur, hide or scales; eyes, teeth, claws,
+  markings and gear keep their own colours, and dark companions take bright colours. A water
+  bucket washes it off. The Mini Player keeps its player skin instead.
 - Spirit Bandage: two paper and a string make two, and each heals a hurt companion 3 hearts.
 
 ### Obtaining
