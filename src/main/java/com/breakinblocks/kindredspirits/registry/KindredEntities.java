@@ -4,6 +4,7 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.companion.MeteorEntity;
+import com.breakinblocks.kindredspirits.companion.SpiritArrow;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityType;
@@ -25,6 +26,15 @@ public final class KindredEntities {
                     .fireImmune()
                     .clientTrackingRange(4)
                     .updateInterval(10)
+                    .build(ResourceKey.create(Registries.ENTITY_TYPE, registryName)));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<SpiritArrow>> SPIRIT_ARROW = ENTITY_TYPES.register("spirit_arrow",
+            registryName -> EntityType.Builder.<SpiritArrow>of(SpiritArrow::new, MobCategory.MISC)
+                    .noLootTable()
+                    .sized(0.5f, 0.5f)
+                    .eyeHeight(0.13f)
+                    .clientTrackingRange(4)
+                    .updateInterval(20)
                     .build(ResourceKey.create(Registries.ENTITY_TYPE, registryName)));
 
     private static final Map<CompanionSpecies, DeferredHolder<EntityType<?>, EntityType<CompanionEntity>>> BY_SPECIES =

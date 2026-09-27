@@ -460,5 +460,25 @@
         "name": "kindredspirits:direwolf_interact"
       }
     ]
+  },
+  "trex.crush": {
+    "subtitle": "subtitles.kindredspirits.trex_crush",
+    "sounds": [
+      {
+        "name": "minecraft:block/grindstone/grindstone1",
+        "volume": 0.6,
+        "pitch": 0.8
+      },
+      {
+        "name": "minecraft:block/grindstone/grindstone2",
+        "volume": 0.6,
+        "pitch": 0.8
+      },
+      {
+        "name": "minecraft:block/grindstone/grindstone3",
+        "volume": 0.6,
+        "pitch": 0.8
+      }
+    ]
   }
 }

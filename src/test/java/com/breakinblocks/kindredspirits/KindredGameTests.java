@@ -3,6 +3,7 @@ package com.breakinblocks.kindredspirits;
 import com.breakinblocks.kindredspirits.block.TrexEggBlock;
 import com.breakinblocks.kindredspirits.companion.*;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
+import com.breakinblocks.kindredspirits.companion.ability.OreCrushing;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
 import com.breakinblocks.kindredspirits.net.KindredNetworking.CharmActionPayload.Action;
@@ -19,10 +20,12 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -47,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /** Server integration regressions. These classes and fixtures are excluded from the release jar. */
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
@@ -76,6 +80,8 @@ public final class KindredGameTests {
         TESTS.put("trex_gloves_sync_to_the_client", KindredGameTests::trexGloves);
         TESTS.put("dragon_tablet_syncs_to_the_client", KindredGameTests::dragonTablet);
         TESTS.put("meteor_call_drops_a_meteor_that_hits", KindredGameTests::meteorCall);
+        TESTS.put("crushing_might_crushes_ore_items", KindredGameTests::crushingMight);
+        TESTS.put("mini_player_fires_spirit_arrows", KindredGameTests::spiritArrow);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
         TESTS.put("unreachable_equipment_is_not_duplicated", KindredGameTests::unreachable);
@@ -815,6 +821,46 @@ public final class KindredGameTests {
             h.assertTrue(husk.getHealth() <= before - 8.0f, "The impact must deal Meteor Call's 8 damage (health " + husk.getHealth() + ")");
             h.getLevel().getServer().getPlayerList().remove(owner);
         });
+    }
+
+    private static void crushingMight(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity trex = pet(h, CompanionSpecies.TREX, owner, true);
+        Function<TagKey<Item>, List<Item>> dusts = tag -> tag.location().toString().equals("c:dusts/iron")
+                ? List.of(Items.SUGAR) : OreCrushing.registryItems(tag);
+        var level = h.getLevel();
+        Vec3 at = trex.position();
+        Consumer<ItemStack> drop = stack -> level.addFreshEntity(new ItemEntity(level, at.x + 2, at.y, at.z, stack, 0, 0, 0));
+        drop.accept(new ItemStack(Items.RAW_IRON, 30));
+        drop.accept(new ItemStack(Items.IRON_ORE, 1));
+        drop.accept(new ItemStack(Items.RAW_GOLD, 4));
+        ItemEntity far = new ItemEntity(level, at.x + 7, at.y, at.z, new ItemStack(Items.RAW_IRON, 5), 0, 0, 0);
+        level.addFreshEntity(far);
+
+        int crushed = OreCrushing.crushAround(level, trex, 5.0, 3, dusts);
+        h.assertTrue(crushed == 31, "Thirty raw iron and one iron ore within 5 blocks must be crushed (crushed " + crushed + ")");
+        List<ItemEntity> near = level.getEntitiesOfClass(ItemEntity.class, trex.getBoundingBox().inflate(5.0));
+        int sugar = near.stream().filter(item -> item.getItem().is(Items.SUGAR)).mapToInt(item -> item.getItem().getCount()).sum();
+        h.assertTrue(sugar == 93, "Each ore must become three dust (found " + sugar + ")");
+        h.assertTrue(near.stream().allMatch(item -> item.getItem().getCount() <= item.getItem().getMaxStackSize()),
+                "Dust must be split into full stacks");
+        h.assertTrue(near.stream().anyMatch(item -> item.getItem().is(Items.RAW_GOLD) && item.getItem().getCount() == 4),
+                "An ore with no matching dust must be left alone");
+        h.assertTrue(far.getItem().is(Items.RAW_IRON) && far.getItem().getCount() == 5, "Ore beyond 5 blocks must be left alone");
+        finish(h, owner);
+    }
+
+    private static void spiritArrow(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity pet = pet(h, CompanionSpecies.MINI_PLAYER, owner, true);
+        var husk = h.spawnWithNoFreeWill(EntityType.HUSK, new BlockPos(4, 1, 9));
+        pet.performRangedAttack(husk, 1.0f);
+        var arrows = h.getLevel().getEntitiesOfClass(SpiritArrow.class, h.getBounds().inflate(4));
+        h.assertTrue(arrows.size() == 1 && arrows.getFirst().getOwner() == pet,
+                "The Mini Player must fire one spirit arrow that it owns");
+        h.assertTrue(arrows.getFirst().pickup == net.minecraft.world.entity.projectile.arrow.AbstractArrow.Pickup.DISALLOWED,
+                "Spirit arrows must not be pickupable");
+        finish(h, owner);
     }
 
     private static void direwolfTransform(GameTestHelper h) {

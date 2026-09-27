@@ -50,8 +50,9 @@ public enum CompanionSpecies implements StringRepresentable {
             new Stats(30.0, 0.25, 4.0, 2.0, 0.9, 1.0),
             CombatStyle.MELEE, false,
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
-                    CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
-                    CompanionAnimations.JUMP_ATTACK, CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
+                    CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
+                    CompanionAnimations.JUMP_ATTACK, CompanionAnimations.SPAWN, CompanionAnimations.DEATH,
+                    CompanionAnimations.HURT, CompanionAnimations.INTERACT),
             new SoundSet(KindredSounds.TREX_AMBIENT, KindredSounds.TREX_HURT, KindredSounds.TREX_DEATH,
                     KindredSounds.TREX_ATTACK, KindredSounds.TREX_SPECIAL_ATTACK, KindredSounds.TREX_INTERACT),
             List.of(
@@ -86,7 +87,8 @@ public enum CompanionSpecies implements StringRepresentable {
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.FLY, CompanionAnimations.SIT,
                     CompanionAnimations.SIT_STILL, CompanionAnimations.SIT_RARE,
                     CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
-                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
+                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH, CompanionAnimations.HURT,
+                    CompanionAnimations.INTERACT),
             new SoundSet(KindredSounds.BABY_DRAGON_AMBIENT, KindredSounds.BABY_DRAGON_HURT, KindredSounds.BABY_DRAGON_DEATH,
                     KindredSounds.BABY_DRAGON_SPECIAL_ATTACK, KindredSounds.BABY_DRAGON_SPECIAL_ATTACK, KindredSounds.BABY_DRAGON_INTERACT),
             List.of(
@@ -115,7 +117,8 @@ public enum CompanionSpecies implements StringRepresentable {
             CombatStyle.MELEE, false,
             Set.of(CompanionAnimations.IDLE, CompanionAnimations.WALK, CompanionAnimations.RUN,
                     CompanionAnimations.SIT, CompanionAnimations.ATTACK, CompanionAnimations.SPECIAL_ATTACK,
-                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH),
+                    CompanionAnimations.SPAWN, CompanionAnimations.DEATH, CompanionAnimations.HURT,
+                    CompanionAnimations.INTERACT),
             new SoundSet(KindredSounds.GREMLIN_AMBIENT, KindredSounds.GREMLIN_HURT, KindredSounds.GREMLIN_DEATH,
                     KindredSounds.GREMLIN_ATTACK, KindredSounds.GREMLIN_SPECIAL_ATTACK, KindredSounds.GREMLIN_INTERACT),
             List.of(

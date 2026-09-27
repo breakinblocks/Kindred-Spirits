@@ -4,6 +4,7 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.render.CompanionRenderer;
 import com.breakinblocks.kindredspirits.client.render.MeteorRenderer;
 import com.breakinblocks.kindredspirits.client.render.MiniPlayerRenderer;
+import com.breakinblocks.kindredspirits.client.render.SpiritArrowRenderer;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.client.screen.KindredStorageScreen;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
@@ -57,6 +58,7 @@ public final class KindredSpiritsClient {
                     : new CompanionRenderer(context, species));
         }
         event.registerEntityRenderer(KindredEntities.METEOR.get(), MeteorRenderer::new);
+        event.registerEntityRenderer(KindredEntities.SPIRIT_ARROW.get(), SpiritArrowRenderer::new);
     }
 
     @SubscribeEvent

@@ -134,6 +134,7 @@ public final class KindredConfig {
         public final ModConfigSpec.IntValue afkSeconds;
         public final ModConfigSpec.DoubleValue tamingChance;
         public final ModConfigSpec.BooleanValue abilitiesEnabled;
+        public final ModConfigSpec.IntValue crushingMightDust;
         public final ModConfigSpec.IntValue reviveCooldownSeconds;
         public final ModConfigSpec.DoubleValue reviveExperiencePenalty;
         public final ModConfigSpec.BooleanValue mimicOwnerWeapon;
@@ -232,6 +233,9 @@ public final class KindredConfig {
             abilitiesEnabled = builder
                     .comment("Run companion abilities. Turn off to leave companions as cosmetic pets.")
                     .define("abilities_enabled", true);
+            crushingMightDust = builder
+                    .comment("Dust the T-Rex's Crushing Might makes from each raw ore or ore item it crushes (into c:dusts/<x>).")
+                    .defineInRange("crushing_might_dust", 3, 1, 64);
             builder.pop();
 
             builder.push("charm");

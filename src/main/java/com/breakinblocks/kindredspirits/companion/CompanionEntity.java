@@ -1478,7 +1478,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
 
         ItemStack ammo = new ItemStack(Items.ARROW);
-        AbstractArrow arrow = ProjectileUtil.getMobArrow(this, ammo, power, bow);
+        AbstractArrow arrow = new SpiritArrow(level, this, bow);
+        arrow.setBaseDamageFromMob(power);
 
         double x = target.getX() - this.getX();
         double y = target.getY(0.333) - arrow.getY();

@@ -60,6 +60,7 @@ import java.util.function.Consumer;
 public final class CompanionAbilities {
     private static final Map<Identifier, CompanionAbility> REGISTRY = new LinkedHashMap<>();
     private static final double OWNER_RANGE_SQR = 144.0;
+    private static final double CRUSHING_RADIUS = 5.0;
     private static final double OWNER_RANGE_LONG_SQR = 256.0;
     private static final double OWNER_RANGE_SHORT_SQR = 64.0;
     private static final double OWNER_RANGE_FIRE_SQR = 100.0;
@@ -103,10 +104,13 @@ public final class CompanionAbilities {
 
     public static final CompanionAbility SAVAGE_LEAP = register(new SavageLeapAbility(KindredSpirits.id("savage_leap")));
 
-    public static final CompanionAbility CRUSHING_MIGHT = register(new SimpleAbility(KindredSpirits.id("crushing_might"), 40,
+    public static final CompanionAbility CRUSHING_MIGHT = register(new SimpleAbility(KindredSpirits.id("crushing_might"), 100,
             (companion, owner) -> {
-                if (ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.HASTE, 60, 0))
+                if (companion.level() instanceof ServerLevel level
+                        && OreCrushing.crushAround(level, companion, CRUSHING_RADIUS, KindredConfig.COMMON.crushingMightDust.get()) > 0) {
                     companion.burst(KindredParticles.CRUSHING_MIGHT.get(), 1);
+                    companion.playSound(KindredSounds.TREX_CRUSH.get(), 0.6f, 1.0f);
+                }
             }));
 
     public static final CompanionAbility DRAGON_BREATH = register(new DragonBreathAbility(KindredSpirits.id("dragon_breath")));

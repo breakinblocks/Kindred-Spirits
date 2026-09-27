@@ -13,6 +13,9 @@ public final class KindredTags {
     public static final TagKey<Item> COMPANION_HEALING =
             TagKey.create(Registries.ITEM, KindredSpirits.id("companion_healing"));
 
+    public static final TagKey<Item> CRUSHING_BLACKLIST =
+            TagKey.create(Registries.ITEM, KindredSpirits.id("crushing_blacklist"));
+
     public static final TagKey<EntityType<?>> DANGEROUS_PREY =
             TagKey.create(Registries.ENTITY_TYPE, KindredSpirits.id("dangerous_prey"));
 

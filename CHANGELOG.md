@@ -54,6 +54,11 @@
   and a level 30 ultimate.
 - Nightfox: Wisplight, Night Light, One With The Night.
 - T-Rex: Alpha, Alpha Boost, X-Ray Stomp (shakes your screen).
+- T-Rex Crushing Might now crushes ore: every 5 seconds, raw ore and ore items lying within 5
+  blocks of it become 3 of the matching dust each (`c:raw_materials/<x>` or `c:ores/<x>` to
+  `c:dusts/<x>`, for any ore a mod makes a dust for). It never breaks blocks. The dust count is
+  `crushing_might_dust` in the common config, and the `#kindredspirits:crushing_blacklist` item
+  tag keeps chosen ores safe.
 - Baby Dragon: Forge Draft (now level 1), Dragonfire, Kiln Breath (`/kindredspirits smelt`).
 - Mini Player: Are You Gonna Eat That?, Helping Hand, Friendly Face.
 - Gremlin: Tinker, Snack Thief, Energized Chaos.
@@ -107,6 +112,12 @@
 - Meteor Call drops a tumbling, burning meteor instead of a ghast fireball. Players can no
   longer punch it back.
 - Wisplight's wisps are visible now: a small glowing orb that pulses gently.
+- The T-Rex can sit (it lies down on its belly), and the T-Rex, Baby Dragon and Gremlin now
+  react when hurt and when fed or petted.
+- The Mini Player has a new animation set: idle, walk, run, sword swing, bow shot, Mirror
+  Strike whirl, sitting, waving, flinching, popping in and falling over.
+- The Mini Player shoots glowing spirit arrows that trail sparks, cannot be picked up and fade
+  after landing.
 
 ### Fixed
 

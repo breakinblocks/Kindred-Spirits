@@ -107,6 +107,8 @@ public final class KindredSounds {
             register("trex.egg_hatch");
     public static final DeferredHolder<SoundEvent, SoundEvent> TREX_LEAP_IMPACT =
             register("trex.leap_impact");
+    public static final DeferredHolder<SoundEvent, SoundEvent> TREX_CRUSH =
+            register("trex.crush");
     public static final DeferredHolder<SoundEvent, SoundEvent> MINI_PLAYER_BOW =
             register("mini.player_bow");
     public static final DeferredHolder<SoundEvent, SoundEvent> GREMLIN_SNACK =
