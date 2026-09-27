@@ -1,0 +1,30 @@
+{
+  "parent": "kindredspirits:craft_charm",
+  "display": {
+    "icon": {
+      "id": "kindredspirits:kindred_charm",
+      "components": {
+        "minecraft:enchantment_glint_override": true
+      }
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.bond_companion.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.bond_companion.description"
+    }
+  },
+  "criteria": {
+    "bonded": {
+      "trigger": "kindredspirits:companion",
+      "conditions": {
+        "event": "bonded"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "bonded"
+    ]
+  ]
+}

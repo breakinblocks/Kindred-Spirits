@@ -85,6 +85,7 @@ public final class KindredGameTests {
         TESTS.put("crushing_might_crushes_ore_items", KindredGameTests::crushingMight);
         TESTS.put("mini_player_fires_spirit_arrows", KindredGameTests::spiritArrow);
         TESTS.put("skin_choice_is_saved_and_validated", KindredGameTests::skinChoice);
+        TESTS.put("advancements_follow_companion_progress", KindredGameTests::advancements);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
         TESTS.put("beach_suspicious_sand_generates_and_can_be_disabled", KindredGameTests::beachSuspiciousSand);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
@@ -161,6 +162,59 @@ public final class KindredGameTests {
     private static CompanionEntity deployed(ServerPlayer player) {
         UUID uuid = KindredAttachments.bond(player).companion().orElseThrow();
         return (CompanionEntity) player.level().getEntity(uuid);
+    }
+
+    private static void advancements(GameTestHelper h) {
+        ServerPlayer player = player(h);
+        var server = h.getLevel().getServer();
+        Function<String, net.minecraft.advancements.AdvancementHolder> find = name -> server.getAdvancements().get(KindredSpirits.id(name));
+        for (String name : List.of("root", "tame_companion", "tame_all", "craft_charm", "bond_companion", "bond_level_5",
+                "bond_level_15", "bond_level_max", "level_10", "level_max", "prestige", "stars_max", "equip", "dye",
+                "open_storage", "revive")) {
+            h.assertTrue(find.apply(name) != null, "Advancement " + name + " must load");
+        }
+        for (CompanionSpecies species : CompanionSpecies.values()) {
+            String name = species.getSerializedName();
+            h.assertTrue(find.apply("tame_" + name) != null, "Every species needs a tame advancement (" + name + ")");
+            h.assertTrue(find.apply("tame_all").value().criteria().containsKey(name), "Spirit Menagerie must list " + name);
+            h.assertTrue(find.apply("tame_companion").value().criteria().containsKey(name), "New Friend must accept " + name);
+        }
+        java.util.function.Predicate<String> done = name -> player.getAdvancements().getOrStartProgress(find.apply(name)).isDone();
+
+        CompanionEntity pet = pet(h, CompanionSpecies.DIREWOLF, player, true);
+        h.assertTrue(done.test("tame_direwolf") && done.test("tame_companion"), "Taming a Direwolf must count");
+        h.assertTrue(!done.test("tame_nightfox") && !done.test("tame_all"), "Taming one species must not count for the others");
+        h.assertTrue(!done.test("bond_companion"), "Nothing is reported before the companion reports its progress");
+        pet.reportProgress(player);
+        h.assertTrue(done.test("bond_companion"), "A bonded companion must grant Bound Together");
+        h.assertTrue(!done.test("level_10") && !done.test("bond_level_5"), "A fresh companion has no level or bond milestones");
+
+        pet.addExperience(Integer.MAX_VALUE / 2);
+        h.assertTrue(done.test("level_10") && done.test("level_max"), "Levelling to the cap must grant both level advancements");
+        h.assertTrue(pet.prestige() && done.test("prestige"), "Prestiging must grant Rising Star");
+        h.assertTrue(done.test("stars_max") == (CompanionLevels.maxStars() <= 1), "Superstar needs every star");
+        pet.addBondPoints(Integer.MAX_VALUE / 2);
+        h.assertTrue(done.test("bond_level_5") && done.test("bond_level_15") && done.test("bond_level_max"),
+                "Bonding to the cap must grant every bond advancement");
+
+        var hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+        player.setItemInHand(hand, new ItemStack(Items.RED_DYE));
+        pet.mobInteract(player, hand);
+        h.assertTrue(done.test("dye"), "Dyeing must grant True Colours");
+        player.setItemInHand(hand, new ItemStack(Items.WOLF_ARMOR));
+        pet.mobInteract(player, hand);
+        h.assertTrue(done.test("equip"), "Equipping must grant Dressed for Success");
+        player.setItemInHand(hand, ItemStack.EMPTY);
+        pet.mobInteract(player, hand);
+        h.assertTrue(done.test("open_storage"), "Opening storage must grant Saddlebags");
+        player.closeContainer();
+
+        h.assertTrue(!done.test("revive"), "Nothing has been revived yet");
+        pet.hurtServer(h.getLevel(), pet.damageSources().genericKill(), 10000);
+        KindredAttachments.modifyBond(player, b -> b.withReviveReadyAt(Math.max(1, h.getLevel().getGameTime())));
+        action(player, Action.SUMMON);
+        h.assertTrue(done.test("revive"), "Reviving must grant Not Goodbye");
+        finish(h, player);
     }
 
     private static void beachSuspiciousSand(GameTestHelper h) {

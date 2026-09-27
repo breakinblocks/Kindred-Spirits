@@ -1,0 +1,29 @@
+{
+  "parent": "kindredspirits:level_10",
+  "display": {
+    "icon": {
+      "id": "minecraft:enchanting_table"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.level_max.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.level_max.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "level": {
+      "trigger": "kindredspirits:companion",
+      "conditions": {
+        "event": "level",
+        "at_max": true
+      }
+    }
+  },
+  "requirements": [
+    [
+      "level"
+    ]
+  ]
+}

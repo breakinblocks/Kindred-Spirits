@@ -15,6 +15,7 @@ import com.breakinblocks.kindredspirits.registry.KindredFeatures;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import com.breakinblocks.kindredspirits.registry.KindredMenus;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
+import com.breakinblocks.kindredspirits.registry.KindredTriggers;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
@@ -51,6 +52,7 @@ public class KindredSpirits {
         KindredParticles.TYPES.register(modEventBus);
         KindredFeatures.FEATURES.register(modEventBus);
         KindredMenus.MENUS.register(modEventBus);
+        KindredTriggers.TRIGGERS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, KindredConfig.COMMON_SPEC);
 

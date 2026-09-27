@@ -2,6 +2,7 @@ package com.breakinblocks.kindredspirits.companion;
 
 import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.advancement.CompanionTrigger;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
@@ -12,6 +13,7 @@ import com.breakinblocks.kindredspirits.menu.KindredStorageMenu;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
 import com.breakinblocks.kindredspirits.registry.KindredTags;
+import com.breakinblocks.kindredspirits.registry.KindredTriggers;
 import com.breakinblocks.kindredspirits.util.BlockPosUtil;
 import com.geckolib.animatable.GeoEntity;
 import com.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -22,6 +24,7 @@ import com.geckolib.animation.object.PlayState;
 import com.geckolib.animation.state.AnimationTest;
 import com.geckolib.util.GeckoLibUtil;
 import com.mojang.serialization.Codec;
+import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleOptions;
@@ -518,6 +521,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         if (after > before && !this.level().isClientSide()) {
             this.announce("bond_up", after);
             this.burst(KindredParticles.BOND_HEART.get(), FEED_HEARTS);
+            this.reportToOwner();
         }
     }
 
@@ -602,6 +606,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             this.setDyeId(dye.getId());
             stack.consume(1, player);
             this.playSound(SoundEvents.DYE_USE, 1.0f, 1.0f);
+            if (player instanceof ServerPlayer serverPlayer) {
+                this.milestone(serverPlayer, CompanionTrigger.Event.DYED, dye.getId());
+            }
         }
         return true;
     }
@@ -632,6 +639,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
         int rows = Math.clamp(Math.max(Mth.positiveCeilDiv(accessible, 9),
                 Mth.positiveCeilDiv(highestFilled + 1, 9)), 1, CompanionLevels.MAX_STORAGE_ROWS);
+        this.milestone(player, CompanionTrigger.Event.STORAGE_OPENED, accessible);
 
         player.openMenu(new SimpleMenuProvider(
                         (id, playerInventory, unused) ->
@@ -768,6 +776,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
         player.sendSystemMessage(Component.translatable("message.kindredspirits.equipped",
                 this.getDisplayName(), this.equipment.getHoverName()));
+        if (player instanceof ServerPlayer serverPlayer) {
+            this.milestone(serverPlayer, CompanionTrigger.Event.EQUIPPED, 0);
+        }
     }
 
     public ItemStack takeEquipment() {
@@ -851,6 +862,34 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         owner.sendSystemMessage(Component.translatable("message.kindredspirits." + key, withName));
     }
 
+    public void milestone(ServerPlayer player, CompanionTrigger.Event event, int value) {
+        KindredTriggers.COMPANION.get().trigger(player, this.species, event, value);
+    }
+
+    public void reportProgress(ServerPlayer owner) {
+        if (!this.isBonded()) {
+            return;
+        }
+
+        this.milestone(owner, CompanionTrigger.Event.BONDED, 0);
+        this.milestone(owner, CompanionTrigger.Event.LEVEL, this.getLevel());
+        this.milestone(owner, CompanionTrigger.Event.BOND_LEVEL, this.getBondLevel());
+        this.milestone(owner, CompanionTrigger.Event.STARS, this.getStars());
+        if (!this.equipment.isEmpty()) {
+            this.milestone(owner, CompanionTrigger.Event.EQUIPPED, 0);
+        }
+        if (this.getDyeId() != NO_DYE) {
+            this.milestone(owner, CompanionTrigger.Event.DYED, this.getDyeId());
+        }
+    }
+
+    private void reportToOwner() {
+        ServerPlayer owner = this.serverOwner();
+        if (owner != null) {
+            this.reportProgress(owner);
+        }
+    }
+
     private void celebrate(SoundEvent sound, float volume, float pitch, ParticleOptions particle, int count) {
         this.applyLevelScaling(true);
         this.playSound(sound, volume, pitch);
@@ -872,6 +911,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         if (owner != null) {
             KindredAttachments.modify(owner, record -> record.withHighestStars(stars));
             this.announce("prestige", stars);
+            this.reportProgress(owner);
         }
 
         return true;
@@ -908,6 +948,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                 int reached = level;
                 KindredAttachments.modify(owner, record -> record.withHighestLevel(reached));
                 this.announce("level_up", level);
+                this.reportProgress(owner);
             }
         }
     }
@@ -916,6 +957,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         if (!(this.getOwner() instanceof Player owner)) {
             return; // An offline owner is not a released bond.
         }
+        if (owner instanceof ServerPlayer serverOwner) {
+            CriteriaTriggers.TAME_ANIMAL.trigger(serverOwner, this);
+        }
 
         CompanionBond bond = KindredAttachments.bond(owner);
         boolean bonded = !bond.stored() && bond.isBoundTo(this.getUUID());
@@ -923,6 +967,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
         if (bonded) {
             KindredAttachments.modifyBond(owner, current -> KindredCharmItem.snapshot(current, this).withStored(false));
+            if (owner instanceof ServerPlayer serverOwner) {
+                this.reportProgress(serverOwner);
+            }
         }
     }
 

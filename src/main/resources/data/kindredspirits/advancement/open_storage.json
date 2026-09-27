@@ -1,0 +1,27 @@
+{
+  "parent": "kindredspirits:bond_companion",
+  "display": {
+    "icon": {
+      "id": "minecraft:chest"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.open_storage.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.open_storage.description"
+    }
+  },
+  "criteria": {
+    "opened": {
+      "trigger": "kindredspirits:companion",
+      "conditions": {
+        "event": "storage_opened"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "opened"
+    ]
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "parent": "kindredspirits:level_max",
+  "display": {
+    "icon": {
+      "id": "minecraft:nether_star"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.prestige.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.prestige.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "stars": {
+      "trigger": "kindredspirits:companion",
+      "conditions": {
+        "event": "stars",
+        "value": {
+          "min": 1
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "stars"
+    ]
+  ]
+}

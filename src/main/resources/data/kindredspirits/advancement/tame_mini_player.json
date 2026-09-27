@@ -1,0 +1,35 @@
+{
+  "parent": "kindredspirits:tame_companion",
+  "display": {
+    "icon": {
+      "id": "kindredspirits:mini_player_spawn_egg"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.tame_mini_player.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.tame_mini_player.description"
+    }
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:mini_player"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "parent": "kindredspirits:tame_companion",
+  "display": {
+    "icon": {
+      "id": "minecraft:sculk"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.tame_nightfox.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.tame_nightfox.description"
+    }
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:nightfox"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ]
+}

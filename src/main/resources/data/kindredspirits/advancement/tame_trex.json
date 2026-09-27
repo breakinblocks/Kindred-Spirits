@@ -1,0 +1,35 @@
+{
+  "parent": "kindredspirits:tame_companion",
+  "display": {
+    "icon": {
+      "id": "kindredspirits:trex_egg"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.tame_trex.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.tame_trex.description"
+    }
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:trex"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ]
+}

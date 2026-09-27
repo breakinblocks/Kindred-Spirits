@@ -1,0 +1,27 @@
+{
+  "parent": "kindredspirits:bond_companion",
+  "display": {
+    "icon": {
+      "id": "kindredspirits:boxing_gloves"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.equip.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.equip.description"
+    }
+  },
+  "criteria": {
+    "equipped": {
+      "trigger": "kindredspirits:companion",
+      "conditions": {
+        "event": "equipped"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "equipped"
+    ]
+  ]
+}

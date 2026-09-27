@@ -1,0 +1,125 @@
+{
+  "parent": "kindredspirits:root",
+  "display": {
+    "icon": {
+      "id": "minecraft:lead"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.tame_companion.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.tame_companion.description"
+    }
+  },
+  "criteria": {
+    "nightfox": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:nightfox"
+            }
+          }
+        ]
+      }
+    },
+    "trex": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:trex"
+            }
+          }
+        ]
+      }
+    },
+    "mini_player": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:mini_player"
+            }
+          }
+        ]
+      }
+    },
+    "baby_dragon": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:baby_dragon"
+            }
+          }
+        ]
+      }
+    },
+    "quokka": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:quokka"
+            }
+          }
+        ]
+      }
+    },
+    "gremlin": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:gremlin"
+            }
+          }
+        ]
+      }
+    },
+    "direwolf": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:direwolf"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "nightfox",
+      "trex",
+      "mini_player",
+      "baby_dragon",
+      "quokka",
+      "gremlin",
+      "direwolf"
+    ]
+  ]
+}

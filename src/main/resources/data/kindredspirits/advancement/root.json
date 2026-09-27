@@ -1,0 +1,26 @@
+{
+  "display": {
+    "icon": {
+      "id": "kindredspirits:kindred_charm"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.root.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.root.description"
+    },
+    "background": "minecraft:block/purple_terracotta",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "tick": {
+      "trigger": "minecraft:tick"
+    }
+  },
+  "requirements": [
+    [
+      "tick"
+    ]
+  ]
+}

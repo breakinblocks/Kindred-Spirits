@@ -1,0 +1,27 @@
+{
+  "parent": "kindredspirits:bond_companion",
+  "display": {
+    "icon": {
+      "id": "minecraft:magenta_dye"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.dye.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.dye.description"
+    }
+  },
+  "criteria": {
+    "dyed": {
+      "trigger": "kindredspirits:companion",
+      "conditions": {
+        "event": "dyed"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "dyed"
+    ]
+  ]
+}

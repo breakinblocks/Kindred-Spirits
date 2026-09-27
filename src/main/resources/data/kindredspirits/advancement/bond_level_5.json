@@ -1,0 +1,30 @@
+{
+  "parent": "kindredspirits:bond_companion",
+  "display": {
+    "icon": {
+      "id": "minecraft:poppy"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.bond_level_5.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.bond_level_5.description"
+    }
+  },
+  "criteria": {
+    "bond": {
+      "trigger": "kindredspirits:companion",
+      "conditions": {
+        "event": "bond_level",
+        "value": {
+          "min": 5
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "bond"
+    ]
+  ]
+}

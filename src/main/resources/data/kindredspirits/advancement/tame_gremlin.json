@@ -1,0 +1,35 @@
+{
+  "parent": "kindredspirits:tame_companion",
+  "display": {
+    "icon": {
+      "id": "kindredspirits:gremlin_spawn_egg"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.tame_gremlin.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.tame_gremlin.description"
+    }
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:gremlin"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "parent": "kindredspirits:bond_companion",
+  "display": {
+    "icon": {
+      "id": "minecraft:experience_bottle"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.level_10.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.level_10.description"
+    }
+  },
+  "criteria": {
+    "level": {
+      "trigger": "kindredspirits:companion",
+      "conditions": {
+        "event": "level",
+        "value": {
+          "min": 10
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "level"
+    ]
+  ]
+}

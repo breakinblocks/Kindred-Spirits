@@ -1,0 +1,32 @@
+{
+  "parent": "kindredspirits:prestige",
+  "display": {
+    "icon": {
+      "id": "minecraft:beacon"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.stars_max.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.stars_max.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "stars": {
+      "trigger": "kindredspirits:companion",
+      "conditions": {
+        "event": "stars",
+        "at_max": true
+      }
+    }
+  },
+  "requirements": [
+    [
+      "stars"
+    ]
+  ],
+  "rewards": {
+    "experience": 250
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "parent": "kindredspirits:tame_companion",
+  "display": {
+    "icon": {
+      "id": "kindredspirits:quokka_spawn_egg"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.tame_quokka.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.tame_quokka.description"
+    }
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kindredspirits:quokka"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ]
+}

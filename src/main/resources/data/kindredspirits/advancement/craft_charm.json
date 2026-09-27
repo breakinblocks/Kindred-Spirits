@@ -1,0 +1,31 @@
+{
+  "parent": "kindredspirits:root",
+  "display": {
+    "icon": {
+      "id": "kindredspirits:kindred_charm"
+    },
+    "title": {
+      "translate": "advancements.kindredspirits.craft_charm.title"
+    },
+    "description": {
+      "translate": "advancements.kindredspirits.craft_charm.description"
+    }
+  },
+  "criteria": {
+    "charm": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "kindredspirits:kindred_charm"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "charm"
+    ]
+  ]
+}

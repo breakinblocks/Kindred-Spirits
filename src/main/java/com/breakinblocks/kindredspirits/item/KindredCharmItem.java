@@ -5,6 +5,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.server.level.TicketType;
 import com.breakinblocks.kindredspirits.KindredMessages;
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.advancement.CompanionTrigger;
 import com.breakinblocks.kindredspirits.companion.CompanionAggression;
 import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
 import com.breakinblocks.kindredspirits.companion.CompanionCommand;
@@ -27,6 +28,7 @@ import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import net.minecraft.core.BlockPos;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
+import com.breakinblocks.kindredspirits.registry.KindredTriggers;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -104,6 +106,7 @@ public class KindredCharmItem extends Item {
         KindredAttachments.modifyBond(player, current -> snapshot(current, companion).withStored(false));
         KindredAttachments.modify(player, record -> record.withBonded(record.companionsBonded() + 1));
         companion.setBonded(true);
+        companion.reportProgress(player);
 
         KindredMessages.send(player, "charm_bound", companion.getDisplayName());
         KindredNetworking.sendCharmView(player, false);
@@ -230,6 +233,8 @@ public class KindredCharmItem extends Item {
             updateSnapshot(player, snap -> prestiged);
             KindredAttachments.modify(player, record -> record.withHighestStars(prestiged.stars()));
             KindredMessages.send(player, "prestige", prestiged.displayName(), prestiged.stars());
+            prestiged.resolveSpecies().ifPresent(species -> KindredTriggers.COMPANION.get()
+                    .trigger(player, species, CompanionTrigger.Event.STARS, prestiged.stars()));
         }
     }
 
@@ -421,6 +426,10 @@ public class KindredCharmItem extends Item {
 
         KindredAttachments.modifyBond(player, current ->
                 snapshot(current, companion).withStored(false).withReviveReadyAt(0L));
+        companion.reportProgress(player);
+        if (reviving) {
+            companion.milestone(player, CompanionTrigger.Event.REVIVED, 0);
+        }
 
         companion.burst(reviving ? KindredParticles.REVIVE_BLOOM.get() : KindredParticles.SUMMON_RUNE.get(), 16);
         companion.playSound(reviving ? KindredSounds.CHARM_REVIVE.get() : KindredSounds.CHARM_SUMMON.get(), 0.6f, 1.0f);

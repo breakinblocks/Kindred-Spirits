@@ -11,6 +11,10 @@
 - Use any dye on your companion to recolour its fur, hide or scales; eyes, teeth, claws,
   markings and gear keep their own colours, and dark companions take bright colours. A water
   bucket washes it off. The Mini Player keeps its player skin instead.
+- A Kindred Spirits advancement tab with 23 advancements: taming each spirit and all of them,
+  crafting the charm, bonding, bond levels 5, 15 and the maximum, levels 10 and the maximum,
+  prestige stars, and equipping, dyeing, opening storage and reviving a companion. Progress made
+  before the update is picked up once the companion is out.
 - Companions can have more than one skin, picked with the Skin button on the charm screen.
   The choice is kept while resting and dye still applies on top. The Direwolf has a Snowy
   skin. Resource packs can add skins as `textures/entity/<species>_skin_<id>.png`.
