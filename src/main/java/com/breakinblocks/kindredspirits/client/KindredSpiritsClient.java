@@ -13,6 +13,7 @@ import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.google.common.reflect.TypeToken;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -20,6 +21,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
@@ -36,6 +38,7 @@ public final class KindredSpiritsClient {
         modEventBus.addListener(KindredParticle::register);
         modEventBus.addListener(KindredSpiritsClient::registerScreens);
         modEventBus.addListener(KindredSpiritsClient::registerRenderStateModifiers);
+        modEventBus.addListener(KindredSpiritsClient::registerReloadListeners);
     }
 
     private static void registerRenderStateModifiers(RegisterRenderStateModifiersEvent event) {
@@ -49,6 +52,11 @@ public final class KindredSpiritsClient {
 
     private static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(KindredMenus.COMPANION_STORAGE.get(), KindredStorageScreen::new);
+    }
+
+    private static void registerReloadListeners(AddClientReloadListenersEvent event) {
+        event.addListener(KindredSpirits.id("companion_skins"),
+                (ResourceManagerReloadListener) resourceManager -> CompanionSkins.clear());
     }
 
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {

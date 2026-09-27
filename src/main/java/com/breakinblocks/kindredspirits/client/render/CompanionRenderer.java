@@ -6,7 +6,6 @@ import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
 import com.geckolib.constant.dataticket.DataTicket;
-import com.geckolib.model.DefaultedEntityGeoModel;
 import com.geckolib.model.GeoModel;
 import com.geckolib.renderer.GeoEntityRenderer;
 import com.breakinblocks.kindredspirits.companion.CompanionAnimations;
@@ -28,6 +27,7 @@ import java.util.List;
 public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, LivingEntityRenderState> {
     static final DataTicket<String> EQUIPMENT = DataTicket.create("kindredspirits:equipment", String.class);
     static final DataTicket<Integer> DYE = DataTicket.create("kindredspirits:dye", Integer.class);
+    static final DataTicket<String> SKIN = DataTicket.create("kindredspirits:skin", String.class);
 
     private final CompanionSpecies species;
 
@@ -42,7 +42,7 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
             case QUOKKA -> new QuokkaGeoModel();
             case TREX -> new EquippedVariantGeoModel(species, KindredItems.BOXING_GLOVES, "trex_gloves");
             case BABY_DRAGON -> new EquippedVariantGeoModel(species, KindredItems.DRAGON_TABLET, "baby_dragon_tablet");
-            default -> new DefaultedEntityGeoModel<>(KindredSpirits.id(species.getSerializedName()));
+            default -> new CompanionGeoModel(KindredSpirits.id(species.getSerializedName()));
         };
     }
 
@@ -64,6 +64,7 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
         super.addRenderData(entity, relatedObject, renderState, partialTick);
         renderState.addGeckolibData(EQUIPMENT, entity.equipmentId());
         renderState.addGeckolibData(DYE, entity.getDyeId());
+        renderState.addGeckolibData(SKIN, this.species.usesPlayerSkin() ? "" : entity.getSkinName());
     }
 
     @Override

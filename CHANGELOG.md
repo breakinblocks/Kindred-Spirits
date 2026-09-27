@@ -11,6 +11,9 @@
 - Use any dye on your companion to recolour its fur, hide or scales; eyes, teeth, claws,
   markings and gear keep their own colours, and dark companions take bright colours. A water
   bucket washes it off. The Mini Player keeps its player skin instead.
+- Companions can have more than one skin, picked with the Skin button on the charm screen.
+  The choice is kept while resting and dye still applies on top. The Direwolf has a Snowy
+  skin. Resource packs can add skins as `textures/entity/<species>_skin_<id>.png`.
 - Spirit Bandage: two paper and a string make two, and each heals a hurt companion 3 hearts.
 
 ### Obtaining

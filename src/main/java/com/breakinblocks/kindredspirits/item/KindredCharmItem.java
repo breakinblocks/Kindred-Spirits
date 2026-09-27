@@ -16,6 +16,7 @@ import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.BondRecord;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
+import com.breakinblocks.kindredspirits.companion.CompanionSkin;
 import com.breakinblocks.kindredspirits.companion.CompanionSnapshot;
 import com.breakinblocks.kindredspirits.companion.CompanionWorldData;
 import net.minecraft.world.level.portal.TeleportTransition;
@@ -274,6 +275,11 @@ public class KindredCharmItem extends Item {
                 : bond.snapshot().orElseThrow().usesPlayerSkin();
 
         if (!wearsSkin) {
+            String skin = text.trim();
+            if (skin.isEmpty() || CompanionSkin.isValid(skin)) {
+                apply(player, live, entity -> entity.setSkinName(skin),
+                        snap -> snap.withSkin(CompanionSnapshot.nonEmpty(skin)));
+            }
             return;
         }
 

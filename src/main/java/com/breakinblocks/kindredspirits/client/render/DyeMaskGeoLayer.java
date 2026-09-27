@@ -1,11 +1,11 @@
 package com.breakinblocks.kindredspirits.client.render;
 
+import com.breakinblocks.kindredspirits.client.CompanionSkins;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.geckolib.renderer.base.GeoRenderer;
 import com.geckolib.renderer.base.RenderPassInfo;
 import com.geckolib.renderer.layer.GeoRenderLayer;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -13,12 +13,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.item.DyeColor;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 final class DyeMaskGeoLayer extends GeoRenderLayer<CompanionEntity, Void, LivingEntityRenderState> {
-    private static final Map<Identifier, Boolean> PRESENT = new ConcurrentHashMap<>();
-
     DyeMaskGeoLayer(GeoRenderer<CompanionEntity, Void, LivingEntityRenderState> renderer) {
         super(renderer);
     }
@@ -37,7 +32,7 @@ final class DyeMaskGeoLayer extends GeoRenderLayer<CompanionEntity, Void, Living
         }
 
         Identifier mask = this.getTextureResource(renderPass.renderState());
-        if (!exists(mask)) {
+        if (!CompanionSkins.exists(mask)) {
             return;
         }
 
@@ -52,10 +47,5 @@ final class DyeMaskGeoLayer extends GeoRenderLayer<CompanionEntity, Void, Living
             renderPass.renderPosed(() -> renderPass.model().render(renderPass, buffer, light, overlay, colour));
             poseStack.popPose();
         });
-    }
-
-    private static boolean exists(Identifier texture) {
-        return PRESENT.computeIfAbsent(texture,
-                id -> Minecraft.getInstance().getResourceManager().getResource(id).isPresent());
     }
 }

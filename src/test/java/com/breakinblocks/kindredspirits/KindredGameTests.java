@@ -84,6 +84,7 @@ public final class KindredGameTests {
         TESTS.put("meteor_call_drops_a_meteor_that_hits", KindredGameTests::meteorCall);
         TESTS.put("crushing_might_crushes_ore_items", KindredGameTests::crushingMight);
         TESTS.put("mini_player_fires_spirit_arrows", KindredGameTests::spiritArrow);
+        TESTS.put("skin_choice_is_saved_and_validated", KindredGameTests::skinChoice);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
         TESTS.put("beach_suspicious_sand_generates_and_can_be_disabled", KindredGameTests::beachSuspiciousSand);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
@@ -920,6 +921,22 @@ public final class KindredGameTests {
                 "The Mini Player must fire one spirit arrow that it owns");
         h.assertTrue(arrows.getFirst().pickup == net.minecraft.world.entity.projectile.arrow.AbstractArrow.Pickup.DISALLOWED,
                 "Spirit arrows must not be pickupable");
+        finish(h, owner);
+    }
+
+    private static void skinChoice(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity fox = pet(h, CompanionSpecies.NIGHTFOX, owner, true);
+        KindredCharmItem.handleAction(owner, Action.SET_SKIN, 0, "frost");
+        h.assertTrue(fox.getSkinName().equals("frost"), "A valid skin id must be stored on the companion");
+        KindredCharmItem.handleAction(owner, Action.SET_SKIN, 0, "Frost Fox!");
+        h.assertTrue(fox.getSkinName().equals("frost"), "An invalid skin id must be refused");
+        action(owner, Action.DISMISS);
+        action(owner, Action.SUMMON);
+        CompanionEntity summoned = deployed(owner);
+        h.assertTrue(summoned.getSkinName().equals("frost"), "The skin must survive a rest in the charm");
+        KindredCharmItem.handleAction(owner, Action.SET_SKIN, 0, "");
+        h.assertTrue(summoned.getSkinName().isEmpty(), "An empty skin id goes back to the default look");
         finish(h, owner);
     }
 

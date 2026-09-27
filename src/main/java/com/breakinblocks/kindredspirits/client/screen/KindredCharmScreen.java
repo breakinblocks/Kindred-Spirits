@@ -1,5 +1,6 @@
 package com.breakinblocks.kindredspirits.client.screen;
 
+import com.breakinblocks.kindredspirits.client.CompanionSkins;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.net.CharmView;
@@ -107,6 +108,7 @@ public class KindredCharmScreen extends Screen {
     private boolean skinRow;
     private @Nullable TextField nameField;
     private @Nullable TextField skinField;
+    private @Nullable Button skinButton;
     private @Nullable CompanionEntity display;
     private int left;
     private int top;
@@ -143,6 +145,9 @@ public class KindredCharmScreen extends Screen {
         } else if (this.display != null) {
             this.display.showEquipment(view.equipment());
             this.display.setDyeId(view.dye());
+            if (!view.usesPlayerSkin()) {
+                this.display.setSkinName(view.skin());
+            }
         }
 
         if (this.summonButton != null && (this.skinRow != this.wantsSkinRow() || !sameSpecies)) {
@@ -159,13 +164,35 @@ public class KindredCharmScreen extends Screen {
             this.skinField.seed(view.skin());
         }
 
+        if (this.skinButton != null) {
+            this.skinButton.setMessage(this.skinLabel());
+        }
+
         if (this.summonButton != null) {
             this.updateButtonState();
         }
     }
 
     private boolean wantsSkinRow() {
-        return this.view.bound() && this.view.usesPlayerSkin();
+        return this.view.bound() && (this.view.usesPlayerSkin() || !this.skinChoices().isEmpty());
+    }
+
+    private List<String> skinChoices() {
+        return this.view.resolveSpecies().map(CompanionSkins::available).orElse(List.of());
+    }
+
+    private Component skinLabel() {
+        Component name = this.view.resolveSpecies()
+                .map(species -> CompanionSkins.displayName(species, this.view.skin()))
+                .orElse(Component.empty());
+        return Component.translatable("screen.kindredspirits.skin_variant", name);
+    }
+
+    private void cycleSkin() {
+        List<String> choices = this.skinChoices();
+        int index = choices.indexOf(this.view.skin());
+        String next = index + 1 < choices.size() ? choices.get(index + 1) : "";
+        ClientPacketDistributor.sendToServer(new CharmActionPayload(Action.SET_SKIN, 0, next));
     }
 
     private int portraitBottom() {
@@ -235,7 +262,9 @@ public class KindredCharmScreen extends Screen {
         nameBox.setValue(this.view.name().orElse(""));
         this.nameField = new TextField(Action.SET_NAME, this.addRenderableWidget(nameBox));
 
-        if (this.skinRow) {
+        this.skinField = null;
+        this.skinButton = null;
+        if (this.skinRow && this.view.usesPlayerSkin()) {
             EditBox skinBox = new EditBox(this.font, this.left + PAD, this.top + this.lowerY(SKIN_BOX_Y),
                     PORTRAIT_WIDTH, NAME_BOX_HEIGHT, Component.translatable("screen.kindredspirits.skin"));
             skinBox.setMaxLength(MAX_SKIN_LENGTH);
@@ -243,8 +272,9 @@ public class KindredCharmScreen extends Screen {
                     .withStyle(ChatFormatting.DARK_GRAY));
             skinBox.setValue(this.view.skin());
             this.skinField = new TextField(Action.SET_SKIN, this.addRenderableWidget(skinBox));
-        } else {
-            this.skinField = null;
+        } else if (this.skinRow) {
+            this.skinButton = this.addRenderableWidget(Button.builder(this.skinLabel(), button -> this.cycleSkin())
+                    .bounds(this.left + PAD, this.top + this.lowerY(SKIN_BOX_Y), PORTRAIT_WIDTH, NAME_BOX_HEIGHT).build());
         }
 
         int halfWidth = COLUMN_WIDTH / 2 - 2;
@@ -579,6 +609,8 @@ public class KindredCharmScreen extends Screen {
 
             if (species.usesPlayerSkin()) {
                 this.display.setSkinName(this.view.skin().isEmpty() ? this.localName() : this.view.skin());
+            } else {
+                this.display.setSkinName(this.view.skin());
             }
         }
 

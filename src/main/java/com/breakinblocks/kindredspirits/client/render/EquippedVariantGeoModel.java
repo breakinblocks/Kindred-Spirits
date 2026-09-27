@@ -3,12 +3,11 @@ package com.breakinblocks.kindredspirits.client.render;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
-import com.geckolib.model.DefaultedEntityGeoModel;
 import com.geckolib.renderer.base.GeoRenderState;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.registries.DeferredItem;
 
-final class EquippedVariantGeoModel extends DefaultedEntityGeoModel<CompanionEntity> {
+final class EquippedVariantGeoModel extends CompanionGeoModel {
     private final DeferredItem<?> item;
     private final Identifier variantModel;
     private final Identifier variantTexture;
@@ -33,8 +32,8 @@ final class EquippedVariantGeoModel extends DefaultedEntityGeoModel<CompanionEnt
     }
 
     @Override
-    public Identifier getTextureResource(GeoRenderState state) {
-        return this.equipped(state) ? this.variantTexture : super.getTextureResource(state);
+    protected Identifier baseTexture(GeoRenderState state) {
+        return this.equipped(state) ? this.variantTexture : super.baseTexture(state);
     }
 
     @Override
