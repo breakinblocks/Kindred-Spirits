@@ -399,6 +399,7 @@ public class KindredCharmItem extends Item {
         companion.tame(player);
         snapshot.name().ifPresent(name -> companion.setCustomName(Component.literal(name)));
         companion.setSkinName(snapshot.skin().orElse(""));
+        companion.setDyeId(snapshot.dye());
 
         boolean reviving = bond.reviveReadyAt() > 0;
         companion.restoreProgress(snapshot, reviving ? penalisedExperience(snapshot) : snapshot.experience());

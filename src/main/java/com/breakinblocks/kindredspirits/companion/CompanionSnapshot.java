@@ -16,7 +16,7 @@ import java.util.Optional;
 public record CompanionSnapshot(String species, int level, int experience, int bondPoints, int stars,
                                 CompanionProgress progress, Optional<String> name,
                                 int command, int aggression, Optional<String> skin, ItemStack equipment,
-                                List<String> disabledAbilities, CompanionState state) {
+                                List<String> disabledAbilities, CompanionState state, int dye) {
     private static final int LEGACY_BOND = -1;
 
     public static final Codec<CompanionSnapshot> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -37,17 +37,18 @@ public record CompanionSnapshot(String species, int level, int experience, int b
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("equipment", ItemStack.EMPTY).forGetter(CompanionSnapshot::equipment),
             Codec.STRING.listOf().optionalFieldOf("disabled_abilities", List.of())
                     .forGetter(CompanionSnapshot::disabledAbilities),
-            CompanionState.CODEC.optionalFieldOf("state", CompanionState.LEGACY).forGetter(CompanionSnapshot::state)
+            CompanionState.CODEC.optionalFieldOf("state", CompanionState.LEGACY).forGetter(CompanionSnapshot::state),
+            Codec.INT.optionalFieldOf("dye", CompanionEntity.NO_DYE).forGetter(CompanionSnapshot::dye)
     ).apply(instance, CompanionSnapshot::fromSaved));
 
     private static CompanionSnapshot fromSaved(String species, int level, int experience, int bondPoints,
                                                int legacyBond, int stars, CompanionProgress progress,
                                                Optional<String> name, int command, int aggression,
                                                Optional<String> skin, ItemStack equipment,
-                                               List<String> disabledAbilities, CompanionState state) {
+                                               List<String> disabledAbilities, CompanionState state, int dye) {
         int points = bondPoints == LEGACY_BOND ? CompanionBondMath.migrateLegacy(legacyBond) : bondPoints;
         return new CompanionSnapshot(species, level, experience, points, stars, progress,
-                name, command, aggression, skin, equipment, disabledAbilities, state);
+                name, command, aggression, skin, equipment, disabledAbilities, state, dye);
     }
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CompanionSnapshot> STREAM_CODEC = new StreamCodec<>() {
@@ -66,7 +67,8 @@ public record CompanionSnapshot(String species, int level, int experience, int b
                     ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8).decode(buffer),
                     ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer),
                     ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).decode(buffer),
-                    CompanionState.STREAM_CODEC.decode(buffer));
+                    CompanionState.STREAM_CODEC.decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer));
         }
 
         @Override
@@ -84,6 +86,7 @@ public record CompanionSnapshot(String species, int level, int experience, int b
             ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, snapshot.equipment());
             ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).encode(buffer, snapshot.disabledAbilities());
             CompanionState.STREAM_CODEC.encode(buffer, snapshot.state());
+            ByteBufCodecs.VAR_INT.encode(buffer, snapshot.dye());
         }
     };
 
@@ -100,7 +103,7 @@ public record CompanionSnapshot(String species, int level, int experience, int b
                 companion.getAggression().ordinal(),
                 nonEmpty(companion.getSkinName()),
                 companion.equipment().copy(),
-                companion.disabledAbilityNames(), companion.savedState());
+                companion.disabledAbilityNames(), companion.savedState(), companion.getDyeId());
     }
 
     public int bondLevel() {
@@ -117,39 +120,45 @@ public record CompanionSnapshot(String species, int level, int experience, int b
 
     public CompanionSnapshot withName(Optional<String> name) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
+                this.progress, name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state, this.dye);
     }
 
     public CompanionSnapshot withSkin(Optional<String> skin) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, this.name, this.command, this.aggression, skin, this.equipment, this.disabledAbilities, this.state);
+                this.progress, this.name, this.command, this.aggression, skin, this.equipment, this.disabledAbilities, this.state, this.dye);
     }
 
     public CompanionSnapshot withCommand(int command) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, this.name, command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
+                this.progress, this.name, command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state, this.dye);
     }
 
     public CompanionSnapshot withAggression(int aggression) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, this.name, this.command, aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
+                this.progress, this.name, this.command, aggression, this.skin, this.equipment, this.disabledAbilities, this.state, this.dye);
     }
 
     public CompanionSnapshot withBondPoints(int bondPoints) {
         return new CompanionSnapshot(this.species, this.level, this.experience,
                 CompanionBondMath.clampPoints(bondPoints), this.stars,
-                this.progress, this.name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
+                this.progress, this.name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state, this.dye);
     }
 
     public CompanionSnapshot withEquipment(ItemStack equipment) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
-                this.progress, this.name, this.command, this.aggression, this.skin, equipment, this.disabledAbilities, this.state);
+                this.progress, this.name, this.command, this.aggression, this.skin, equipment, this.disabledAbilities, this.state, this.dye);
     }
 
     public CompanionSnapshot withDisabledAbilities(List<String> disabledAbilities) {
         return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
                 this.progress, this.name, this.command, this.aggression, this.skin, this.equipment,
-                disabledAbilities, this.state);
+                disabledAbilities, this.state, this.dye);
+    }
+
+    public CompanionSnapshot withDye(int dye) {
+        return new CompanionSnapshot(this.species, this.level, this.experience, this.bondPoints, this.stars,
+                this.progress, this.name, this.command, this.aggression, this.skin, this.equipment,
+                this.disabledAbilities, this.state, dye);
     }
 
     public static Optional<String> nonEmpty(String value) {
@@ -176,7 +185,7 @@ public record CompanionSnapshot(String species, int level, int experience, int b
         }
 
         return new CompanionSnapshot(this.species, CompanionLevels.MIN_LEVEL, 0, this.bondPoints, this.stars + 1,
-                this.progress, this.name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state);
+                this.progress, this.name, this.command, this.aggression, this.skin, this.equipment, this.disabledAbilities, this.state, this.dye);
     }
 
     public Optional<CompanionSpecies> resolveSpecies() {

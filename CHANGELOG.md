@@ -8,6 +8,9 @@
 - Baby Dragon is immune to fire and lava. Nightfox is immune to wither. Gremlin is immune
   to poison.
 - T-Rex knockback resistance raised from 0.6 to 0.9.
+- Use any dye on your companion to tint it; a water bucket washes it off. The Mini Player
+  keeps its player skin instead.
+- Spirit Bandage: two paper and a string make two, and each heals a hurt companion 3 hearts.
 
 ### Obtaining
 
@@ -53,7 +56,7 @@
 - Baby Dragon: Forge Draft (now level 1), Dragonfire, Kiln Breath (`/kindredspirits smelt`).
 - Mini Player: Are You Gonna Eat That?, Helping Hand, Friendly Face.
 - Gremlin: Tinker, Snack Thief, Energized Chaos.
-- Quokka: Brighter Side, Smile, Always Happy.
+- Quokka: Smile, Brighter Side, Always Happy.
 - Direwolf: Not Another Hole (digs up loot on soft ground, archaeology tables on sand and
   gravel), Best Friend (+50% experience from your kills), Leader of the Pack (Resistance II
   and hostiles glowing for you alone every 90 seconds).
@@ -92,6 +95,15 @@
   summon, revive and prestige.
 - A companion levelling up now finishes with the experience orb chime.
 
+### Textures
+
+- New spawn eggs for the T-Rex, Baby Dragon, Mini Player, Gremlin and Nightfox, each
+  showing the companion's face in its own colours.
+- New Golden Bone, Spirit Bandage and T-Rex Egg icons.
+- The T-Rex Egg block is now a speckled tan egg, with cracks that spread as it gets closer to
+  hatching.
+- Darker, coloured outlines on the Battery, Dragon Tablet and Direwolf spawn egg.
+
 ### Fixed
 
 - Gremlin and Quokka animations failed to load, which crashed the client whenever one
@@ -108,4 +120,5 @@
 ### Other
 
 - In-game guide through Oracle Index.
+- Jade shows your bonded companion's bond level under its level.
 - New charm, spawn egg, egg and equipment textures.

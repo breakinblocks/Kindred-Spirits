@@ -79,6 +79,7 @@ import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball;
 import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -148,11 +149,14 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_SKIN =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Integer> DATA_DYE =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<String> DATA_EQUIPMENT_ID =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
 
     private static final EntityDataAccessor<Integer> DATA_LEVEL_LIMIT = SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_STAR_LIMIT = SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_BOND_LIMIT = SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
 
     public static final String MAIN_CONTROLLER = "main";
     public static final String ACTION_CONTROLLER = "action";
@@ -182,6 +186,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final int PROGRESS_INTERVAL = 20;
     private static final int FEED_HEARTS = 7;
     private static final int FOOD_BOND_POINTS = 1;
+    public static final int NO_DYE = -1;
     private static final int BOW_INTERVAL = 35;
     private static final double MELEE_SWITCH_RANGE = 3.0;
     private static final double BOW_SWITCH_RANGE = 6.0;
@@ -389,6 +394,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         entityData.define(DATA_LEVEL, CompanionLevels.MIN_LEVEL);
         entityData.define(DATA_LEVEL_LIMIT, CompanionLevels.maxLevel());
         entityData.define(DATA_STAR_LIMIT, CompanionLevels.maxStars());
+        entityData.define(DATA_BOND_LIMIT, CompanionBondMath.maxLevel());
         entityData.define(DATA_EXPERIENCE, 0);
         entityData.define(DATA_BOND, 0);
         entityData.define(DATA_BOND_LEVEL, 0);
@@ -397,6 +403,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         entityData.define(DATA_AGGRESSION, (byte) CompanionAggression.NEUTRAL.ordinal());
         entityData.define(DATA_BONDED, false);
         entityData.define(DATA_SKIN, "");
+        entityData.define(DATA_DYE, NO_DYE);
         entityData.define(DATA_EQUIPMENT_ID, "");
         entityData.define(DATA_DISABLED_ABILITIES, "");
     }
@@ -420,6 +427,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         output.putString("Aggression", this.getAggression().getSerializedName());
         output.putBoolean("PlayedSpawnAnimation", this.playedSpawnAnimation);
         output.putString("Skin", this.getSkinName());
+        if (this.getDyeId() != NO_DYE) {
+            output.putString("Dye", DyeColor.byId(this.getDyeId()).getSerializedName());
+        }
         if (!this.disabledAbilityNames().isEmpty()) {
             output.store("DisabledAbilities", Codec.STRING.listOf(), this.disabledAbilityNames());
         }
@@ -446,6 +456,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.lights = input.read("Lights", CompanionLights.CODEC).orElseGet(CompanionLights::new);
         this.playedSpawnAnimation = input.getBooleanOr("PlayedSpawnAnimation", true);
         this.entityData.set(DATA_SKIN, input.getStringOr("Skin", ""));
+        DyeColor dye = DyeColor.byName(input.getStringOr("Dye", ""), null);
+        this.setDyeId(dye == null ? NO_DYE : dye.getId());
         this.setDisabledAbilityNames(input.read("DisabledAbilities", Codec.STRING.listOf()).orElse(List.of()));
         this.equipment = input.read("Equipment", ItemStack.CODEC).orElse(ItemStack.EMPTY);
         this.entityData.set(DATA_AGGRESSION, (byte) CompanionAggression
@@ -467,6 +479,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     public int configuredMaxStars() {
         return this.entityData.get(DATA_STAR_LIMIT);
+    }
+
+    public int configuredMaxBond() {
+        return this.entityData.get(DATA_BOND_LIMIT);
     }
 
     public int getExperience() {
@@ -515,14 +531,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public int scaledInterval(CompanionAbility ability) {
-        if (!ability.scalesWithBond()) {
+        if (!ability.scalesWithBond() || !CompanionAbilities.isBaseBuff(ability)) {
             return ability.intervalTicks();
         }
         return (int) Math.max(1L, Math.round(ability.intervalTicks() * this.bondRateMultiplier()));
-    }
-
-    public double scaledChance(double chance) {
-        return Math.min(1.0, chance / this.bondRateMultiplier());
     }
 
     public CompanionLights lights() {
@@ -572,6 +584,36 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     public String getSkinName() {
         return this.entityData.get(DATA_SKIN);
+    }
+
+    public int getDyeId() {
+        return this.entityData.get(DATA_DYE);
+    }
+
+    public void setDyeId(int dye) {
+        this.entityData.set(DATA_DYE, dye < 0 || dye >= DyeColor.values().length ? NO_DYE : dye);
+    }
+
+    private boolean tryDye(Player player, ItemStack stack) {
+        DyeColor dye = stack.get(DataComponents.DYE);
+        if (dye == null || this.species.usesPlayerSkin()) {
+            return false;
+        }
+        if (this.getDyeId() != dye.getId()) {
+            this.setDyeId(dye.getId());
+            stack.consume(1, player);
+            this.playSound(SoundEvents.DYE_USE, 1.0f, 1.0f);
+        }
+        return true;
+    }
+
+    private boolean tryWashDye(ItemStack stack) {
+        if (!stack.is(Items.WATER_BUCKET) || this.getDyeId() == NO_DYE) {
+            return false;
+        }
+        this.setDyeId(NO_DYE);
+        this.playSound(SoundEvents.GENERIC_SPLASH, 0.6f, 1.2f);
+        return true;
     }
 
     public void setSkinName(String name) {
@@ -1057,6 +1099,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         if (this.tickCount % PROGRESS_INTERVAL == 0) {
             this.entityData.set(DATA_LEVEL_LIMIT, CompanionLevels.maxLevel());
             this.entityData.set(DATA_STAR_LIMIT, CompanionLevels.maxStars());
+            this.entityData.set(DATA_BOND_LIMIT, CompanionBondMath.maxLevel());
         }
         this.updateRunning();
         if (this.species == CompanionSpecies.NIGHTFOX && this.isBonded() && this.getTarget() == null
@@ -1149,7 +1192,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             if (stack.is(KindredTags.COMPANION_HEALING) && this.getHealth() < this.getMaxHealth()) {
                 return this.serverOnly(() -> {
                     this.consumeWithFeedback(player, stack);
-                    this.heal((float) (double) KindredConfig.COMMON.healingPerItem.get());
+                    this.heal((float) (double) (stack.is(KindredItems.SPIRIT_BANDAGE)
+                            ? KindredConfig.COMMON.bandageHealing.get()
+                            : KindredConfig.COMMON.healingPerItem.get()));
 
                     if (this.level() instanceof ServerLevel serverLevel) {
                         serverLevel.sendParticles(KindredParticles.BOND_HEART.get(),
@@ -1160,6 +1205,14 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
             if (stack.is(this.species.equipmentTag())) {
                 return this.serverOnly(() -> this.tryEquip(player, stack));
+            }
+
+            if (stack.has(DataComponents.DYE) && !this.species.usesPlayerSkin()) {
+                return this.serverOnly(() -> this.tryDye(player, stack));
+            }
+
+            if (stack.is(Items.WATER_BUCKET) && this.getDyeId() != NO_DYE) {
+                return this.serverOnly(() -> this.tryWashDye(stack));
             }
 
             if (this.isBonded() && stack.is(this.species.tamingTag())) {

@@ -95,7 +95,7 @@ public final class CompanionAbilityEvents {
         }
 
         companionWith(owner, CompanionAbilities.HELPING_HAND).ifPresent(companion -> {
-            if (owner.getRandom().nextDouble() < companion.scaledChance(HELPING_HAND_CHANCE)) {
+            if (owner.getRandom().nextDouble() < HELPING_HAND_CHANCE) {
                 owner.getInventory().placeItemBackInInventory(crafted.copy());
                 companion.burst(KindredParticles.CRAFT_SPARK.get(), 6);
                 companion.playSound(companion.species().sounds().interact().get(), 0.8f, 1.2f);

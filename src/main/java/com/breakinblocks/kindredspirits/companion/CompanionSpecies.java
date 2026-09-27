@@ -105,8 +105,8 @@ public enum CompanionSpecies implements StringRepresentable {
                     CompanionAnimations.INTERACT),
             new SoundSet(KindredSounds.QUOKKA_AMBIENT, KindredSounds.QUOKKA_HURT, KindredSounds.QUOKKA_DEATH,
                     KindredSounds.QUOKKA_ATTACK, KindredSounds.QUOKKA_SPECIAL_ATTACK, KindredSounds.QUOKKA_INTERACT),
-            List.of(Unlock.level(1, CompanionAbilities.BRIGHTER_SIDE),
-                    Unlock.bond(5, CompanionAbilities.SMILE),
+            List.of(Unlock.level(1, CompanionAbilities.SMILE),
+                    Unlock.bond(5, CompanionAbilities.BRIGHTER_SIDE),
                     Unlock.level(30, CompanionAbilities.ALWAYS_HAPPY))),
 
     GREMLIN("gremlin",

@@ -47,7 +47,8 @@ public final class QuokkaSupport {
         Identifier id = CompanionAbilities.SMILE.id();
         if (!companion.ownerWithin(owner, 256) || !companion.isAbilityReady(id)) return;
         owner.addEffect(new MobEffectInstance(SMILE_EFFECTS.get(companion.getRandom().nextInt(SMILE_EFFECTS.size())), 600));
-        companion.setAbilityCooldown(id, Math.max(30, 120 - 3 * companion.getLevel()) * 20);
+        companion.setAbilityCooldown(id, (int) Math.round(Math.max(30, 120 - 3 * companion.getLevel()) * 20
+                * companion.bondRateMultiplier()));
         companion.playSpecialAttack(0.7f, 1.2f);
         companion.burst(KindredParticles.HAPPY_BLOOM.get(), 5);
     }

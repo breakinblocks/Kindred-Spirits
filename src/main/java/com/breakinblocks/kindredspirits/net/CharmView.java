@@ -32,14 +32,14 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                         int command, int aggression, boolean stored, int reviveSeconds, boolean present,
                         String skin, int companionsBonded, int highestLevel, int highestStars,
                         String activeAbility, int activeCooldownSeconds, ItemStack equipment,
-                        CompanionStats stats, List<String> disabledAbilities) {
+                        CompanionStats stats, List<String> disabledAbilities, int dye) {
 
     public static CharmView unbound(BondRecord record) {
         return new CharmView(false, "", Optional.empty(),
                 0, 0, 1, 0, 1, 0, 1, 0, 0, false,
                 0.0f, 0.0f, 0.0f, 0.0f, 0, 1, true, 0, false, "",
                 record.companionsBonded(), record.highestLevelReached(), record.highestStars(), "", 0, ItemStack.EMPTY,
-                CompanionStats.EMPTY, List.of());
+                CompanionStats.EMPTY, List.of(), CompanionEntity.NO_DYE);
     }
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CharmView> STREAM_CODEC = new StreamCodec<>() {
@@ -76,7 +76,8 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                     ByteBufCodecs.VAR_INT.decode(buffer),
                     ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer),
                     CompanionStats.STREAM_CODEC.decode(buffer),
-                    ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).decode(buffer));
+                    ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer));
         }
 
         @Override
@@ -112,6 +113,7 @@ public record CharmView(boolean bound, String species, Optional<String> name,
             ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, view.equipment());
             CompanionStats.STREAM_CODEC.encode(buffer, view.stats());
             ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).encode(buffer, view.disabledAbilities());
+            ByteBufCodecs.VAR_INT.encode(buffer, view.dye());
         }
     };
 
@@ -170,7 +172,8 @@ public record CharmView(boolean bound, String species, Optional<String> name,
                 live != null ? CompanionStats.of(live)
                         : snapshot.resolveSpecies().map(species -> CompanionStats.of(species, snapshot))
                                 .orElse(CompanionStats.EMPTY),
-                snapshot.disabledAbilities());
+                snapshot.disabledAbilities(),
+                snapshot.dye());
     }
 
     public boolean isDisabled(CompanionAbility ability) {

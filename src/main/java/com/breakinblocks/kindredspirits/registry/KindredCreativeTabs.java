@@ -20,6 +20,7 @@ public final class KindredCreativeTabs {
                         output.accept(KindredItems.KINDRED_CHARM.get());
                         output.accept(KindredItems.TREX_EGG.get());
                         output.accept(KindredItems.GOLDEN_BONE.get());
+                        output.accept(KindredItems.SPIRIT_BANDAGE.get());
                         KindredItems.equipment().forEach(item -> output.accept(item.get()));
                         KindredItems.spawnEggs().values().forEach(egg -> output.accept(egg.get()));
                     })

@@ -37,5 +37,7 @@ public enum CompanionStatusProvider implements IEntityComponentProvider {
                         ? Component.literal(" ").append(CharmView.starText(companion.getStars()))
                                 .withStyle(ChatFormatting.YELLOW)
                         : Component.empty()));
+        tooltip.add(Component.translatable("jade.kindredspirits.bond",
+                companion.getBondLevel(), companion.configuredMaxBond()).withStyle(ChatFormatting.LIGHT_PURPLE));
     }
 }

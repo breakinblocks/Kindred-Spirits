@@ -112,6 +112,7 @@ public final class KindredConfig {
         public final ModConfigSpec.IntValue baseExperience;
         public final ModConfigSpec.IntValue experiencePerFeed;
         public final ModConfigSpec.DoubleValue healingPerItem;
+        public final ModConfigSpec.DoubleValue bandageHealing;
         public final ModConfigSpec.IntValue storageBaseSlots;
         public final ModConfigSpec.DoubleValue healthPerLevel;
         public final ModConfigSpec.DoubleValue attackPerLevel;
@@ -156,6 +157,9 @@ public final class KindredConfig {
             healingPerItem = builder
                     .comment("Health restored when a companion is given an item from the companion_healing tag.")
                     .defineInRange("healing_per_item", 10.0, 0.0, 1024.0);
+            bandageHealing = builder
+                    .comment("Health restored by a Spirit Bandage, which is also in the companion_healing tag.")
+                    .defineInRange("bandage_healing", 6.0, 0.0, 1024.0);
             healthPerLevel = builder
                     .comment("Extra max health added per level, before the species growth multiplier.")
                     .defineInRange("health_per_level", 1.0, 0.0, 20.0);

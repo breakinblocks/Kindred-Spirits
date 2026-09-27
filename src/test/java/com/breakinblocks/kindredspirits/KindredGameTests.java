@@ -57,6 +57,9 @@ public final class KindredGameTests {
         TESTS.put("quokka_taming_and_equipping", KindredGameTests::quokkaTame);
         TESTS.put("quokka_growth_ticks_and_age_lock", KindredGameTests::quokkaAgeTicks);
         TESTS.put("quokka_buffs_and_unlocks", KindredGameTests::quokkaBuffs);
+        TESTS.put("bond_speeds_up_only_the_base_buff", KindredGameTests::bondRateScope);
+        TESTS.put("dye_recolours_persists_and_washes_off", KindredGameTests::dyeRecolour);
+        TESTS.put("spirit_bandage_heals_less_than_golden_apple", KindredGameTests::spiritBandage);
         TESTS.put("quokka_snack_cooldown_and_targeting", KindredGameTests::quokkaSnack);
         TESTS.put("quokka_charm_expires_and_protects", KindredGameTests::quokkaCharm);
         TESTS.put("quokka_charm_survives_save", KindredGameTests::quokkaCharmSave);
@@ -546,23 +549,86 @@ public final class KindredGameTests {
     private static void quokkaBuffs(GameTestHelper h) {
         ServerPlayer owner = player(h);
         CompanionEntity quokka = pet(h, CompanionSpecies.QUOKKA, owner, true);
-        h.assertTrue(quokka.hasAbility(CompanionAbilities.BRIGHTER_SIDE) && !quokka.hasAbility(CompanionAbilities.SMILE), "Only Brighter Side unlocks at level one, bond zero");
-        CompanionAbilities.BRIGHTER_SIDE.serverTick(quokka, owner);
-        h.assertTrue(owner.hasEffect(net.minecraft.world.effect.MobEffects.LUCK), "Nearby owner must receive Luck I");
-        quokka.setBondPoints(CompanionBondMath.pointsAtLevelStart(5));
-        h.assertTrue(quokka.hasAbility(CompanionAbilities.SMILE), "Bond five unlocks Smile");
+        h.assertTrue(quokka.hasAbility(CompanionAbilities.SMILE) && !quokka.hasAbility(CompanionAbilities.BRIGHTER_SIDE), "Only Smile unlocks at level one, bond zero");
         CompanionAbilities.SMILE.serverTick(quokka, owner);
         h.assertTrue(quokka.abilityCooldownTicks(CompanionAbilities.SMILE.id()) == 2340, "Level one Smile cooldown is 117 seconds");
-        h.assertTrue(owner.getActiveEffects().size() == 2, "Smile adds one positive effect alongside Luck");
+        h.assertTrue(owner.getActiveEffects().size() == 1, "Smile gives the owner one positive effect");
+        quokka.setBondPoints(CompanionBondMath.pointsAtLevelStart(5));
+        h.assertTrue(quokka.hasAbility(CompanionAbilities.BRIGHTER_SIDE), "Bond five unlocks Brighter Side");
+        CompanionAbilities.BRIGHTER_SIDE.serverTick(quokka, owner);
+        h.assertTrue(owner.hasEffect(net.minecraft.world.effect.MobEffects.LUCK), "Nearby owner must receive Luck I");
+        quokka.setBondPoints(CompanionBondMath.pointsAtLevelStart(15));
+        quokka.setAbilityCooldown(CompanionAbilities.SMILE.id(), 0);
+        CompanionAbilities.SMILE.serverTick(quokka, owner);
+        h.assertTrue(quokka.abilityCooldownTicks(CompanionAbilities.SMILE.id()) == 1170, "Bond fifteen halves the Smile cooldown");
+        quokka.setBondPoints(CompanionBondMath.pointsAtLevelStart(5));
         quokka.addExperience(Integer.MAX_VALUE);
         h.assertTrue(quokka.hasAbility(CompanionAbilities.ALWAYS_HAPPY), "Level thirty unlocks Always Happy");
         quokka.setAbilityCooldown(CompanionAbilities.SMILE.id(), 0);
         CompanionAbilities.SMILE.serverTick(quokka, owner);
         h.assertTrue(quokka.abilityCooldownTicks(CompanionAbilities.SMILE.id()) == 600, "Level thirty Smile cooldown is thirty seconds");
+        quokka.setBondPoints(CompanionBondMath.pointsAtLevelStart(30));
+        quokka.setAbilityCooldown(CompanionAbilities.SMILE.id(), 0);
+        CompanionAbilities.SMILE.serverTick(quokka, owner);
+        h.assertTrue(quokka.abilityCooldownTicks(CompanionAbilities.SMILE.id()) == 150, "Bond thirty quarters the level thirty Smile cooldown");
         owner.removeAllEffects();
         quokka.teleportTo(owner.getX() + 20, owner.getY(), owner.getZ());
         CompanionAbilities.BRIGHTER_SIDE.serverTick(quokka, owner);
         h.assertTrue(!owner.hasEffect(net.minecraft.world.effect.MobEffects.LUCK), "Luck cannot reach beyond sixteen blocks");
+        finish(h, owner);
+    }
+
+    private static void bondRateScope(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity nightfox = pet(h, CompanionSpecies.NIGHTFOX, owner, true);
+        nightfox.setBondPoints(CompanionBondMath.pointsAtLevelStart(30));
+        h.assertTrue(nightfox.scaledInterval(CompanionAbilities.WISPLIGHT) == CompanionAbilities.WISPLIGHT.intervalTicks() / 4,
+                "Bond thirty runs the base buff four times as often");
+        h.assertTrue(nightfox.scaledInterval(CompanionAbilities.SWIFT_STEP) == CompanionAbilities.SWIFT_STEP.intervalTicks(),
+                "Bond does not speed up abilities other than the base buff");
+        h.assertTrue(nightfox.scaledInterval(CompanionAbilities.LEADER_OF_THE_PACK) == CompanionAbilities.LEADER_OF_THE_PACK.intervalTicks(),
+                "Bond does not speed up ultimates");
+        finish(h, owner);
+    }
+
+    private static void dyeRecolour(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        var hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+        CompanionEntity trex = pet(h, CompanionSpecies.TREX, owner, true);
+        owner.setItemInHand(hand, new ItemStack(Items.RED_DYE));
+        trex.mobInteract(owner, hand);
+        int red = net.minecraft.world.item.DyeColor.RED.getId();
+        h.assertTrue(trex.getDyeId() == red, "Dye recolours an owned companion");
+        CompanionSnapshot snapshot = CompanionSnapshot.of(trex);
+        h.assertTrue(snapshot.dye() == red, "The resting snapshot keeps the dye");
+        var ops = h.getLevel().registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+        var saved = CompanionSnapshot.CODEC.encodeStart(ops, snapshot).getOrThrow();
+        h.assertTrue(CompanionSnapshot.CODEC.parse(ops, saved).getOrThrow().dye() == red, "The dye survives a save");
+        owner.setItemInHand(hand, new ItemStack(Items.WATER_BUCKET));
+        trex.mobInteract(owner, hand);
+        h.assertTrue(trex.getDyeId() == CompanionEntity.NO_DYE, "A water bucket washes the dye off");
+        h.assertTrue(owner.getItemInHand(hand).is(Items.WATER_BUCKET), "Washing keeps the water bucket");
+        CompanionEntity mini = pet(h, CompanionSpecies.MINI_PLAYER, owner, false);
+        owner.setItemInHand(hand, new ItemStack(Items.BLUE_DYE));
+        mini.mobInteract(owner, hand);
+        h.assertTrue(mini.getDyeId() == CompanionEntity.NO_DYE, "The Mini Player keeps its player skin instead of dye");
+        finish(h, owner);
+    }
+
+    private static void spiritBandage(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        var hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+        CompanionEntity trex = pet(h, CompanionSpecies.TREX, owner, true);
+        trex.setHealth(trex.getMaxHealth() - 20.0f);
+        float before = trex.getHealth();
+        owner.setItemInHand(hand, new ItemStack(KindredItems.SPIRIT_BANDAGE.get()));
+        trex.mobInteract(owner, hand);
+        float bandaged = trex.getHealth() - before;
+        h.assertTrue(Math.abs(bandaged - 6.0f) < 0.01f, "A Spirit Bandage restores 3 hearts");
+        before = trex.getHealth();
+        owner.setItemInHand(hand, new ItemStack(Items.GOLDEN_APPLE));
+        trex.mobInteract(owner, hand);
+        h.assertTrue(trex.getHealth() - before > bandaged, "A golden apple heals more than a bandage");
         finish(h, owner);
     }
 

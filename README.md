@@ -4,8 +4,8 @@ A pet companion mod for Minecraft 26.1.2 on NeoForge. Bond with a spirit
 companion, keep it alive and fed, and it grows with you: gaining levels, raising
 its bond, and unlocking abilities that change how it fights and helps you.
 
-Six companions are available: Nightfox, T-Rex, Baby Dragon, Mini Player, Gremlin,
-and Quokka. The Quokka is a jungle support companion with Luck, animal care,
+Seven companions are available: Nightfox, T-Rex, Baby Dragon, Mini Player, Gremlin,
+Quokka, and Direwolf. The Quokka is a jungle support companion with Luck, animal care,
 monster charm, and up to 27 storage slots.
 
 Around a dozen distinct companions are planned, each with its own model,
@@ -14,7 +14,7 @@ animations, stat curve and ability set.
 ## Integrations
 
 - **GeckoLib** (required) - companion models and animations
-- **Jade** (optional) - level, bond and ability readout on the companion tooltip
+- **Jade** (optional) - your bonded companion's level, stars and bond level on its tooltip
 - **JEI** (optional) - info pages for Kindred Spirits items
 
 ## Building
@@ -25,12 +25,12 @@ animations, stat curve and ability set.
 
 Output jar: `build/libs/kindredspirits-26.1.2-<version>.jar`
 
-Numbered development versions use `mod_version=1.0.0-SNAPSHOT.5` in
+Numbered development versions use `mod_version=1.0.0-SNAPSHOT.<n>` in
 `gradle.properties`; increment the final snapshot number for the next development
 build. These versions automatically publish to the BreakInBlocks snapshots Maven
 repository with `./gradlew publishMaven`, using `MAVEN_USER` and `MAVEN_TOKEN` from
 the environment. The Maven version includes the Minecraft prefix, for example
-`26.1.2-1.0.0-SNAPSHOT.5`; the in-game mod version is `1.0.0-SNAPSHOT.5`.
+`26.1.2-1.0.0-SNAPSHOT.<n>`; the in-game mod version is `1.0.0-SNAPSHOT.<n>`.
 
 Run the dev client with `./gradlew runClient`.
 

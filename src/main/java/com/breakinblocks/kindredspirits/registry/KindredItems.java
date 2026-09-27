@@ -5,6 +5,7 @@ import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.companion.CompanionLevels.AttributeBonus;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
 import com.breakinblocks.kindredspirits.item.KindredEquipmentItem;
+import com.breakinblocks.kindredspirits.item.SpiritBandageItem;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.BlockItem;
@@ -30,6 +31,9 @@ public final class KindredItems {
 
     public static final DeferredItem<Item> GOLDEN_BONE =
             ITEMS.registerItem("golden_bone", props -> new Item(props.rarity(Rarity.UNCOMMON)));
+
+    public static final DeferredItem<SpiritBandageItem> SPIRIT_BANDAGE =
+            ITEMS.registerItem("spirit_bandage", props -> new SpiritBandageItem(props.stacksTo(16)));
 
     public static final DeferredItem<KindredEquipmentItem> BOXING_GLOVES = equipment("boxing_gloves", List.of(
             new AttributeBonus(Attributes.ATTACK_DAMAGE, new AttributeModifier(KindredSpirits.id("boxing_gloves"),

@@ -54,6 +54,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public final class CompanionAbilities {
@@ -162,6 +163,13 @@ public final class CompanionAbilities {
                     ownerEffect(companion, owner, OWNER_RANGE_LONG_SQR, MobEffects.INVISIBILITY, 80, 0);
                 }
             }));
+
+    private static final Set<CompanionAbility> BASE_BUFFS =
+            Set.of(ALPHA, FORGE_DRAFT, SMILE, TINKER, EAT_THAT, WISPLIGHT, NOT_ANOTHER_HOLE);
+
+    public static boolean isBaseBuff(CompanionAbility ability) {
+        return BASE_BUFFS.contains(ability);
+    }
 
     public static boolean ownerEffect(CompanionEntity companion, @Nullable ServerPlayer owner, double rangeSqr,
                                       Holder<MobEffect> effect, int duration, int amplifier) {
