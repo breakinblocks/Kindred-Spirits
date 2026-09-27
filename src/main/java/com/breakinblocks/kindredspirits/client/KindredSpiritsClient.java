@@ -2,6 +2,7 @@ package com.breakinblocks.kindredspirits.client;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.render.CompanionRenderer;
+import com.breakinblocks.kindredspirits.client.render.MeteorRenderer;
 import com.breakinblocks.kindredspirits.client.render.MiniPlayerRenderer;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.client.screen.KindredStorageScreen;
@@ -55,6 +56,7 @@ public final class KindredSpiritsClient {
                     ? new MiniPlayerRenderer(context, species)
                     : new CompanionRenderer(context, species));
         }
+        event.registerEntityRenderer(KindredEntities.METEOR.get(), MeteorRenderer::new);
     }
 
     @SubscribeEvent

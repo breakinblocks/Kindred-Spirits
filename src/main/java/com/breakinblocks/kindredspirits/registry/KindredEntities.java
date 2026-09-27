@@ -3,6 +3,7 @@ package com.breakinblocks.kindredspirits.registry;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
+import com.breakinblocks.kindredspirits.companion.MeteorEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityType;
@@ -16,6 +17,15 @@ import java.util.Map;
 public final class KindredEntities {
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, KindredSpirits.MOD_ID);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<MeteorEntity>> METEOR = ENTITY_TYPES.register("meteor",
+            registryName -> EntityType.Builder.<MeteorEntity>of(MeteorEntity::new, MobCategory.MISC)
+                    .noLootTable()
+                    .sized(1.0f, 1.0f)
+                    .fireImmune()
+                    .clientTrackingRange(4)
+                    .updateInterval(10)
+                    .build(ResourceKey.create(Registries.ENTITY_TYPE, registryName)));
 
     private static final Map<CompanionSpecies, DeferredHolder<EntityType<?>, EntityType<CompanionEntity>>> BY_SPECIES =
             new EnumMap<>(CompanionSpecies.class);

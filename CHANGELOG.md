@@ -95,7 +95,7 @@
   summon, revive and prestige.
 - A companion levelling up now finishes with the experience orb chime.
 
-### Textures
+### Textures and models
 
 - New spawn eggs for the T-Rex, Baby Dragon, Mini Player, Gremlin and Nightfox, each
   showing the companion's face in its own colours.
@@ -103,6 +103,9 @@
 - The T-Rex Egg block is now a speckled tan egg, with cracks that spread as it gets closer to
   hatching.
 - Darker, coloured outlines on the Battery, Dragon Tablet and Direwolf spawn egg.
+- Meteor Call drops a tumbling, burning meteor instead of a ghast fireball. Players can no
+  longer punch it back.
+- Wisplight's wisps are visible now: a small glowing orb that pulses gently.
 
 ### Fixed
 

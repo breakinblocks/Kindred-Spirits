@@ -77,7 +77,6 @@ import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
-import net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
@@ -1562,8 +1561,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             return;
         }
 
-        LargeFireball fireball = new LargeFireball(level, this, new Vec3(0.0, -1.0, 0.0), 0);
-        fireball.setPos(target.getX(), target.getY() + METEOR_HEIGHT, target.getZ());
+        MeteorEntity fireball = new MeteorEntity(level, this, new Vec3(target.getX(), target.getY() + METEOR_HEIGHT, target.getZ()));
         fireball.setDeltaMovement(0.0, -0.6, 0.0);
         level.addFreshEntity(fireball);
         this.meteors.add(new Meteor(fireball, METEOR_TIMEOUT));
@@ -1758,10 +1756,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     private static final class Meteor {
-        private final LargeFireball fireball;
+        private final MeteorEntity fireball;
         private int remaining;
 
-        private Meteor(LargeFireball fireball, int remaining) {
+        private Meteor(MeteorEntity fireball, int remaining) {
             this.fireball = fireball;
             this.remaining = remaining;
         }
