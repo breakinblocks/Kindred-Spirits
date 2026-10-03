@@ -2097,6 +2097,11 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     @Override
+    public int getAmbientSoundInterval() {
+        return 1160;
+    }
+
+    @Override
     protected @Nullable SoundEvent getHurtSound(DamageSource source) {
         return this.species.sounds().hurt().get();
     }
