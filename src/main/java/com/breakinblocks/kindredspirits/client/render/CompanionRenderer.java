@@ -38,7 +38,9 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
 
     private static GeoModel<CompanionEntity> modelFor(CompanionSpecies species) {
         return switch (species) {
-            case QUOKKA -> new QuokkaGeoModel();
+            case QUOKKA -> new EquippedVariantGeoModel(species, KindredItems.QUOKKA_SNACK, "quokka_snack");
+            case GREMLIN -> new EquippedVariantGeoModel(species, KindredItems.BATTERY, "gremlin_battery");
+            case NIGHTFOX -> new EquippedVariantGeoModel(species, KindredItems.RUNNING_SHOES, "nightfox_boots");
             case TREX -> new EquippedVariantGeoModel(species, KindredItems.BOXING_GLOVES, "trex_gloves");
             case BABY_DRAGON -> new EquippedVariantGeoModel(species, KindredItems.DRAGON_TABLET, "baby_dragon_tablet");
             default -> new CompanionGeoModel(KindredSpirits.id(species.getSerializedName()));
