@@ -11,9 +11,13 @@ public final class KindredKeyMappings {
     public static final KeyMapping CYCLE_COMMAND =
             new KeyMapping("key.kindredspirits.cycle_command", InputConstants.KEY_G, CATEGORY);
 
+    public static final KeyMapping OPEN_CHARM =
+            new KeyMapping("key.kindredspirits.open_charm", InputConstants.UNKNOWN.getValue(), CATEGORY);
+
     public static void register(RegisterKeyMappingsEvent event) {
         event.registerCategory(CATEGORY);
         event.register(CYCLE_COMMAND);
+        event.register(OPEN_CHARM);
     }
 
     private KindredKeyMappings() {}

@@ -2,4 +2,4 @@
 
 ## 1.0.0
 
-Initial release of the mod
+Initial Mod release

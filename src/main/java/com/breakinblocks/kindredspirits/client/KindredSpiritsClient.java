@@ -78,6 +78,9 @@ public final class KindredSpiritsClient {
         while (KindredKeyMappings.CYCLE_COMMAND.consumeClick()) {
             ClientPacketDistributor.sendToServer(KindredNetworking.CycleCommandPayload.INSTANCE);
         }
+        while (KindredKeyMappings.OPEN_CHARM.consumeClick()) {
+            ClientPacketDistributor.sendToServer(KindredNetworking.OpenCharmPayload.INSTANCE);
+        }
     }
 
     @SubscribeEvent

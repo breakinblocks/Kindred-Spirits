@@ -27,10 +27,12 @@ public final class KindredNetworking {
 
     @SubscribeEvent
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("3");
+        var registrar = event.registrar("4");
 
         registrar.playToServer(
                 CycleCommandPayload.TYPE, CycleCommandPayload.STREAM_CODEC, CycleCommandPayload::handleOnServer);
+
+        registrar.playToServer(OpenCharmPayload.TYPE, OpenCharmPayload.STREAM_CODEC, OpenCharmPayload::handleOnServer);
 
         registrar.playToClient(
                 CompanionLevelUpPayload.TYPE,
@@ -151,6 +153,26 @@ public final class KindredNetworking {
                 if (context.player() instanceof ServerPlayer player) {
                     CompanionEntity.bondedNear(player, COMMAND_RANGE)
                             .ifPresent(companion -> companion.cycleCommandBy(player));
+                }
+            });
+        }
+    }
+
+    public record OpenCharmPayload() implements CustomPacketPayload {
+        public static final OpenCharmPayload INSTANCE = new OpenCharmPayload();
+        public static final Type<OpenCharmPayload> TYPE = new Type<>(KindredSpirits.id("open_charm"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, OpenCharmPayload> STREAM_CODEC =
+                StreamCodec.unit(INSTANCE);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+
+        public static void handleOnServer(OpenCharmPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    KindredCharmItem.openFromKey(player);
                 }
             });
         }

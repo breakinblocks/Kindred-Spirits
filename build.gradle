@@ -47,6 +47,11 @@ repositories {
         url = 'https://api.modrinth.com/maven'
         content { includeGroup 'maven.modrinth' }
     }
+    maven {
+        name = 'Illusive Soulworks'
+        url = 'https://maven.theillusivec4.top/'
+        content { includeGroup 'top.theillusivec4.curios' }
+    }
 }
 
 neoForge {
@@ -120,6 +125,9 @@ dependencies {
     compileOnly "maven.modrinth:oracle-index:${oracle_index_version}"
     localRuntime "maven.modrinth:oracle-index:${oracle_index_version}"
     localRuntime "maven.modrinth:architectury-api:${architectury_version}"
+
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
+    localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
 }
 
 tasks.named('test', Test).configure {

@@ -14,6 +14,7 @@ import com.breakinblocks.kindredspirits.companion.CompanionWorldData;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
+import com.breakinblocks.kindredspirits.integration.curios.KindredCurios;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
@@ -86,6 +87,19 @@ public class KindredCharmItem extends Item {
         }
 
         return InteractionResult.SUCCESS;
+    }
+
+    public static boolean isCarried(Player player) {
+        return player.getInventory().contains(stack -> stack.getItem() instanceof KindredCharmItem)
+                || KindredCurios.wearsCharm(player);
+    }
+
+    public static void openFromKey(ServerPlayer player) {
+        if (isCarried(player)) {
+            KindredNetworking.sendCharmView(player, true);
+        } else {
+            player.sendOverlayMessage(Component.translatable("message.kindredspirits.charm_not_carried"));
+        }
     }
 
     private static void toggleBond(ServerPlayer player, CompanionEntity companion) {
