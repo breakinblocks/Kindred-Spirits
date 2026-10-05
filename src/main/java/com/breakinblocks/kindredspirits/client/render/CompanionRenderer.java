@@ -33,7 +33,13 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
     public CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species) {
         this(context, species, modelFor(species));
         this.withRenderLayer(new DyeMaskGeoLayer(this));
-        if (species.hasGlowMask()) this.withRenderLayer(new AutoGlowingGeoLayer<>(this));
+        if (species.hasGlowMask())
+            this.withRenderLayer(new AutoGlowingGeoLayer<>(this) {
+                @Override
+                protected boolean shouldAddZOffset(LivingEntityRenderState renderState) {
+                    return true;
+                }
+            });
     }
 
     private static GeoModel<CompanionEntity> modelFor(CompanionSpecies species) {
