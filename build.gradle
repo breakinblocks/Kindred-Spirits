@@ -4,6 +4,7 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.neoforged.moddev' version "${mdg_version}"
+    id 'me.modmuss50.mod-publish-plugin' version '1.1.0'
     id 'com.diffplug.spotless' version '8.10.3'
 }
 
@@ -381,6 +382,38 @@ publishing {
                 password = System.getenv('MAVEN_TOKEN') ?: ''
             }
         }
+    }
+}
+
+publishMods {
+    dryRun = providers.gradleProperty('dryRun').map { it == 'true' }.orElse(false)
+    file = jar.archiveFile
+    changelog = providers.provider {
+        def changelogFile = file('CHANGELOG.md')
+        if (!changelogFile.exists()) return "Release ${project.version}".toString()
+        def section = (changelogFile.text =~ /(?ms)^## ${java.util.regex.Pattern.quote(mod_version)}\s*$(.*?)(?=^## |\z)/)
+        section.find() ? section.group(1).trim() : "Release ${project.version}".toString()
+    }
+    type = isSnapshot ? ALPHA : STABLE
+    modLoaders.add('neoforge')
+    displayName = "${mod_name} ${project.version}"
+
+    curseforge {
+        projectId = '1726567'
+        projectSlug = 'kindred-spirits'
+        accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
+        minecraftVersions.add(minecraft_version)
+        clientRequired = true
+        serverRequired = true
+        requires('geckolib')
+        optional('jei', 'jade', 'curios', 'oracle-index')
+    }
+}
+
+tasks.named('publishMods') {
+    def isDryRun = providers.gradleProperty('dryRun').map { it == 'true' }.getOrElse(false)
+    if (providers.environmentVariable('MAVEN_USER').isPresent() && !isDryRun) {
+        dependsOn 'publishMavenJavaPublicationToBreakInBlocksRepository'
     }
 }
 
