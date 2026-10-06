@@ -3,6 +3,7 @@ package com.breakinblocks.kindredspirits;
 import com.breakinblocks.kindredspirits.block.TrexEggBlock;
 import com.breakinblocks.kindredspirits.companion.*;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
+import com.breakinblocks.kindredspirits.companion.ability.HelpingHandGuard;
 import com.breakinblocks.kindredspirits.companion.ability.OreCrushing;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
@@ -10,8 +11,10 @@ import com.breakinblocks.kindredspirits.net.KindredNetworking.CharmActionPayload
 import com.breakinblocks.kindredspirits.registry.*;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
 import com.breakinblocks.kindredspirits.worldgen.BeachSuspiciousSandFeature;
+import com.mojang.authlib.GameProfile;
 import com.mojang.serialization.JsonOps;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,10 +26,13 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.*;
+import net.minecraft.network.Connection;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.*;
@@ -35,6 +41,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
@@ -84,6 +91,7 @@ public final class KindredGameTests {
         TESTS.put("meteor_call_drops_a_meteor_that_hits", KindredGameTests::meteorCall);
         TESTS.put("crushing_might_crushes_ore_items", KindredGameTests::crushingMight);
         TESTS.put("mini_player_fires_spirit_arrows", KindredGameTests::spiritArrow);
+        TESTS.put("helping_hand_skips_reversible_recipes", KindredGameTests::helpingHandGuard);
         TESTS.put("skin_choice_is_saved_and_validated", KindredGameTests::skinChoice);
         TESTS.put("advancements_follow_companion_progress", KindredGameTests::advancements);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
@@ -145,9 +153,20 @@ public final class KindredGameTests {
 
     @SuppressWarnings("removal")
     private static ServerPlayer player(GameTestHelper h) {
-        ServerPlayer player = h.makeMockServerPlayerInLevel();
-        net.neoforged.neoforge.network.registration.NetworkRegistry.configureMockConnection(
-                player.connection.getConnection());
+        var level = h.getLevel();
+        CommonListenerCookie cookie =
+                CommonListenerCookie.createInitial(new GameProfile(UUID.randomUUID(), "test-mock-player"), false);
+        ServerPlayer player =
+                new ServerPlayer(level.getServer(), level, cookie.gameProfile(), cookie.clientInformation()) {
+                    @Override
+                    public GameType gameMode() {
+                        return GameType.CREATIVE;
+                    }
+                };
+        Connection connection = new Connection(PacketFlow.SERVERBOUND);
+        new EmbeddedChannel(connection);
+        net.neoforged.neoforge.network.registration.NetworkRegistry.configureMockConnection(connection);
+        level.getServer().getPlayerList().placeNewPlayer(connection, player, cookie);
         Vec3 pos = h.absoluteVec(new Vec3(2.5, 1, 2.5));
         player.teleportTo(pos.x, pos.y, pos.z);
         return player;
@@ -1243,6 +1262,43 @@ public final class KindredGameTests {
                     "The impact must deal Meteor Call's 8 damage (health " + husk.getHealth() + ")");
             h.getLevel().getServer().getPlayerList().remove(owner);
         });
+    }
+
+    private static void helpingHandGuard(GameTestHelper h) {
+        var level = h.getLevel();
+        List<String> none = List.of();
+        h.assertFalse(
+                HelpingHandGuard.allows(level, null, Items.IRON_INGOT, List.of(Items.IRON_BLOCK), none, 4),
+                "Unpacking an iron block must not be copied, the ingots craft straight back");
+        h.assertFalse(
+                HelpingHandGuard.allows(level, null, Items.IRON_BLOCK, List.of(Items.IRON_INGOT), none, 4),
+                "Packing ingots into a block must not be copied either");
+        h.assertFalse(
+                HelpingHandGuard.allows(level, null, Items.IRON_NUGGET, List.of(Items.IRON_INGOT), none, 4),
+                "Nuggets craft back into the ingot");
+        h.assertFalse(
+                HelpingHandGuard.allows(level, null, Items.IRON_NUGGET, List.of(Items.IRON_BLOCK), none, 4),
+                "A two step chain back to the input must be caught");
+        h.assertFalse(
+                HelpingHandGuard.allows(level, null, Items.IRON_NUGGET, List.of(), none, 4),
+                "A craft with no visible inputs must not be copied");
+        h.assertTrue(
+                HelpingHandGuard.allows(level, null, Items.OAK_PLANKS, List.of(Items.OAK_LOG), none, 4),
+                "Planks cannot be turned back into logs, so they may be copied");
+        Identifier planks = Identifier.withDefaultNamespace("oak_planks");
+        h.assertFalse(
+                HelpingHandGuard.allows(
+                        level, planks, Items.OAK_PLANKS, List.of(Items.OAK_LOG), List.of("minecraft:oak_planks"), 4),
+                "An exact blacklist entry must block the recipe");
+        h.assertFalse(
+                HelpingHandGuard.allows(
+                        level, planks, Items.OAK_PLANKS, List.of(Items.OAK_LOG), List.of("minecraft:*"), 4),
+                "A wildcard blacklist entry must block every recipe it prefixes");
+        h.assertTrue(
+                HelpingHandGuard.allows(
+                        level, planks, Items.OAK_PLANKS, List.of(Items.OAK_LOG), List.of("othermod:*"), 4),
+                "A wildcard for another namespace must not block the recipe");
+        h.succeed();
     }
 
     private static void crushingMight(GameTestHelper h) {

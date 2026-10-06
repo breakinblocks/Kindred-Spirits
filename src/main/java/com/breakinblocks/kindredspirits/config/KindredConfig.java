@@ -2,6 +2,7 @@ package com.breakinblocks.kindredspirits.config;
 
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
@@ -141,6 +142,8 @@ public final class KindredConfig {
         public final ModConfigSpec.BooleanValue beachSuspiciousSand;
         public final ModConfigSpec.BooleanValue abilitiesEnabled;
         public final ModConfigSpec.IntValue crushingMightDust;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> helpingHandRecipeBlacklist;
+        public final ModConfigSpec.IntValue helpingHandReverseDepth;
         public final ModConfigSpec.IntValue reviveCooldownSeconds;
         public final ModConfigSpec.DoubleValue reviveExperiencePenalty;
         public final ModConfigSpec.BooleanValue mimicOwnerWeapon;
@@ -235,6 +238,16 @@ public final class KindredConfig {
             crushingMightDust = builder.comment(
                             "Dust the T-Rex's Crushing Might makes from each raw ore or ore item it crushes (into c:dusts/<x>).")
                     .defineInRange("crushing_might_dust", 3, 1, 64);
+            helpingHandRecipeBlacklist = builder.comment(
+                            "Crafting recipe ids the Mini Player's Helping Hand never copies. An entry ending in * matches every id that starts with the rest, so \"somemod:*\" covers a whole mod and \"somemod:compress/*\" one folder.")
+                    .defineListAllowEmpty(
+                            "helping_hand_recipe_blacklist",
+                            List.of(),
+                            () -> "",
+                            entry -> entry instanceof String text && !text.isBlank());
+            helpingHandReverseDepth = builder.comment(
+                            "How many recipe steps Helping Hand follows from a crafted item looking for a way back to what went into it. Any recipe chain that leads back (an ingot block to ingots and ingots to the block, say) is never copied. Recipes of every type count, smelting and stonecutting included.")
+                    .defineInRange("helping_hand_reverse_depth", 4, 1, 16);
             builder.pop();
 
             builder.push("charm");
