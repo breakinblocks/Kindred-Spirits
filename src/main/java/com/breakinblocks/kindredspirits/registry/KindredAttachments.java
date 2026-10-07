@@ -188,8 +188,8 @@ public final class KindredAttachments {
                     .serialize(Codec.BOOL.fieldOf("bottle"))
                     .build());
 
-    public static final Supplier<AttachmentType<Long>> BOTTLE_XP_PICKUP = ATTACHMENT_TYPES.register(
-            "bottle_xp_pickup", () -> AttachmentType.builder(() -> -1L).build());
+    public static final Supplier<AttachmentType<Long>> ORB_XP_PICKUP = ATTACHMENT_TYPES.register(
+            "orb_xp_pickup", () -> AttachmentType.builder(() -> -1L).build());
 
     public static final Supplier<AttachmentType<Optional<UUID>>> RABBIT_FED_BY = ATTACHMENT_TYPES.register(
             "rabbit_fed_by",

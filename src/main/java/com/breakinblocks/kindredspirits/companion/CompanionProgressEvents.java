@@ -11,6 +11,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownExperienceBottle;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -74,10 +75,10 @@ public final class CompanionProgressEvents {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onPickupExperience(PlayerXpEvent.PickupXp event) {
-        if (event.getEntity() instanceof ServerPlayer player && event.getOrb().getData(KindredAttachments.BOTTLE_XP)) {
-            player.setData(KindredAttachments.BOTTLE_XP_PICKUP, player.level().getGameTime());
+        if (event.getEntity() instanceof ServerPlayer player && !event.getOrb().getData(KindredAttachments.BOTTLE_XP)) {
+            player.setData(KindredAttachments.ORB_XP_PICKUP, player.level().getGameTime());
         }
     }
 
@@ -87,11 +88,10 @@ public final class CompanionProgressEvents {
             return;
         }
 
-        if (player.getData(KindredAttachments.BOTTLE_XP_PICKUP)
-                == player.level().getGameTime()) {
-            player.setData(KindredAttachments.BOTTLE_XP_PICKUP, -1L);
+        if (player.getData(KindredAttachments.ORB_XP_PICKUP) != player.level().getGameTime()) {
             return;
         }
+        player.setData(KindredAttachments.ORB_XP_PICKUP, -1L);
 
         bondedCompanionNear(player, CompanionBondMath.PASSIVE_RANGE).ifPresent(companion -> {
             int share = companion.progress().shareExperience(event.getAmount(), KindredConfig.COMMON.xpShare.get());

@@ -116,6 +116,7 @@ public final class KindredGameTests {
         TESTS.put("death_animation_lifetime", KindredGameTests::deathAnimation);
         TESTS.put("egg_hatches_through_three_stages", KindredGameTests::eggHatching);
         TESTS.put("xp_events_accumulate_small_gains", KindredGameTests::xpEvents);
+        TESTS.put("only_picked_up_orbs_share_xp", KindredGameTests::returnedXp);
         TESTS.put("feeding_cooldown_survives_storage", KindredGameTests::feeding);
         TESTS.put("transformation_preserves_source_if_spawn_canceled", KindredGameTests::canceledTransform);
         TESTS.put("invalid_ability_name_is_ignored", KindredGameTests::invalidAbility);
@@ -791,14 +792,37 @@ public final class KindredGameTests {
         double previous = KindredConfig.COMMON.xpShare.get();
         try {
             KindredConfig.COMMON.xpShare.set(0.5);
-            player.giveExperiencePoints(1);
+            pickUpOrb(h, player, 1, false);
             h.assertTrue(pet.getExperience() == 0, "The first half-point should remain fractional");
-            player.giveExperiencePoints(1);
+            pickUpOrb(h, player, 1, false);
             h.assertTrue(pet.getExperience() == 1, "Actual player XP events must accumulate small shares");
         } finally {
             KindredConfig.COMMON.xpShare.set(previous);
         }
         finish(h, player);
+    }
+
+    private static void returnedXp(GameTestHelper h) {
+        ServerPlayer player = player(h);
+        CompanionEntity pet = pet(h, CompanionSpecies.MINI_PLAYER, player, true);
+        pickUpOrb(h, player, 20, false);
+        int earned = pet.getExperience();
+        h.assertTrue(earned > 0, "A picked up orb must share xp");
+        player.giveExperiencePoints(500);
+        h.assertTrue(pet.getExperience() == earned, "Xp handed back without an orb, as by a grave, must not share");
+        pickUpOrb(h, player, 20, true);
+        h.assertTrue(pet.getExperience() == earned, "Bottle o' Enchanting orbs must not share");
+        player.giveExperiencePoints(500);
+        h.assertTrue(pet.getExperience() == earned, "A bottle pickup must not let the next direct gain share");
+        finish(h, player);
+    }
+
+    private static void pickUpOrb(GameTestHelper h, ServerPlayer player, int value, boolean bottle) {
+        ExperienceOrb orb = new ExperienceOrb(h.getLevel(), player.getX(), player.getY(), player.getZ(), value);
+        orb.setData(KindredAttachments.BOTTLE_XP, bottle);
+        h.getLevel().addFreshEntity(orb);
+        player.takeXpDelay = 0;
+        orb.playerTouch(player);
     }
 
     private static void feeding(GameTestHelper h) {

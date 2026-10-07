@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4
+
+- Fixed companions levelling from xp returned by graves or xp storage blocks.
+- Advancement and command xp no longer level companions.
+
 ## 1.0.3
 
 - Fixed the Mini Player's Helping Hand duplicating items through reversible recipes, such as unpacking an iron block into ingots and packing them back (breakinblocks/Kindred-Spirits#10). Helping Hand now skips any craft whose result can be turned back into one of its ingredients within a few recipe steps, counting every recipe type, not only crafting.
