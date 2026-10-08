@@ -11,12 +11,14 @@ import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
@@ -51,7 +53,22 @@ public final class CompanionWorldData {
                             .serialize(LightRemoval.CODEC.listOf().fieldOf("lights"))
                             .build());
 
+    public static final Supplier<AttachmentType<List<UUID>>> ABANDONED = KindredAttachments.ATTACHMENT_TYPES.register(
+            "abandoned_companions",
+            () -> AttachmentType.<List<UUID>>builder(() -> List.of())
+                    .serialize(UUIDUtil.CODEC.listOf().fieldOf("companions"))
+                    .build());
+
     public static void init() {}
+
+    public static void abandon(MinecraftServer server, UUID companion) {
+        ServerLevel storage = server.overworld();
+        List<UUID> abandoned = storage.getData(ABANDONED);
+        if (abandoned.contains(companion)) return;
+        List<UUID> updated = new ArrayList<>(abandoned);
+        updated.add(companion);
+        storage.setData(ABANDONED, List.copyOf(updated));
+    }
 
     public static void recordDeath(ServerLevel level, Death death) {
         ServerLevel storage = level.getServer().overworld();
@@ -105,6 +122,15 @@ public final class CompanionWorldData {
         if (event.getEntity() instanceof ServerPlayer player) {
             reconcile(player);
             KindredAttachments.syncTooltip(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onEntityJoin(EntityJoinLevelEvent event) {
+        if (event.getEntity() instanceof CompanionEntity companion
+                && event.getLevel() instanceof ServerLevel level
+                && level.getServer().overworld().getData(ABANDONED).contains(companion.getUUID())) {
+            event.setCanceled(true);
         }
     }
 

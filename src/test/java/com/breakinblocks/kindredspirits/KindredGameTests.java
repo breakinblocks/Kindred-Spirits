@@ -98,6 +98,7 @@ public final class KindredGameTests {
         TESTS.put("beach_suspicious_sand_generates_and_can_be_disabled", KindredGameTests::beachSuspiciousSand);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
         TESTS.put("unreachable_equipment_is_not_duplicated", KindredGameTests::unreachable);
+        TESTS.put("lost_companion_reforms_at_owner", KindredGameTests::lostReform);
         TESTS.put("revival_heals_and_retains_equipment", KindredGameTests::revival);
         TESTS.put("offline_death_reconciles", KindredGameTests::offlineDeath);
         TESTS.put("bond_lookup_skips_unbonded_pets", KindredGameTests::bondLookup);
@@ -433,15 +434,48 @@ public final class KindredGameTests {
         KindredAttachments.modifyBond(player, b -> KindredCharmItem.snapshot(b, pet));
         CompanionBond before = KindredAttachments.bond(player);
         pet.discard(); // Models a deployed entity unavailable to the server lookup.
-        for (Action action : List.of(Action.UNEQUIP, Action.RELEASE, Action.PRESTIGE, Action.SET_NAME, Action.SUMMON))
+        for (Action action : List.of(Action.UNEQUIP, Action.PRESTIGE, Action.SET_NAME, Action.SUMMON))
             action(player, action);
         h.assertTrue(
                 before.equals(KindredAttachments.bond(player)), "Unavailable deployed snapshots must remain read-only");
         h.assertTrue(
                 player.getInventory().countItem(Items.DIAMOND_CHESTPLATE) == 0,
                 "Unreachable equipment must not be returned");
-        h.assertTrue(!KindredCharmItem.releaseFully(player), "Command release must use the same unreachable guard");
+        h.assertTrue(KindredCharmItem.releaseFully(player), "A lost companion must still be releasable");
+        h.assertTrue(!KindredAttachments.bond(player).isBound(), "Release must clear the bond");
+        h.assertTrue(
+                player.getInventory().countItem(Items.DIAMOND_CHESTPLATE) == 1,
+                "Release must return the snapshot equipment once");
+        assertAbandoned(h, pet.getUUID());
         finish(h, player);
+    }
+
+    private static void lostReform(GameTestHelper h) {
+        ServerPlayer player = player(h);
+        CompanionEntity pet = pet(h, CompanionSpecies.MINI_PLAYER, player, true);
+        pet.setEquipment(new ItemStack(Items.DIAMOND_CHESTPLATE));
+        KindredAttachments.modifyBond(player, b -> KindredCharmItem.snapshot(b, pet));
+        UUID lost = pet.getUUID();
+        pet.discard();
+        action(player, Action.RECALL);
+        CompanionEntity reformed = deployed(player);
+        h.assertTrue(
+                reformed != null && !reformed.getUUID().equals(lost) && reformed.isBonded(),
+                "Calling a lost companion must re-form it under a new id");
+        h.assertTrue(
+                reformed.equipment().is(Items.DIAMOND_CHESTPLATE),
+                "The re-formed companion must keep the snapshot equipment");
+        h.assertTrue(!KindredAttachments.bond(player).stored(), "The re-formed companion must be out");
+        assertAbandoned(h, lost);
+        finish(h, player);
+    }
+
+    private static void assertAbandoned(GameTestHelper h, UUID lost) {
+        CompanionEntity stale =
+                KindredEntities.type(CompanionSpecies.MINI_PLAYER).create(h.getLevel(), EntitySpawnReason.LOAD);
+        stale.setUUID(lost);
+        stale.setPos(h.absoluteVec(new Vec3(3.5, 1, 3.5)));
+        h.assertTrue(!h.getLevel().addFreshEntity(stale), "The lost companion must be refused if its chunk loads");
     }
 
     private static void revival(GameTestHelper h) {

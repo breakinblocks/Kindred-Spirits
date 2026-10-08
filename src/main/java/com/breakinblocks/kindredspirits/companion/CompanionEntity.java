@@ -257,6 +257,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private ItemStack equipment = ItemStack.EMPTY;
     private final List<Meteor> meteors = new ArrayList<>();
     private @Nullable CompanionCommand tabletWanderRestore;
+    private long recordedChunk = Long.MIN_VALUE;
     private long tabletWanderUntil;
     private @Nullable BlockPos digPos;
     private int digTicks;
@@ -1023,6 +1024,21 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
     }
 
+    private void recordLocation() {
+        this.recordedChunk = this.chunkPosition().pack();
+        if (!(this.getOwner() instanceof Player owner)) {
+            return;
+        }
+
+        CompanionBond bond = KindredAttachments.bond(owner);
+        if (bond.stored() || !bond.isBoundTo(this.getUUID())) {
+            return;
+        }
+
+        KindredAttachments.modifyBond(
+                owner, current -> current.withLocation(this.level().dimension().identifier(), this.blockPosition()));
+    }
+
     public CompanionCommand commandForStorage() {
         return this.tabletWanderRestore != null && this.getCommand() == CompanionCommand.WANDER
                 ? this.tabletWanderRestore
@@ -1241,6 +1257,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
         if (this.isAlive() && this.tickCount % LOCATION_UPDATE_INTERVAL == 0) {
             this.refreshBondState();
+        }
+
+        if (this.isAlive() && this.chunkPosition().pack() != this.recordedChunk) {
+            this.recordLocation();
         }
 
         this.updateCombatMode();
@@ -2066,6 +2086,11 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     @Override
     public void onRemoval(RemovalReason reason) {
+        if (reason == RemovalReason.UNLOADED_TO_CHUNK
+                && this.isAlive()
+                && !this.level().isClientSide()) {
+            this.recordLocation();
+        }
         if ((reason.shouldDestroy() || reason == RemovalReason.UNLOADED_TO_CHUNK)
                 && this.level() instanceof ServerLevel serverLevel) {
             this.lights.clear(serverLevel);

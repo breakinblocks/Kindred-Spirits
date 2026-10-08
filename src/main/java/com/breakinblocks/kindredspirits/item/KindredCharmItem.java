@@ -164,7 +164,11 @@ public class KindredCharmItem extends Item {
 
         // An unavailable deployed entity is not a stored snapshot. Never edit or
         // return its equipment until the authoritative entity has been loaded.
-        if (!bond.stored() && live == null && action != KindredNetworking.CharmActionPayload.Action.REFRESH) {
+        if (!bond.stored()
+                && live == null
+                && action != KindredNetworking.CharmActionPayload.Action.REFRESH
+                && action != KindredNetworking.CharmActionPayload.Action.RECALL
+                && action != KindredNetworking.CharmActionPayload.Action.RELEASE) {
             KindredMessages.send(player, "charm_unreachable");
             KindredNetworking.sendCharmView(player, false);
             return;
@@ -380,8 +384,15 @@ public class KindredCharmItem extends Item {
         if (live != null) {
             live.setBonded(false);
             live.dropEquipment();
-        } else if (!snapshot.equipment().isEmpty()) {
-            player.getInventory().placeItemBackInInventory(snapshot.equipment().copy());
+        } else {
+            if (!bond.stored()) {
+                CompanionWorldData.abandon(
+                        player.level().getServer(), bond.companion().orElseThrow());
+            }
+            if (!snapshot.equipment().isEmpty()) {
+                player.getInventory()
+                        .placeItemBackInInventory(snapshot.equipment().copy());
+            }
         }
 
         releaseBond(player);
@@ -399,7 +410,13 @@ public class KindredCharmItem extends Item {
 
     private static void recall(
             ServerPlayer player, ServerLevel level, CompanionBond bond, @Nullable CompanionEntity live) {
-        if (missingLive(player, bond, live)) {
+        if (bond.stored()) {
+            KindredMessages.send(player, "charm_already_resting");
+            return;
+        }
+
+        if (live == null) {
+            reform(player, level, bond);
             return;
         }
 
@@ -412,6 +429,41 @@ public class KindredCharmItem extends Item {
         KindredAttachments.modifyBond(
                 player, current -> snapshot(current, recalled).withStored(false));
         KindredMessages.send(player, "charm_recalled", recalled.getDisplayName());
+    }
+
+    private static void reform(ServerPlayer player, ServerLevel level, CompanionBond bond) {
+        CompanionSnapshot snapshot = bond.snapshot().orElseThrow();
+
+        if (stillSearching(level.getServer(), bond)) {
+            KindredMessages.send(player, "charm_searching", snapshot.displayName());
+            return;
+        }
+
+        CompanionEntity companion = create(player, level, snapshot, snapshot.experience());
+        if (companion == null) {
+            return;
+        }
+
+        if (!level.tryAddFreshEntityWithPassengers(companion)) {
+            KindredMessages.send(player, "charm_missing");
+            return;
+        }
+
+        CompanionWorldData.abandon(level.getServer(), bond.companion().orElseThrow());
+        KindredAttachments.modifyBond(
+                player, current -> snapshot(current, companion).withStored(false));
+        companion.reportProgress(player);
+        companion.burst(KindredParticles.SUMMON_RUNE.get(), 16);
+        companion.playSound(KindredSounds.CHARM_SUMMON.get(), 0.6f, 1.0f);
+        KindredMessages.send(player, "charm_recalled", companion.getDisplayName());
+    }
+
+    private static boolean stillSearching(MinecraftServer server, CompanionBond bond) {
+        ServerLevel level = lastKnownLevel(server, bond);
+        BlockPos pos = bond.lastPos().orElse(null);
+        return level != null
+                && pos != null
+                && !level.areEntitiesLoaded(ChunkPos.containing(pos).pack());
     }
 
     private static void dismiss(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live) {
@@ -440,16 +492,10 @@ public class KindredCharmItem extends Item {
         }
 
         CompanionSnapshot snapshot = bond.snapshot().orElseThrow();
-        Optional<CompanionSpecies> species = snapshot.resolveSpecies();
-
-        if (species.isEmpty()) {
-            KindredMessages.send(player, "charm_missing");
-            return;
-        }
-
-        CompanionEntity companion = KindredEntities.type(species.get()).create(level, EntitySpawnReason.COMMAND);
+        boolean reviving = bond.reviveReadyAt() > 0;
+        CompanionEntity companion =
+                create(player, level, snapshot, reviving ? penalisedExperience(snapshot) : snapshot.experience());
         if (companion == null) {
-            KindredMessages.send(player, "charm_missing");
             return;
         }
 
@@ -458,18 +504,7 @@ public class KindredCharmItem extends Item {
             companion.setUUID(bound);
         }
 
-        companion.snapTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0f);
-        companion.tame(player);
-        snapshot.name().ifPresent(name -> companion.setCustomName(Component.literal(name)));
-        companion.setSkinName(snapshot.skin().orElse(""));
-        companion.setDyeId(snapshot.dye());
-
-        boolean reviving = bond.reviveReadyAt() > 0;
-        companion.restoreProgress(snapshot, reviving ? penalisedExperience(snapshot) : snapshot.experience());
         if (reviving) companion.setHealth(companion.getMaxHealth());
-        companion.setCommand(snapshot.commandValue());
-        companion.setAggression(snapshot.aggressionValue());
-        companion.setBonded(true);
 
         if (!level.tryAddFreshEntityWithPassengers(companion)) {
             KindredMessages.send(player, "charm_missing");
@@ -487,6 +522,33 @@ public class KindredCharmItem extends Item {
         companion.burst(reviving ? KindredParticles.REVIVE_BLOOM.get() : KindredParticles.SUMMON_RUNE.get(), 16);
         companion.playSound(reviving ? KindredSounds.CHARM_REVIVE.get() : KindredSounds.CHARM_SUMMON.get(), 0.6f, 1.0f);
         KindredMessages.send(player, reviving ? "charm_revived" : "charm_summoned", companion.getDisplayName());
+    }
+
+    private static @Nullable CompanionEntity create(
+            ServerPlayer player, ServerLevel level, CompanionSnapshot snapshot, int experience) {
+        Optional<CompanionSpecies> species = snapshot.resolveSpecies();
+
+        if (species.isEmpty()) {
+            KindredMessages.send(player, "charm_missing");
+            return null;
+        }
+
+        CompanionEntity companion = KindredEntities.type(species.get()).create(level, EntitySpawnReason.COMMAND);
+        if (companion == null) {
+            KindredMessages.send(player, "charm_missing");
+            return null;
+        }
+
+        companion.snapTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0f);
+        companion.tame(player);
+        snapshot.name().ifPresent(name -> companion.setCustomName(Component.literal(name)));
+        companion.setSkinName(snapshot.skin().orElse(""));
+        companion.setDyeId(snapshot.dye());
+        companion.restoreProgress(snapshot, experience);
+        companion.setCommand(snapshot.commandValue());
+        companion.setAggression(snapshot.aggressionValue());
+        companion.setBonded(true);
+        return companion;
     }
 
     private static int penalisedExperience(CompanionSnapshot snapshot) {
@@ -573,7 +635,6 @@ public class KindredCharmItem extends Item {
         }
 
         CompanionEntity live = findCompanion(player.level().getServer(), bond);
-        if (!bond.stored() && missingLive(player, bond, live)) return false;
         release(player, bond, live);
         return true;
     }

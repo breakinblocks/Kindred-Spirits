@@ -408,7 +408,7 @@ public class KindredCharmScreen extends Screen {
         boolean present = bound && this.view.present();
 
         this.summonButton.setMessage(this.summonLabel());
-        this.summonButton.active = editable && (present || this.view.reviveSeconds() <= 0);
+        this.summonButton.active = bound && (!this.view.stored() || this.view.reviveSeconds() <= 0);
 
         this.dismissButton.active = present;
 
@@ -418,7 +418,7 @@ public class KindredCharmScreen extends Screen {
         this.aggressionButton.setMessage(this.aggressionLabel());
         this.aggressionButton.active = editable;
 
-        this.releaseButton.active = editable;
+        this.releaseButton.active = bound;
         this.prestigeButton.visible = bound && this.view.canPrestige();
         this.prestigeButton.active = this.prestigeButton.visible && editable;
 
@@ -552,7 +552,9 @@ public class KindredCharmScreen extends Screen {
                 Component.translatable(
                         this.view.present()
                                 ? "screen.kindredspirits.state_out"
-                                : "screen.kindredspirits.state_resting"),
+                                : this.view.stored()
+                                        ? "screen.kindredspirits.state_resting"
+                                        : "screen.kindredspirits.state_lost"),
                 x0,
                 this.top + this.lowerY(STATE_Y),
                 COLOUR_LABEL);
