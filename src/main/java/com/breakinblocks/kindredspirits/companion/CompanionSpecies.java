@@ -30,7 +30,7 @@ public enum CompanionSpecies implements StringRepresentable {
     NIGHTFOX(
             "nightfox",
             new Size(0.7f, 0.8f, 1.0f, 0.0f),
-            new Stats(14.0, 0.32, 3.0, 2.0, 0.0, 1.0),
+            new Stats(35.0, 0.32, 3.0, 2.0, 0.0, 1.0),
             CombatStyle.RANGED,
             true,
             Set.of(
@@ -57,7 +57,7 @@ public enum CompanionSpecies implements StringRepresentable {
     TREX(
             "trex",
             new Size(1.2f, 1.7f, 0.6f, 0.5f),
-            new Stats(30.0, 0.25, 4.0, 2.0, 0.9, 1.0),
+            new Stats(75.0, 0.25, 4.0, 2.0, 0.9, 1.0),
             CombatStyle.MELEE,
             false,
             Set.of(
@@ -90,7 +90,7 @@ public enum CompanionSpecies implements StringRepresentable {
     MINI_PLAYER(
             "mini_player",
             new Size(0.4f, 1.2f, 0.6f, 0.0f),
-            new Stats(18.0, 0.30, 4.0, 2.0, 0.0, 0.5),
+            new Stats(45.0, 0.30, 4.0, 2.0, 0.0, 0.5),
             CombatStyle.HYBRID,
             true,
             Set.of(
@@ -122,7 +122,7 @@ public enum CompanionSpecies implements StringRepresentable {
     BABY_DRAGON(
             "baby_dragon",
             new Size(0.7f, 1.2f, 0.6f, 0.0f),
-            new Stats(10.0, 0.36, 7.0, 2.0, 0.0, 1.5),
+            new Stats(25.0, 0.36, 7.0, 2.0, 0.0, 1.5),
             CombatStyle.RANGED,
             true,
             Set.of(
@@ -153,7 +153,7 @@ public enum CompanionSpecies implements StringRepresentable {
     QUOKKA(
             "quokka",
             new Size(0.5f, 0.65f, 1.0f, 0.0f),
-            new Stats(18.0, 0.36, 2.0, 6.0, 0.0, 0.5),
+            new Stats(45.0, 0.36, 2.0, 6.0, 0.0, 0.5),
             CombatStyle.MELEE,
             false,
             Set.of(
@@ -182,7 +182,7 @@ public enum CompanionSpecies implements StringRepresentable {
     GREMLIN(
             "gremlin",
             new Size(0.5f, 0.8f, 0.8f, 0.0f),
-            new Stats(10.0, 0.40, 2.0, 2.0, 0.0, 1.5),
+            new Stats(25.0, 0.40, 2.0, 2.0, 0.0, 1.5),
             CombatStyle.MELEE,
             false,
             Set.of(
@@ -212,7 +212,7 @@ public enum CompanionSpecies implements StringRepresentable {
     DIREWOLF(
             "direwolf",
             new Size(1.0f, 1.1f, 1.3f, 0.0f),
-            new Stats(18.0, 0.32, 5.0, 4.0, 0.2, 1.0),
+            new Stats(45.0, 0.32, 5.0, 4.0, 0.2, 1.0),
             CombatStyle.MELEE,
             false,
             Set.of(

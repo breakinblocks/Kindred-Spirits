@@ -5,6 +5,7 @@
 - Fixed the Kindred Charm losing track of a companion after its owner teleported away, which greyed out every button with no way to call, rest or release it. The charm now records where the companion is whenever it changes chunk or its chunk unloads.
 - If the charm still cannot find a companion that is out, Call to me re-forms it beside you from what the charm remembers, and Release bond works too. The lost copy is removed if its chunk ever loads again, so its gear cannot be duplicated. Players already stuck this way can press Call to me after updating.
 - The charm screen shows "Out of reach" instead of "Resting in the charm" for a companion it cannot find.
+- Raised every companion's level 1 health by 2.5 times: Baby Dragon and Gremlin 25, Nightfox 35, Mini Player, Quokka and Direwolf 45, T-Rex 75. These are the defaults in `kindredspirits-startup.toml`, so an existing config file keeps its old values until it is updated or deleted.
 
 ## 1.0.4
 
