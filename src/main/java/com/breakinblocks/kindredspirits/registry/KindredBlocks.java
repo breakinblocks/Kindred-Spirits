@@ -4,6 +4,7 @@ import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.block.TrexEggBlock;
 import com.breakinblocks.kindredspirits.block.WispLightBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -15,7 +16,8 @@ public final class KindredBlocks {
     public static final DeferredBlock<WispLightBlock> WISP_LIGHT = BLOCKS.registerBlock(
             "wisp_light",
             WispLightBlock::new,
-            props -> props.noCollision()
+            BlockBehaviour.Properties.of()
+                    .noCollission()
                     .noOcclusion()
                     .noLootTable()
                     .replaceable()
@@ -28,7 +30,8 @@ public final class KindredBlocks {
     public static final DeferredBlock<TrexEggBlock> TREX_EGG = BLOCKS.registerBlock(
             "trex_egg",
             TrexEggBlock::new,
-            props -> props.mapColor(MapColor.COLOR_LIGHT_GRAY)
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_GRAY)
                     .strength(0.5f)
                     .noOcclusion()
                     .sound(SoundType.STONE));

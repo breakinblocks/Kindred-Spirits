@@ -6,14 +6,14 @@ import java.util.Map;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /** State that must survive both chunk saves and dismissal. Deadlines use server game time. */
-public record CompanionState(float health, Map<Identifier, Long> cooldowns) {
+public record CompanionState(float health, Map<ResourceLocation, Long> cooldowns) {
     public static final CompanionState LEGACY = new CompanionState(-1.0f, Map.of());
     public static final Codec<CompanionState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                     Codec.FLOAT.optionalFieldOf("health", -1.0f).forGetter(CompanionState::health),
-                    Codec.unboundedMap(Identifier.CODEC, Codec.LONG)
+                    Codec.unboundedMap(ResourceLocation.CODEC, Codec.LONG)
                             .optionalFieldOf("cooldowns", Map.of())
                             .forGetter(CompanionState::cooldowns))
             .apply(instance, CompanionState::new));

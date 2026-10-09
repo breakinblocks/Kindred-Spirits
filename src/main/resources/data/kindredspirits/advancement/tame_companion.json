@@ -2,7 +2,8 @@
   "parent": "kindredspirits:root",
   "display": {
     "icon": {
-      "id": "minecraft:lead"
+      "id": "minecraft:lead",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.tame_companion.title"

@@ -7,8 +7,8 @@ import java.util.Optional;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
@@ -44,7 +44,7 @@ public final class CompanionAbilityEvents {
 
     @SubscribeEvent
     public static void onSpawnPositionCheck(MobSpawnEvent.PositionCheck event) {
-        if (event.getSpawnType() != EntitySpawnReason.NATURAL
+        if (event.getSpawnType() != MobSpawnType.NATURAL
                 || !(event.getEntity() instanceof Enemy)
                 || !CompanionAbilities.enabled()) {
             return;
@@ -77,7 +77,7 @@ public final class CompanionAbilityEvents {
         if (!(event.getSource().getEntity() instanceof CompanionEntity companion)
                 || !companion.hasAbility(CompanionAbilities.DRAGONFIRE)
                 || !CompanionAbilities.enabled()
-                || event.getHealthDamage() <= 0.0f) {
+                || event.getNewDamage() <= 0.0f) {
             return;
         }
 
@@ -103,7 +103,7 @@ public final class CompanionAbilityEvents {
 
         companionWith(owner, CompanionAbilities.HELPING_HAND).ifPresent(companion -> {
             if (owner.getRandom().nextDouble() < HELPING_HAND_CHANCE
-                    && HelpingHandGuard.mayDuplicate(owner.level(), crafted, event.getInventory())) {
+                    && HelpingHandGuard.mayDuplicate(owner.serverLevel(), crafted, event.getInventory())) {
                 owner.getInventory().placeItemBackInInventory(crafted.copy());
                 companion.burst(KindredParticles.CRAFT_SPARK.get(), 6);
                 companion.playSound(companion.species().sounds().interact().get(), 0.8f, 1.2f);

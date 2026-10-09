@@ -2,12 +2,13 @@ package com.breakinblocks.kindredspirits.client;
 
 import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.SingleQuadParticle;
+import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
+import net.minecraft.client.particle.TextureSheetParticle;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 
 /** Native pixel sprites advance over their lifetime; no interpolation between texture frames. */
-public final class KindredParticle extends SingleQuadParticle {
+public final class KindredParticle extends TextureSheetParticle {
     private final SpriteSet sprites;
     private final boolean emissive;
 
@@ -21,7 +22,7 @@ public final class KindredParticle extends SingleQuadParticle {
             double dz,
             SpriteSet sprites,
             KindredParticles.Effect effect) {
-        super(level, x, y, z, sprites.first());
+        super(level, x, y, z);
         this.sprites = sprites;
         this.emissive = effect.emissive();
         this.lifetime = effect.lifetime();
@@ -34,8 +35,8 @@ public final class KindredParticle extends SingleQuadParticle {
     }
 
     @Override
-    public Layer getLayer() {
-        return Layer.TRANSLUCENT;
+    public ParticleRenderType getRenderType() {
+        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
     @Override
@@ -47,15 +48,15 @@ public final class KindredParticle extends SingleQuadParticle {
     }
 
     @Override
-    public int getLightCoords(float partialTick) {
-        return this.emissive ? 0xF000F0 : super.getLightCoords(partialTick);
+    public int getLightColor(float partialTick) {
+        return this.emissive ? 0xF000F0 : super.getLightColor(partialTick);
     }
 
     public static void register(RegisterParticleProvidersEvent event) {
         for (var effect : KindredParticles.effects()) {
             event.registerSpriteSet(
                     effect.type().get(),
-                    sprites -> (options, level, x, y, z, dx, dy, dz, random) ->
+                    sprites -> (options, level, x, y, z, dx, dy, dz) ->
                             new KindredParticle(level, x, y, z, dx, dy, dz, sprites, effect));
         }
     }

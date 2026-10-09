@@ -34,8 +34,8 @@ import java.util.function.UnaryOperator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,17 +43,17 @@ import net.minecraft.server.level.TicketType;
 import net.minecraft.util.StringUtil;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public class KindredCharmItem extends Item {
     public KindredCharmItem(Properties properties) {
@@ -81,12 +81,12 @@ public class KindredCharmItem extends Item {
     }
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         if (player instanceof ServerPlayer serverPlayer) {
             KindredNetworking.sendCharmView(serverPlayer, true);
         }
 
-        return InteractionResult.SUCCESS;
+        return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
     }
 
     public static boolean isCarried(Player player) {
@@ -98,7 +98,7 @@ public class KindredCharmItem extends Item {
         if (isCarried(player)) {
             KindredNetworking.sendCharmView(player, true);
         } else {
-            player.sendOverlayMessage(Component.translatable("message.kindredspirits.charm_not_carried"));
+            player.displayClientMessage(Component.translatable("message.kindredspirits.charm_not_carried"), true);
         }
     }
 
@@ -150,7 +150,7 @@ public class KindredCharmItem extends Item {
             ServerPlayer player, KindredNetworking.CharmActionPayload.Action action, int value, String text) {
         CompanionWorldData.reconcile(player);
         CompanionBond bond = KindredAttachments.bond(player);
-        ServerLevel level = player.level();
+        ServerLevel level = player.serverLevel();
 
         if (!bond.isBound()) {
             if (action != KindredNetworking.CharmActionPayload.Action.REFRESH) {
@@ -227,7 +227,7 @@ public class KindredCharmItem extends Item {
     }
 
     private static void toggleAbility(ServerPlayer player, @Nullable CompanionEntity live, String text) {
-        Identifier id = Identifier.tryParse(KindredSpirits.MOD_ID + ":" + text);
+        ResourceLocation id = ResourceLocation.tryParse(KindredSpirits.MOD_ID + ":" + text);
         CompanionAbility ability = id == null ? null : CompanionAbilities.get(id);
         if (ability == null) {
             return;
@@ -420,8 +420,8 @@ public class KindredCharmItem extends Item {
             return;
         }
 
-        Entity arrived = live.teleport(new TeleportTransition(
-                level, player.position(), Vec3.ZERO, player.getYRot(), 0.0f, TeleportTransition.DO_NOTHING));
+        Entity arrived = live.changeDimension(new DimensionTransition(
+                level, player.position(), Vec3.ZERO, player.getYRot(), 0.0f, DimensionTransition.DO_NOTHING));
         if (!(arrived instanceof CompanionEntity recalled)) {
             KindredMessages.send(player, "charm_unreachable");
             return;
@@ -461,9 +461,7 @@ public class KindredCharmItem extends Item {
     private static boolean stillSearching(MinecraftServer server, CompanionBond bond) {
         ServerLevel level = lastKnownLevel(server, bond);
         BlockPos pos = bond.lastPos().orElse(null);
-        return level != null
-                && pos != null
-                && !level.areEntitiesLoaded(ChunkPos.containing(pos).pack());
+        return level != null && pos != null && !level.areEntitiesLoaded(ChunkPos.asLong(pos));
     }
 
     private static void dismiss(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live) {
@@ -533,13 +531,13 @@ public class KindredCharmItem extends Item {
             return null;
         }
 
-        CompanionEntity companion = KindredEntities.type(species.get()).create(level, EntitySpawnReason.COMMAND);
+        CompanionEntity companion = KindredEntities.type(species.get()).create(level);
         if (companion == null) {
             KindredMessages.send(player, "charm_missing");
             return null;
         }
 
-        companion.snapTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0f);
+        companion.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0f);
         companion.tame(player);
         snapshot.name().ifPresent(name -> companion.setCustomName(Component.literal(name)));
         companion.setSkinName(snapshot.skin().orElse(""));
@@ -557,7 +555,7 @@ public class KindredCharmItem extends Item {
     }
 
     public static void onCompanionDied(CompanionEntity companion) {
-        if (!companion.isBonded() || companion.getOwnerReference() == null) return;
+        if (!companion.isBonded() || companion.getOwnerUUID() == null) return;
         int cooldownTicks = CompanionBondMath.reviveCooldownTicks(companion.getBondLevel());
         long readyAt = companion.level().getGameTime() + Math.max(1, cooldownTicks);
         if (!(companion.getOwner() instanceof ServerPlayer owner)) {
@@ -565,7 +563,7 @@ public class KindredCharmItem extends Item {
                 CompanionWorldData.recordDeath(
                         level,
                         new CompanionWorldData.Death(
-                                companion.getOwnerReference().getUUID(),
+                                companion.getOwnerUUID(),
                                 companion.getUUID(),
                                 CompanionSnapshot.of(companion),
                                 readyAt));
@@ -583,7 +581,7 @@ public class KindredCharmItem extends Item {
 
     public static CompanionBond snapshot(CompanionBond bond, CompanionEntity companion) {
         return bond.withSnapshot(companion.getUUID(), CompanionSnapshot.of(companion))
-                .withLocation(companion.level().dimension().identifier(), companion.blockPosition());
+                .withLocation(companion.level().dimension().location(), companion.blockPosition());
     }
 
     private static @Nullable CompanionEntity findCompanion(MinecraftServer server, CompanionBond bond) {
@@ -606,13 +604,12 @@ public class KindredCharmItem extends Item {
 
         // Entity deserialization trails chunk loading. Keep the last-known chunk
         // available for subsequent screen refreshes without blocking the server tick.
-        level.getChunkSource()
-                .addTicketAndLoadWithRadius(TicketType.PORTAL, new ChunkPos(pos.getX() >> 4, pos.getZ() >> 4), 0);
+        level.getChunkSource().addRegionTicket(TicketType.PORTAL, new ChunkPos(pos), 0, pos);
         return null;
     }
 
     private static @Nullable ServerLevel lastKnownLevel(MinecraftServer server, CompanionBond bond) {
-        Identifier dimension = bond.lastDimension().orElse(null);
+        ResourceLocation dimension = bond.lastDimension().orElse(null);
         return dimension == null ? null : server.getLevel(ResourceKey.create(Registries.DIMENSION, dimension));
     }
 
@@ -642,7 +639,6 @@ public class KindredCharmItem extends Item {
     public static void releaseBond(Player player) {
         KindredAttachments.modifyBond(player, current -> CompanionBond.NONE);
 
-        ItemStack charm = new ItemStack(KindredItems.KINDRED_CHARM.get());
-        player.getCooldowns().removeCooldown(player.getCooldowns().getCooldownGroup(charm));
+        player.getCooldowns().removeCooldown(KindredItems.KINDRED_CHARM.get());
     }
 }

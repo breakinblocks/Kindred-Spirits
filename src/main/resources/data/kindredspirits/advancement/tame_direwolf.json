@@ -2,7 +2,8 @@
   "parent": "kindredspirits:tame_companion",
   "display": {
     "icon": {
-      "id": "kindredspirits:golden_bone"
+      "id": "kindredspirits:golden_bone",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.tame_direwolf.title"

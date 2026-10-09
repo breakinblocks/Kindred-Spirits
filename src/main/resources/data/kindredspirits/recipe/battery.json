@@ -2,9 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "C": "minecraft:copper_ingot",
-    "R": "minecraft:redstone_block",
-    "S": "minecraft:slime_ball"
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    },
+    "S": {
+      "item": "minecraft:slime_ball"
+    }
   },
   "pattern": [
     " C ",
@@ -12,6 +18,7 @@
     "CSC"
   ],
   "result": {
-    "id": "kindredspirits:battery"
+    "id": "kindredspirits:battery",
+    "count": 1
   }
 }

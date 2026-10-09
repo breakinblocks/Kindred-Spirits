@@ -2,8 +2,12 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "G": "minecraft:gold_nugget",
-    "B": "minecraft:bone"
+    "G": {
+      "item": "minecraft:gold_nugget"
+    },
+    "B": {
+      "item": "minecraft:bone"
+    }
   },
   "pattern": [
     "GGG",
@@ -11,6 +15,7 @@
     "GGG"
   ],
   "result": {
-    "id": "kindredspirits:golden_bone"
+    "id": "kindredspirits:golden_bone",
+    "count": 1
   }
 }

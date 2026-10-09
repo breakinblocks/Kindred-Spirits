@@ -16,14 +16,6 @@ import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import com.breakinblocks.kindredspirits.registry.KindredTags;
 import com.breakinblocks.kindredspirits.registry.KindredTriggers;
 import com.breakinblocks.kindredspirits.util.BlockPosUtil;
-import com.geckolib.animatable.GeoEntity;
-import com.geckolib.animatable.instance.AnimatableInstanceCache;
-import com.geckolib.animatable.manager.AnimatableManager;
-import com.geckolib.animation.AnimationController;
-import com.geckolib.animation.RawAnimation;
-import com.geckolib.animation.object.PlayState;
-import com.geckolib.animation.state.AnimationTest;
-import com.geckolib.util.GeckoLibUtil;
 import com.mojang.serialization.Codec;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,18 +28,20 @@ import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -87,30 +81,36 @@ import net.minecraft.world.entity.ai.goal.target.OwnerHurtTargetGoal;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
-import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.portal.TeleportTransition;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.PlayState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedAttackMob {
     private long quokkaDecoyUntil;
@@ -123,7 +123,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public boolean isQuokkaFleeing() {
-        if (this.level().isClientSide()) return this.entityData.get(DATA_QUOKKA_FLEEING);
+        if (this.level().isClientSide) return this.entityData.get(DATA_QUOKKA_FLEEING);
         return this.species == CompanionSpecies.QUOKKA
                 && !this.isTame()
                 && this.quokkaFleeUntil > this.level().getGameTime();
@@ -209,7 +209,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final float SIT_RARE_CHANCE = 0.05f;
     private static final float SIT_RESTLESS_CHANCE = 0.25f;
     private static final float HITBOX_YAW_STEP = 5.0f;
-    private static final Identifier VANILLA_SPRINT_MODIFIER = Identifier.withDefaultNamespace("sprinting");
+    private static final ResourceLocation VANILLA_SPRINT_MODIFIER = ResourceLocation.withDefaultNamespace("sprinting");
     private static final AttributeModifier RUN_SPEED_MODIFIER =
             new AttributeModifier(KindredSpirits.id("running"), 0.2, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
     private static final double SHOCKWAVE_MAX_RADIUS = 4.0;
@@ -221,7 +221,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private static final int TABLET_WANDER_INTERVAL = 2400;
     private static final int TABLET_WANDER_TICKS = 600;
     private static final float TABLET_WANDER_CHANCE = 0.25f;
-    private static final Identifier METEOR_FIRE = KindredSpirits.id("meteor_fire");
+    private static final ResourceLocation METEOR_FIRE = KindredSpirits.id("meteor_fire");
     private static final int BATTERY_INTERVAL = 20;
     private static final int BATTERY_RADIUS = 4;
     private static final int BATTERY_EXTRA_TICKS = 8;
@@ -237,7 +237,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
     private final CompanionSpecies species;
     private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
-    private final Map<Identifier, Long> abilityCooldowns = new HashMap<>();
+    private final Map<ResourceLocation, Long> abilityCooldowns = new HashMap<>();
     private boolean abilitiesWereEnabled = true;
     private @Nullable LeapImpact pendingImpact;
     private int shockwaveTicks;
@@ -248,7 +248,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private float hitboxYaw = Float.NaN;
     private RawAnimation sitVariant = SIT;
     private long sitVariantUntil;
-    private static final Identifier BOW_COOLDOWN = KindredSpirits.id("bow_attack");
+    private static final ResourceLocation BOW_COOLDOWN = KindredSpirits.id("bow_attack");
     private List<CompanionAbility> cachedAbilities = List.of();
     private CompanionProgress progress = new CompanionProgress();
     private CompanionLights lights = new CompanionLights();
@@ -262,6 +262,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     private @Nullable BlockPos digPos;
     private int digTicks;
     private int levelChimeTicks;
+    private @Nullable AnimationController<CompanionEntity> actionController;
 
     public CompanionEntity(EntityType<? extends CompanionEntity> type, Level level, CompanionSpecies species) {
         super(type, level);
@@ -285,7 +286,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public static AttributeSupplier.Builder createCompanionAttributes(CompanionSpecies species) {
-        return TamableAnimal.createAnimalAttributes()
+        return Mob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, species.baseHealth())
                 .add(Attributes.MOVEMENT_SPEED, species.moveSpeed())
                 .add(Attributes.ATTACK_DAMAGE, species.attackDamage())
@@ -351,7 +352,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                         () -> this.getAggression().huntsMonsters()));
     }
 
-    private boolean isHuntable(LivingEntity target, ServerLevel level) {
+    private boolean isHuntable(LivingEntity target) {
         if (!isHostile(target)) {
             return false;
         }
@@ -433,7 +434,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     @Override
-    protected void addAdditionalSaveData(ValueOutput output) {
+    public void addAdditionalSaveData(CompoundTag output) {
         super.addAdditionalSaveData(output);
         output.putLong("QuokkaDecoyUntil", this.quokkaDecoyUntil);
         output.putLong("QuokkaFleeUntil", this.quokkaFleeUntil);
@@ -441,12 +442,12 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         output.putInt("Experience", this.getExperience());
         output.putInt("BondPoints", this.getBondPoints());
         output.putInt("Stars", this.getStars());
-        output.store("Progress", CompanionProgress.CODEC, this.progress);
+        this.store(output, "Progress", CompanionProgress.CODEC, this.progress);
         if (!this.lights.isEmpty()) {
-            output.store("Lights", CompanionLights.CODEC, this.lights);
+            this.store(output, "Lights", CompanionLights.CODEC, this.lights);
         }
         output.putString("Command", this.commandForStorage().getSerializedName());
-        output.store("CompanionState", CompanionState.CODEC, this.savedState());
+        this.store(output, "CompanionState", CompanionState.CODEC, this.savedState());
         output.putBoolean("Bonded", this.isBonded());
         output.putString("Aggression", this.getAggression().getSerializedName());
         output.putBoolean("PlayedSpawnAnimation", this.playedSpawnAnimation);
@@ -455,46 +456,70 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             output.putString("Dye", DyeColor.byId(this.getDyeId()).getSerializedName());
         }
         if (!this.disabledAbilityNames().isEmpty()) {
-            output.store("DisabledAbilities", Codec.STRING.listOf(), this.disabledAbilityNames());
+            this.store(output, "DisabledAbilities", Codec.STRING.listOf(), this.disabledAbilityNames());
         }
         if (!this.equipment.isEmpty()) {
-            output.store("Equipment", ItemStack.CODEC, this.equipment);
+            this.store(output, "Equipment", ItemStack.CODEC, this.equipment);
         }
     }
 
     @Override
-    protected void readAdditionalSaveData(ValueInput input) {
+    public void readAdditionalSaveData(CompoundTag input) {
         super.readAdditionalSaveData(input);
-        this.quokkaDecoyUntil = input.getLongOr("QuokkaDecoyUntil", 0L);
-        this.quokkaFleeUntil = input.getLongOr("QuokkaFleeUntil", 0L);
-        this.entityData.set(DATA_LEVEL, CompanionLevels.clampLevel(input.getIntOr("Level", CompanionLevels.MIN_LEVEL)));
-        this.entityData.set(DATA_EXPERIENCE, input.getIntOr("Experience", 0));
-        this.setBondPoints(input.read("BondPoints", Codec.INT)
-                .orElseGet(() -> CompanionBondMath.migrateLegacy(input.getIntOr("Bond", 0))));
-        this.entityData.set(DATA_STARS, CompanionLevels.clampStars(input.getIntOr("Stars", 0)));
-        this.progress = input.read("Progress", CompanionProgress.CODEC).orElseGet(CompanionProgress::new);
-        this.entityData.set(DATA_BONDED, input.getBooleanOr("Bonded", false));
+        this.quokkaDecoyUntil = input.getLong("QuokkaDecoyUntil");
+        this.quokkaFleeUntil = input.getLong("QuokkaFleeUntil");
+        this.entityData.set(
+                DATA_LEVEL,
+                CompanionLevels.clampLevel(
+                        input.contains("Level") ? input.getInt("Level") : CompanionLevels.MIN_LEVEL));
+        this.entityData.set(DATA_EXPERIENCE, input.getInt("Experience"));
+        this.setBondPoints(
+                input.contains("BondPoints")
+                        ? input.getInt("BondPoints")
+                        : CompanionBondMath.migrateLegacy(input.getInt("Bond")));
+        this.entityData.set(DATA_STARS, CompanionLevels.clampStars(input.getInt("Stars")));
+        this.progress = this.read(input, "Progress", CompanionProgress.CODEC).orElseGet(CompanionProgress::new);
+        this.entityData.set(DATA_BONDED, input.getBoolean("Bonded"));
         this.abilityCooldowns.clear();
-        this.abilityCooldowns.putAll(input.read("CompanionState", CompanionState.CODEC)
+        this.abilityCooldowns.putAll(this.read(input, "CompanionState", CompanionState.CODEC)
                 .orElse(CompanionState.LEGACY)
                 .cooldowns());
-        this.lights = input.read("Lights", CompanionLights.CODEC).orElseGet(CompanionLights::new);
-        this.playedSpawnAnimation = input.getBooleanOr("PlayedSpawnAnimation", true);
-        this.entityData.set(DATA_SKIN, input.getStringOr("Skin", ""));
-        DyeColor dye = DyeColor.byName(input.getStringOr("Dye", ""), null);
+        this.lights = this.read(input, "Lights", CompanionLights.CODEC).orElseGet(CompanionLights::new);
+        this.playedSpawnAnimation = !input.contains("PlayedSpawnAnimation") || input.getBoolean("PlayedSpawnAnimation");
+        this.entityData.set(DATA_SKIN, input.getString("Skin"));
+        DyeColor dye = DyeColor.byName(input.getString("Dye"), null);
         this.setDyeId(dye == null ? NO_DYE : dye.getId());
         this.setDisabledAbilityNames(
-                input.read("DisabledAbilities", Codec.STRING.listOf()).orElse(List.of()));
-        this.equipment = input.read("Equipment", ItemStack.CODEC).orElse(ItemStack.EMPTY);
+                this.read(input, "DisabledAbilities", Codec.STRING.listOf()).orElse(List.of()));
+        this.equipment = this.read(input, "Equipment", ItemStack.CODEC).orElse(ItemStack.EMPTY);
         this.entityData.set(DATA_AGGRESSION, (byte) CompanionAggression.byName(
-                        input.getStringOr("Aggression", CompanionAggression.NEUTRAL.getSerializedName()))
+                        input.contains("Aggression")
+                                ? input.getString("Aggression")
+                                : CompanionAggression.NEUTRAL.getSerializedName())
                 .ordinal());
 
-        this.entityData.set(DATA_COMMAND, (byte)
-                CompanionCommand.byName(input.getStringOr("Command", CompanionCommand.FOLLOW.getSerializedName()))
-                        .ordinal());
+        this.entityData.set(DATA_COMMAND, (byte) CompanionCommand.byName(
+                        input.contains("Command")
+                                ? input.getString("Command")
+                                : CompanionCommand.FOLLOW.getSerializedName())
+                .ordinal());
 
         this.applyLevelScaling(false);
+    }
+
+    private <T> void store(CompoundTag tag, String key, Codec<T> codec, T value) {
+        codec.encodeStart(this.registryAccess().createSerializationContext(NbtOps.INSTANCE), value)
+                .resultOrPartial(KindredSpirits.LOGGER::error)
+                .ifPresent(encoded -> tag.put(key, encoded));
+    }
+
+    private <T> Optional<T> read(CompoundTag tag, String key, Codec<T> codec) {
+        Tag value = tag.get(key);
+        if (value == null) {
+            return Optional.empty();
+        }
+        return codec.parse(this.registryAccess().createSerializationContext(NbtOps.INSTANCE), value)
+                .resultOrPartial(KindredSpirits.LOGGER::error);
     }
 
     public int getLevel() {
@@ -544,7 +569,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         this.setBondPoints((int) Math.clamp((long) this.getBondPoints() + amount, 0L, Integer.MAX_VALUE));
         int after = this.getBondLevel();
 
-        if (after > before && !this.level().isClientSide()) {
+        if (after > before && !this.level().isClientSide) {
             this.announce("bond_up", after);
             this.burst(KindredParticles.BOND_HEART.get(), FEED_HEARTS);
             this.reportToOwner();
@@ -624,10 +649,10 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     private boolean tryDye(Player player, ItemStack stack) {
-        DyeColor dye = stack.get(DataComponents.DYE);
-        if (dye == null || this.species.usesPlayerSkin()) {
+        if (!(stack.getItem() instanceof DyeItem dyeItem) || this.species.usesPlayerSkin()) {
             return false;
         }
+        DyeColor dye = dyeItem.getDyeColor();
         if (this.getDyeId() != dye.getId()) {
             this.setDyeId(dye.getId());
             stack.consume(1, player);
@@ -692,7 +717,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             this.cachedAbilityBond = bondLevel;
             this.applyAbilityBonuses();
 
-            if (announce && !this.level().isClientSide() && this.isBonded()) {
+            if (announce && !this.level().isClientSide && this.isBonded()) {
                 for (CompanionAbility ability : this.cachedAbilities) {
                     if (!previous.contains(ability)) {
                         this.announce("ability_unlocked", ability.displayName());
@@ -778,7 +803,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public boolean hasEquipment(Item item) {
-        if (this.level().isClientSide()) {
+        if (this.level().isClientSide) {
             return this.equipmentId().equals(equipmentId(new ItemStack(item)));
         }
         return this.equipment.is(item);
@@ -833,20 +858,19 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     public void dropEquipment() {
         ItemStack dropped = this.takeEquipment();
         if (!dropped.isEmpty() && this.level() instanceof ServerLevel level) {
-            this.spawnAtLocation(level, dropped);
+            this.spawnAtLocation(dropped);
         }
     }
 
     @Override
-    protected AABB getAttackBoundingBox(double horizontalExpansion) {
-        return super.getAttackBoundingBox(
-                horizontalExpansion + this.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE));
+    protected AABB getAttackBoundingBox() {
+        double reach = this.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE);
+        return super.getAttackBoundingBox().inflate(reach, 0.0, reach);
     }
 
     @Override
-    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
-        return super.isInvulnerableTo(level, source)
-                || this.species.immunities().blocks(source);
+    public boolean isInvulnerableTo(DamageSource source) {
+        return super.isInvulnerableTo(source) || this.species.immunities().blocks(source);
     }
 
     @Override
@@ -860,7 +884,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                 .findFirst();
     }
 
-    public int abilityCooldownTicks(Identifier ability) {
+    public int abilityCooldownTicks(ResourceLocation ability) {
         return (int) Math.clamp(
                 this.abilityCooldowns.getOrDefault(ability, 0L) - this.level().getGameTime(), 0L, Integer.MAX_VALUE);
     }
@@ -879,7 +903,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public void gainExperience(int amount) {
-        if (this.level().isClientSide() || amount <= 0 || !this.isBonded()) {
+        if (this.level().isClientSide || amount <= 0 || !this.isBonded()) {
             return;
         }
 
@@ -947,7 +971,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public boolean prestige() {
-        if (this.level().isClientSide() || !CompanionLevels.canPrestige(this.getLevel(), this.getStars())) {
+        if (this.level().isClientSide || !CompanionLevels.canPrestige(this.getLevel(), this.getStars())) {
             return false;
         }
 
@@ -968,7 +992,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public void addExperience(int amount) {
-        if (this.level().isClientSide() || amount <= 0 || !this.isBonded()) {
+        if (this.level().isClientSide || amount <= 0 || !this.isBonded()) {
             return;
         }
 
@@ -1025,7 +1049,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     private void recordLocation() {
-        this.recordedChunk = this.chunkPosition().pack();
+        this.recordedChunk = this.chunkPosition().toLong();
         if (!(this.getOwner() instanceof Player owner)) {
             return;
         }
@@ -1036,7 +1060,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
 
         KindredAttachments.modifyBond(
-                owner, current -> current.withLocation(this.level().dimension().identifier(), this.blockPosition()));
+                owner, current -> current.withLocation(this.level().dimension().location(), this.blockPosition()));
     }
 
     public CompanionCommand commandForStorage() {
@@ -1134,7 +1158,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public void magicHurt(ServerLevel level, LivingEntity target, float damage) {
-        target.hurtServer(level, this.damageSources().indirectMagic(this, this), damage);
+        target.hurt(this.damageSources().indirectMagic(this, this), damage);
     }
 
     public static boolean isHostile(Entity entity) {
@@ -1189,7 +1213,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         super.tick();
         this.tickHitboxOffset();
 
-        if (this.level().isClientSide()) {
+        if (this.level().isClientSide) {
             return;
         }
 
@@ -1259,7 +1283,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             this.refreshBondState();
         }
 
-        if (this.isAlive() && this.chunkPosition().pack() != this.recordedChunk) {
+        if (this.isAlive() && this.chunkPosition().toLong() != this.recordedChunk) {
             this.recordLocation();
         }
 
@@ -1322,7 +1346,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     private InteractionResult serverOnly(Runnable action) {
-        if (!this.level().isClientSide()) {
+        if (!this.level().isClientSide) {
             action.run();
         }
         return InteractionResult.SUCCESS;
@@ -1369,7 +1393,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                 return this.serverOnly(() -> this.tryEquip(player, stack));
             }
 
-            if (stack.has(DataComponents.DYE) && !this.species.usesPlayerSkin()) {
+            if (stack.getItem() instanceof DyeItem && !this.species.usesPlayerSkin()) {
                 return this.serverOnly(() -> this.tryDye(player, stack));
             }
 
@@ -1382,14 +1406,14 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             }
 
             if (this.isBonded() && stack.isEmpty()) {
-                if (this.level().isClientSide()) {
+                if (this.level().isClientSide) {
                     return InteractionResult.SUCCESS;
                 }
 
                 if (player instanceof ServerPlayer serverPlayer) {
                     this.openStorage(serverPlayer);
                 }
-                return InteractionResult.SUCCESS_SERVER;
+                return InteractionResult.SUCCESS;
             }
 
             if (this.isFood(stack)) {
@@ -1439,15 +1463,15 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     @Override
-    protected AABB makeBoundingBox(Vec3 position) {
+    protected AABB makeBoundingBox() {
         double offset = this.species == null ? 0.0 : this.species.hitboxOffset();
 
         if (offset == 0.0) {
-            return super.makeBoundingBox(position);
+            return super.makeBoundingBox();
         }
 
         float yaw = this.yBodyRot * Mth.DEG_TO_RAD;
-        return super.makeBoundingBox(position.add(Mth.sin(yaw) * offset, 0.0, -Mth.cos(yaw) * offset));
+        return super.makeBoundingBox().move(Mth.sin(yaw) * offset, 0.0, -Mth.cos(yaw) * offset);
     }
 
     private void tickHitboxOffset() {
@@ -1530,14 +1554,15 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     public static @Nullable EquipmentSlot wornSlot(ItemStack stack) {
-        Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
-        if (equippable == null) {
+        if (stack.isEmpty()) {
             return null;
         }
-        return switch (equippable.slot()) {
-            case CHEST, BODY -> equippable.slot();
-            default -> null;
-        };
+        EquipmentSlot slot = stack.getEquipmentSlot();
+        if (slot == null) {
+            Equipable equipable = Equipable.get(stack);
+            slot = equipable == null ? null : equipable.getEquipmentSlot();
+        }
+        return slot == EquipmentSlot.CHEST || slot == EquipmentSlot.BODY ? slot : null;
     }
 
     private void refreshEquipment() {
@@ -1650,7 +1675,6 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             bow = new ItemStack(Items.BOW);
         }
 
-        ItemStack ammo = new ItemStack(Items.ARROW);
         AbstractArrow arrow = new SpiritArrow(level, this, bow);
         arrow.setBaseDamageFromMob(power);
 
@@ -1659,18 +1683,19 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         double z = target.getZ() - this.getZ();
         double horizontal = Math.sqrt(x * x + z * z);
 
-        Projectile.spawnProjectileUsingShoot(arrow, level, ammo, x, y + horizontal * 0.2, z, 1.6f, 6.0f);
+        arrow.shoot(x, y + horizontal * 0.2, z, 1.6f, 6.0f);
+        level.addFreshEntity(arrow);
         this.playSound(
                 KindredSounds.MINI_PLAYER_BOW.get(),
                 1.0f,
                 1.0f / (this.getRandom().nextFloat() * 0.4f + 0.8f));
     }
 
-    public boolean isAbilityReady(Identifier ability) {
+    public boolean isAbilityReady(ResourceLocation ability) {
         return this.abilityCooldownTicks(ability) <= 0;
     }
 
-    public void setAbilityCooldown(Identifier ability, int ticks) {
+    public void setAbilityCooldown(ResourceLocation ability, int ticks) {
         this.abilityCooldowns.put(ability, this.level().getGameTime() + Math.max(0, ticks));
     }
 
@@ -1720,7 +1745,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
         for (LivingEntity victim :
                 this.hostilesWithin(level, this.getBoundingBox().inflate(impact.radius), target)) {
-            victim.hurtServer(level, source, victim == target ? impact.damage : impact.damage * 0.5f);
+            victim.hurt(source, victim == target ? impact.damage : impact.damage * 0.5f);
             victim.knockback(impact.knockback, this.getX() - victim.getX(), this.getZ() - victim.getZ());
         }
 
@@ -1847,7 +1872,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
 
         for (LivingEntity hostile :
                 this.hostilesWithin(level, this.getBoundingBox().inflate(BATTERY_SHOCK_RADIUS), null)) {
-            hostile.hurtServer(level, shock, BATTERY_SHOCK_DAMAGE);
+            hostile.hurt(shock, BATTERY_SHOCK_DAMAGE);
             CompanionAbilities.hitParticles(level, hostile, KindredParticles.GREMLIN_SPARK.get(), 8, 0.5, 0.3, 0.02);
         }
     }
@@ -1930,7 +1955,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
                 .create(LootContextParamSets.GIFT);
 
         for (ItemStack stack : table.getRandomItems(params)) {
-            this.spawnAtLocation(level, stack);
+            this.spawnAtLocation(stack);
         }
 
         this.burst(KindredParticles.EARTH_IMPACT.get(), 8);
@@ -2032,7 +2057,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     @Override
-    public boolean doHurtTarget(ServerLevel level, Entity target) {
+    public boolean doHurtTarget(Entity target) {
         if (!this.isAlive()
                 || !this.isBonded()
                 || !CompanionAbilities.enabled()
@@ -2040,7 +2065,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
             return false;
         }
 
-        boolean hit = super.doHurtTarget(level, target);
+        boolean hit = super.doHurtTarget(target);
         if (hit) {
             this.playAction(
                     CompanionAnimations.ATTACK, this.species.sounds().attack().get(), 0.9f, 1.0f);
@@ -2049,9 +2074,9 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     @Override
-    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
-        boolean hurt = super.hurtServer(level, source, damage);
-        if (hurt && this.isAlive()) {
+    public boolean hurt(DamageSource source, float damage) {
+        boolean hurt = super.hurt(source, damage);
+        if (hurt && this.isAlive() && this.level() instanceof ServerLevel level) {
             this.playCompanionAnim(CompanionAnimations.HURT);
             if (this.species == CompanionSpecies.QUOKKA
                     && !this.isTame()
@@ -2067,40 +2092,43 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     }
 
     @Override
-    public @Nullable Entity teleport(TeleportTransition transition) {
+    public @Nullable Entity changeDimension(DimensionTransition transition) {
         if (this.level() instanceof ServerLevel level && transition.newLevel() != level) {
             this.lights.clear(level);
         }
-        return super.teleport(transition);
+        return super.changeDimension(transition);
     }
 
     @Override
     protected void tickDeath() {
         this.deathTime++;
         int duration = this.species == CompanionSpecies.TREX ? 58 : this.species == CompanionSpecies.GREMLIN ? 30 : 20;
-        if (this.deathTime >= duration && !this.level().isClientSide() && !this.isRemoved()) {
+        if (this.deathTime >= duration && !this.level().isClientSide && !this.isRemoved()) {
             this.level().broadcastEntityEvent(this, (byte) 60);
             this.remove(RemovalReason.KILLED);
         }
     }
 
     @Override
-    public void onRemoval(RemovalReason reason) {
-        if (reason == RemovalReason.UNLOADED_TO_CHUNK
-                && this.isAlive()
-                && !this.level().isClientSide()) {
+    public void onRemovedFromLevel() {
+        RemovalReason reason = this.getRemovalReason();
+        if (reason == null) {
+            super.onRemovedFromLevel();
+            return;
+        }
+        if (reason == RemovalReason.UNLOADED_TO_CHUNK && this.isAlive() && !this.level().isClientSide) {
             this.recordLocation();
         }
         if ((reason.shouldDestroy() || reason == RemovalReason.UNLOADED_TO_CHUNK)
                 && this.level() instanceof ServerLevel serverLevel) {
             this.lights.clear(serverLevel);
         }
-        super.onRemoval(reason);
+        super.onRemovedFromLevel();
     }
 
     @Override
     public void die(DamageSource source) {
-        if (!this.level().isClientSide()) {
+        if (!this.level().isClientSide) {
             this.setTarget(null);
             this.pendingImpact = null;
             this.digPos = null;
@@ -2139,7 +2167,8 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         AnimationController<CompanionEntity> action =
-                new AnimationController<CompanionEntity>(ACTION_CONTROLLER, 3, test -> PlayState.STOP);
+                new AnimationController<CompanionEntity>(this, ACTION_CONTROLLER, 3, test -> PlayState.STOP);
+        this.actionController = action;
 
         addTriggerable(action, CompanionAnimations.ATTACK, ATTACK);
         addTriggerable(action, CompanionAnimations.SPECIAL_ATTACK, SPECIAL_ATTACK);
@@ -2150,7 +2179,7 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         addTriggerable(action, CompanionAnimations.SPAWN, SPAWN);
         addTriggerable(action, CompanionAnimations.INTERACT, INTERACT);
 
-        controllers.add(new AnimationController<CompanionEntity>(MAIN_CONTROLLER, 5, this::animateMain));
+        controllers.add(new AnimationController<CompanionEntity>(this, MAIN_CONTROLLER, 5, this::animateMain));
         controllers.add(action);
     }
 
@@ -2160,17 +2189,16 @@ public class CompanionEntity extends TamableAnimal implements GeoEntity, RangedA
         }
     }
 
-    private PlayState animateMain(AnimationTest<CompanionEntity> test) {
-        CompanionEntity companion = test.animatable();
+    private PlayState animateMain(AnimationState<CompanionEntity> test) {
+        CompanionEntity companion = test.getAnimatable();
         CompanionSpecies species = companion.species();
 
         if (companion.isDeadOrDying() && species.hasAnimation(CompanionAnimations.DEATH)) {
             return test.setAndContinue(DEATH);
         }
 
-        AnimationController<CompanionEntity> action =
-                test.manager().getAnimationControllers().get(ACTION_CONTROLLER);
-        if (action != null && action.isPlayingTriggeredAnimation() && !action.hasAnimationFinished()) {
+        AnimationController<CompanionEntity> action = companion.actionController;
+        if (action != null && action.isPlayingTriggeredAnimation()) {
             return PlayState.STOP;
         }
 

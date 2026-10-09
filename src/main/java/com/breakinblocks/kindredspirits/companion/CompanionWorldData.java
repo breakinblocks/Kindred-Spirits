@@ -44,19 +44,22 @@ public final class CompanionWorldData {
     public static final Supplier<AttachmentType<List<Death>>> DEATHS = KindredAttachments.ATTACHMENT_TYPES.register(
             "pending_deaths",
             () -> AttachmentType.<List<Death>>builder(() -> List.of())
-                    .serialize(Death.CODEC.listOf().fieldOf("deaths"))
+                    .serialize(Death.CODEC.listOf().fieldOf("deaths").codec())
                     .build());
     public static final Supplier<AttachmentType<List<LightRemoval>>> LIGHT_REMOVALS =
             KindredAttachments.ATTACHMENT_TYPES.register(
                     "pending_light_removals",
                     () -> AttachmentType.<List<LightRemoval>>builder(() -> List.of())
-                            .serialize(LightRemoval.CODEC.listOf().fieldOf("lights"))
+                            .serialize(LightRemoval.CODEC
+                                    .listOf()
+                                    .fieldOf("lights")
+                                    .codec())
                             .build());
 
     public static final Supplier<AttachmentType<List<UUID>>> ABANDONED = KindredAttachments.ATTACHMENT_TYPES.register(
             "abandoned_companions",
             () -> AttachmentType.<List<UUID>>builder(() -> List.of())
-                    .serialize(UUIDUtil.CODEC.listOf().fieldOf("companions"))
+                    .serialize(UUIDUtil.CODEC.listOf().fieldOf("companions").codec())
                     .build());
 
     public static void init() {}

@@ -2,7 +2,8 @@
   "parent": "kindredspirits:prestige",
   "display": {
     "icon": {
-      "id": "minecraft:beacon"
+      "id": "minecraft:beacon",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.stars_max.title"

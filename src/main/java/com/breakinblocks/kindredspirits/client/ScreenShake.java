@@ -3,7 +3,7 @@ package com.breakinblocks.kindredspirits.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.neoforged.neoforge.client.event.ViewportEvent;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public final class ScreenShake {
     private static final int DURATION_TICKS = 12;

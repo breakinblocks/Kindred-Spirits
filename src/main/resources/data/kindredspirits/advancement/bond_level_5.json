@@ -2,7 +2,8 @@
   "parent": "kindredspirits:bond_companion",
   "display": {
     "icon": {
-      "id": "minecraft:poppy"
+      "id": "minecraft:poppy",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.bond_level_5.title"

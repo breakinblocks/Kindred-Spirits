@@ -16,7 +16,7 @@ import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.component.ItemContainerContents;
@@ -31,7 +31,7 @@ public final class KindredAttachments {
     public static final Supplier<AttachmentType<Long>> CHARMED = ATTACHMENT_TYPES.register(
             "charmed",
             () -> AttachmentType.builder(() -> 0L)
-                    .serialize(Codec.LONG.fieldOf("until"))
+                    .serialize(Codec.LONG.fieldOf("until").codec())
                     .build());
 
     public static final Supplier<AttachmentType<Long>> QUOKKA_AGED_AT = ATTACHMENT_TYPES.register(
@@ -64,7 +64,7 @@ public final class KindredAttachments {
     public static final Supplier<AttachmentType<BondRecord>> BOND_RECORD = ATTACHMENT_TYPES.register(
             "bond_record",
             () -> AttachmentType.builder(() -> BondRecord.DEFAULT)
-                    .serialize(BondRecord.CODEC)
+                    .serialize(BondRecord.CODEC.codec())
                     .copyOnDeath()
                     .build());
 
@@ -73,7 +73,7 @@ public final class KindredAttachments {
             Optional<CompanionSnapshot> snapshot,
             boolean stored,
             long reviveReadyAt,
-            Optional<Identifier> lastDimension,
+            Optional<ResourceLocation> lastDimension,
             Optional<BlockPos> lastPos) {
         public static final CompanionBond NONE =
                 new CompanionBond(Optional.empty(), Optional.empty(), true, 0L, Optional.empty(), Optional.empty());
@@ -83,7 +83,9 @@ public final class KindredAttachments {
                         CompanionSnapshot.CODEC.optionalFieldOf("snapshot").forGetter(CompanionBond::snapshot),
                         Codec.BOOL.optionalFieldOf("stored", true).forGetter(CompanionBond::stored),
                         Codec.LONG.optionalFieldOf("revive_ready_at", 0L).forGetter(CompanionBond::reviveReadyAt),
-                        Identifier.CODEC.optionalFieldOf("last_dimension").forGetter(CompanionBond::lastDimension),
+                        ResourceLocation.CODEC
+                                .optionalFieldOf("last_dimension")
+                                .forGetter(CompanionBond::lastDimension),
                         BlockPos.CODEC.optionalFieldOf("last_pos").forGetter(CompanionBond::lastPos))
                 .apply(instance, CompanionBond::new));
 
@@ -96,7 +98,7 @@ public final class KindredAttachments {
                 CompanionBond::stored,
                 ByteBufCodecs.VAR_LONG,
                 CompanionBond::reviveReadyAt,
-                ByteBufCodecs.optional(Identifier.STREAM_CODEC),
+                ByteBufCodecs.optional(ResourceLocation.STREAM_CODEC),
                 CompanionBond::lastDimension,
                 ByteBufCodecs.optional(BlockPos.STREAM_CODEC),
                 CompanionBond::lastPos,
@@ -134,7 +136,7 @@ public final class KindredAttachments {
                     this.companion, this.snapshot, this.stored, readyAt, this.lastDimension, this.lastPos);
         }
 
-        public CompanionBond withLocation(Identifier dimension, BlockPos pos) {
+        public CompanionBond withLocation(ResourceLocation dimension, BlockPos pos) {
             return new CompanionBond(
                     this.companion,
                     this.snapshot,
@@ -185,7 +187,7 @@ public final class KindredAttachments {
     public static final Supplier<AttachmentType<Boolean>> BOTTLE_XP = ATTACHMENT_TYPES.register(
             "bottle_xp",
             () -> AttachmentType.builder(() -> false)
-                    .serialize(Codec.BOOL.fieldOf("bottle"))
+                    .serialize(Codec.BOOL.fieldOf("bottle").codec())
                     .build());
 
     public static final Supplier<AttachmentType<Long>> ORB_XP_PICKUP = ATTACHMENT_TYPES.register(
@@ -194,20 +196,20 @@ public final class KindredAttachments {
     public static final Supplier<AttachmentType<Optional<UUID>>> RABBIT_FED_BY = ATTACHMENT_TYPES.register(
             "rabbit_fed_by",
             () -> AttachmentType.<Optional<UUID>>builder(() -> Optional.empty())
-                    .serialize(UUIDUtil.CODEC.optionalFieldOf("player"))
+                    .serialize(UUIDUtil.CODEC.optionalFieldOf("player").codec())
                     .build());
 
     public static final Supplier<AttachmentType<ItemContainerContents>> COMPANION_STORAGE = ATTACHMENT_TYPES.register(
             "companion_storage",
             () -> AttachmentType.builder(() -> ItemContainerContents.EMPTY)
-                    .serialize(ItemContainerContents.CODEC.fieldOf("items"))
+                    .serialize(ItemContainerContents.CODEC.fieldOf("items").codec())
                     .copyOnDeath()
                     .build());
 
     public static final Supplier<AttachmentType<CompanionBond>> COMPANION_BOND = ATTACHMENT_TYPES.register(
             "companion_bond",
             () -> AttachmentType.builder(() -> CompanionBond.NONE)
-                    .serialize(CompanionBond.CODEC)
+                    .serialize(CompanionBond.CODEC.codec())
                     .sync((holder, to) -> holder == to, CompanionBond.STREAM_CODEC)
                     .copyOnDeath()
                     .build());
@@ -232,7 +234,7 @@ public final class KindredAttachments {
                     .build());
 
     public static void syncTooltip(Player player) {
-        if (player.level().isClientSide()) return;
+        if (player.level().isClientSide) return;
         TooltipProgress progress = bond(player)
                 .snapshot()
                 .map(snapshot -> new TooltipProgress(

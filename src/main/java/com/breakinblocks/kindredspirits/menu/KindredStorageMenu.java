@@ -11,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public class KindredStorageMenu extends AbstractContainerMenu {
     private static final double REACH_SQR = 64.0;
@@ -42,7 +42,15 @@ public class KindredStorageMenu extends AbstractContainerMenu {
             }
         }
 
-        this.addStandardInventorySlots(playerInventory, 8, 18 + rows * 18 + 13);
+        int inventoryY = 18 + rows * 18 + 13;
+        for (int row = 0; row < 3; row++) {
+            for (int column = 0; column < 9; column++) {
+                this.addSlot(new Slot(playerInventory, column + row * 9 + 9, 8 + column * 18, inventoryY + row * 18));
+            }
+        }
+        for (int column = 0; column < 9; column++) {
+            this.addSlot(new Slot(playerInventory, column, 8 + column * 18, inventoryY + 58));
+        }
     }
 
     public static KindredStorageMenu client(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf data) {

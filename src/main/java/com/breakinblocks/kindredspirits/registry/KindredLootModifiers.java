@@ -25,8 +25,8 @@ public final class KindredLootModifiers {
         private static final MapCodec<TrexEgg> CODEC =
                 RecordCodecBuilder.mapCodec(i -> codecStart(i).apply(i, TrexEgg::new));
 
-        public TrexEgg(LootItemCondition[] conditions, int priority) {
-            super(conditions, priority);
+        public TrexEgg(LootItemCondition[] conditions) {
+            super(conditions);
         }
 
         @Override

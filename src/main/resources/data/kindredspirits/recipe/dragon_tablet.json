@@ -2,9 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "A": "minecraft:amethyst_shard",
-    "B": "minecraft:dragon_breath",
-    "S": "minecraft:smooth_stone"
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "B": {
+      "item": "minecraft:dragon_breath"
+    },
+    "S": {
+      "item": "minecraft:smooth_stone"
+    }
   },
   "pattern": [
     "ASA",
@@ -12,6 +18,7 @@
     "ASA"
   ],
   "result": {
-    "id": "kindredspirits:dragon_tablet"
+    "id": "kindredspirits:dragon_tablet",
+    "count": 1
   }
 }

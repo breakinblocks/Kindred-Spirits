@@ -2,9 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "#": "minecraft:gold_ingot",
-    "X": "minecraft:amethyst_shard",
-    "S": "minecraft:string"
+    "#": {
+      "item": "minecraft:gold_ingot"
+    },
+    "X": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "S": {
+      "item": "minecraft:string"
+    }
   },
   "pattern": [
     " # ",
@@ -12,6 +18,7 @@
     " S "
   ],
   "result": {
-    "id": "kindredspirits:kindred_charm"
+    "id": "kindredspirits:kindred_charm",
+    "count": 1
   }
 }

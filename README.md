@@ -1,6 +1,6 @@
 # Kindred Spirits
 
-A pet companion mod for Minecraft 26.1.2 on NeoForge. Bond with a spirit
+A pet companion mod for Minecraft 1.21.1 on NeoForge. Bond with a spirit
 companion, keep it alive and fed, and it grows with you: gaining levels, raising
 its bond, and unlocking abilities that change how it fights and helps you.
 
@@ -23,7 +23,7 @@ animations, stat curve and ability set.
 ./gradlew build
 ```
 
-Output jar: `build/libs/kindredspirits-26.1.2-<version>.jar`
+Output jar: `build/libs/kindredspirits-1.21.1-<version>.jar`
 
 Releases use a plain version, `mod_version=1.0.0` in `gradle.properties`, and
 publish to the BreakInBlocks releases Maven repository with `./gradlew publishMaven`,
@@ -31,7 +31,7 @@ using `MAVEN_USER` and `MAVEN_TOKEN` from the environment. Development builds be
 releases use a numbered snapshot of the next version, for example
 `mod_version=1.0.1-SNAPSHOT.<n>`, which publishes to the snapshots repository instead;
 increment the final snapshot number for each development build. The Maven version
-includes the Minecraft prefix, for example `26.1.2-1.0.0`; the in-game mod version is
+includes the Minecraft prefix, for example `1.21.1-1.0.0`; the in-game mod version is
 `1.0.0`.
 
 Run the dev client with `./gradlew runClient`.

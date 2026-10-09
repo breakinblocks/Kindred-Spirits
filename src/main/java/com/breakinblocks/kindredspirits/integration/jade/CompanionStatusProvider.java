@@ -5,7 +5,7 @@ import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -14,10 +14,10 @@ import snownee.jade.api.config.IPluginConfig;
 public enum CompanionStatusProvider implements IEntityComponentProvider {
     INSTANCE;
 
-    private static final Identifier UID = KindredSpirits.id("companion_status");
+    private static final ResourceLocation UID = KindredSpirits.id("companion_status");
 
     @Override
-    public Identifier getUid() {
+    public ResourceLocation getUid() {
         return UID;
     }
 

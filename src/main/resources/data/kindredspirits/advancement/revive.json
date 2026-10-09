@@ -2,7 +2,8 @@
   "parent": "kindredspirits:bond_companion",
   "display": {
     "icon": {
-      "id": "minecraft:totem_of_undying"
+      "id": "minecraft:totem_of_undying",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.revive.title"

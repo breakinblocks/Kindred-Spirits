@@ -2,7 +2,8 @@
   "parent": "kindredspirits:bond_level_15",
   "display": {
     "icon": {
-      "id": "minecraft:heart_of_the_sea"
+      "id": "minecraft:heart_of_the_sea",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.bond_level_max.title"

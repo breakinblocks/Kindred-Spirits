@@ -7,7 +7,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.ChunkPos;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public final class CompanionProgress {
     public static final int REST_DELAY_TICKS = 5 * 60 * 20;
@@ -23,22 +23,30 @@ public final class CompanionProgress {
                     Codec.LONG.optionalFieldOf("last_tick", 0L).forGetter(p -> p.lastTick))
             .apply(instance, CompanionProgress::new));
 
-    public static final StreamCodec<ByteBuf, CompanionProgress> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.VAR_INT,
-            p -> p.saturation,
-            ByteBufCodecs.VAR_LONG,
-            p -> p.anchor,
-            ByteBufCodecs.VAR_INT,
-            p -> p.rested,
-            ByteBufCodecs.VAR_LONG,
-            p -> p.lastGain,
-            ByteBufCodecs.VAR_LONG,
-            p -> p.feedReadyAt,
-            ByteBufCodecs.DOUBLE,
-            p -> p.fractionalShare,
-            ByteBufCodecs.VAR_LONG,
-            p -> p.lastTick,
-            CompanionProgress::new);
+    public static final StreamCodec<ByteBuf, CompanionProgress> STREAM_CODEC = new StreamCodec<>() {
+        @Override
+        public CompanionProgress decode(ByteBuf buffer) {
+            return new CompanionProgress(
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    ByteBufCodecs.VAR_LONG.decode(buffer),
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    ByteBufCodecs.VAR_LONG.decode(buffer),
+                    ByteBufCodecs.VAR_LONG.decode(buffer),
+                    ByteBufCodecs.DOUBLE.decode(buffer),
+                    ByteBufCodecs.VAR_LONG.decode(buffer));
+        }
+
+        @Override
+        public void encode(ByteBuf buffer, CompanionProgress progress) {
+            ByteBufCodecs.VAR_INT.encode(buffer, progress.saturation);
+            ByteBufCodecs.VAR_LONG.encode(buffer, progress.anchor);
+            ByteBufCodecs.VAR_INT.encode(buffer, progress.rested);
+            ByteBufCodecs.VAR_LONG.encode(buffer, progress.lastGain);
+            ByteBufCodecs.VAR_LONG.encode(buffer, progress.feedReadyAt);
+            ByteBufCodecs.DOUBLE.encode(buffer, progress.fractionalShare);
+            ByteBufCodecs.VAR_LONG.encode(buffer, progress.lastTick);
+        }
+    };
 
     private int saturation;
     private long anchor;
@@ -132,7 +140,7 @@ public final class CompanionProgress {
         this.lastGain = gameTime;
 
         if (this.anchor == NO_ANCHOR && ownerChunk != null) {
-            this.anchor = ownerChunk.pack();
+            this.anchor = ownerChunk.toLong();
         }
 
         return (int) Math.min(Integer.MAX_VALUE, (long) gained + bonus);
@@ -156,7 +164,7 @@ public final class CompanionProgress {
 
         if (this.anchor != NO_ANCHOR
                 && ownerChunk != null
-                && ChunkPos.unpack(this.anchor).getChessboardDistance(ownerChunk)
+                && new ChunkPos(this.anchor).getChessboardDistance(ownerChunk)
                         >= KindredConfig.COMMON.saturationResetChunks.get()) {
             this.saturation = 0;
             this.anchor = NO_ANCHOR;

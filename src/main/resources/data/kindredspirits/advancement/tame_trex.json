@@ -2,7 +2,8 @@
   "parent": "kindredspirits:tame_companion",
   "display": {
     "icon": {
-      "id": "kindredspirits:trex_egg"
+      "id": "kindredspirits:trex_egg",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.tame_trex.title"

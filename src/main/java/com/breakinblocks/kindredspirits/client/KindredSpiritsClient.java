@@ -10,23 +10,19 @@ import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredMenus;
-import com.google.common.reflect.TypeToken;
-import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraft.world.entity.Entity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID, value = Dist.CLIENT)
 public final class KindredSpiritsClient {
@@ -37,13 +33,7 @@ public final class KindredSpiritsClient {
         modEventBus.addListener(KindredKeyMappings::register);
         modEventBus.addListener(KindredParticle::register);
         modEventBus.addListener(KindredSpiritsClient::registerScreens);
-        modEventBus.addListener(KindredSpiritsClient::registerRenderStateModifiers);
         modEventBus.addListener(KindredSpiritsClient::registerReloadListeners);
-    }
-
-    private static void registerRenderStateModifiers(RegisterRenderStateModifiersEvent event) {
-        event.registerEntityModifier(
-                new TypeToken<EntityRenderer<Entity, EntityRenderState>>() {}, PackGlowOverlay::outline);
     }
 
     private static void clientSetup(FMLClientSetupEvent event) {
@@ -54,9 +44,8 @@ public final class KindredSpiritsClient {
         event.register(KindredMenus.COMPANION_STORAGE.get(), KindredStorageScreen::new);
     }
 
-    private static void registerReloadListeners(AddClientReloadListenersEvent event) {
-        event.addListener(KindredSpirits.id("companion_skins"), (ResourceManagerReloadListener)
-                resourceManager -> CompanionSkins.clear());
+    private static void registerReloadListeners(RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> CompanionSkins.clear());
     }
 
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -76,11 +65,16 @@ public final class KindredSpiritsClient {
         OreRevealOverlay.clientTick();
         PackGlowOverlay.clientTick();
         while (KindredKeyMappings.CYCLE_COMMAND.consumeClick()) {
-            ClientPacketDistributor.sendToServer(KindredNetworking.CycleCommandPayload.INSTANCE);
+            PacketDistributor.sendToServer(KindredNetworking.CycleCommandPayload.INSTANCE);
         }
         while (KindredKeyMappings.OPEN_CHARM.consumeClick()) {
-            ClientPacketDistributor.sendToServer(KindredNetworking.OpenCharmPayload.INSTANCE);
+            PacketDistributor.sendToServer(KindredNetworking.OpenCharmPayload.INSTANCE);
         }
+    }
+
+    @SubscribeEvent
+    public static void onRenderLevelStage(RenderLevelStageEvent event) {
+        OreRevealOverlay.render(event);
     }
 
     @SubscribeEvent

@@ -15,10 +15,10 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.animal.fox.Fox;
-import net.minecraft.world.entity.animal.rabbit.Rabbit;
-import net.minecraft.world.entity.animal.wolf.Wolf;
-import net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader;
+import net.minecraft.world.entity.animal.Fox;
+import net.minecraft.world.entity.animal.Rabbit;
+import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.ItemCost;
@@ -31,7 +31,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class CompanionObtainEvents {
@@ -135,13 +135,13 @@ public final class CompanionObtainEvents {
                 direwolf.setEquipment(armour);
             }
         } else if (!armour.isEmpty()) {
-            direwolf.spawnAtLocation((ServerLevel) direwolf.level(), armour);
+            direwolf.spawnAtLocation(armour);
         }
     }
 
     private static void interactRabbit(PlayerInteractEvent.EntityInteract event, Rabbit rabbit, ItemStack stack) {
         if (stack.is(Items.CARROT)) {
-            if (!event.getLevel().isClientSide()) {
+            if (!event.getLevel().isClientSide) {
                 rabbit.setData(
                         KindredAttachments.RABBIT_FED_BY,
                         Optional.of(event.getEntity().getUUID()));
@@ -161,7 +161,7 @@ public final class CompanionObtainEvents {
     }
 
     private static boolean isWitchingHour(Level level) {
-        long timeOfDay = level.getDefaultClockTime() % TICKS_PER_DAY;
+        long timeOfDay = level.getDayTime() % TICKS_PER_DAY;
         return timeOfDay >= GREMLIN_HOUR_START && timeOfDay < GREMLIN_HOUR_END;
     }
 
@@ -170,7 +170,7 @@ public final class CompanionObtainEvents {
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
 
-        if (event.getLevel().isClientSide()) {
+        if (event.getLevel().isClientSide) {
             return null;
         }
 

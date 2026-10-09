@@ -10,19 +10,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 public final class CompanionSkins {
     private static final String FOLDER = "textures/entity";
     private static final String PNG = ".png";
-    private static final Map<Identifier, Boolean> PRESENT = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, Boolean> PRESENT = new ConcurrentHashMap<>();
     private static final Map<CompanionSpecies, List<String>> AVAILABLE = new ConcurrentHashMap<>();
 
-    public static Identifier skinned(Identifier texture, String skin) {
+    public static ResourceLocation skinned(ResourceLocation texture, String skin) {
         if (skin.isEmpty() || !texture.getPath().endsWith(PNG)) {
             return texture;
         }
-        Identifier candidate = texture.withPath(
+        ResourceLocation candidate = texture.withPath(
                 path -> path.substring(0, path.length() - PNG.length()) + CompanionSkin.MARKER + skin + PNG);
         return exists(candidate) ? candidate : texture;
     }
@@ -46,7 +46,7 @@ public final class CompanionSkins {
         return Component.literal(words.substring(0, 1).toUpperCase(Locale.ROOT) + words.substring(1));
     }
 
-    public static boolean exists(Identifier texture) {
+    public static boolean exists(ResourceLocation texture) {
         return PRESENT.computeIfAbsent(
                 texture,
                 id -> Minecraft.getInstance()

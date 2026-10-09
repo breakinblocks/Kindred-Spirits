@@ -11,28 +11,29 @@ import com.breakinblocks.kindredspirits.net.KindredNetworking.CharmActionPayload
 import com.breakinblocks.kindredspirits.net.KindredNetworking.CharmActionPayload.Action;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.Util;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.jspecify.annotations.Nullable;
 
 public class KindredCharmScreen extends Screen {
     private static final int PANEL_WIDTH = 288;
@@ -101,6 +102,8 @@ public class KindredCharmScreen extends Screen {
     private static final int PORTRAIT_SCALE = 42;
     private static final float PORTRAIT_REST_YAW = 25.0f;
     private static final float PORTRAIT_DRAG_SPEED = 2.0f;
+    private static final long DOUBLE_CLICK_MILLIS = 250L;
+    private static final float POPUP_Z = 300.0f;
 
     private CharmView view;
     private int refreshTimer;
@@ -114,6 +117,8 @@ public class KindredCharmScreen extends Screen {
     private int panelHeight;
     private float portraitYaw = PORTRAIT_REST_YAW;
     private boolean draggingPortrait;
+    private long lastPortraitClick;
+    private @Nullable Runnable pendingTooltip;
 
     private Button summonButton;
     private Button dismissButton;
@@ -193,7 +198,7 @@ public class KindredCharmScreen extends Screen {
         List<String> choices = this.skinChoices();
         int index = choices.indexOf(this.view.skin());
         String next = index + 1 < choices.size() ? choices.get(index + 1) : "";
-        ClientPacketDistributor.sendToServer(new CharmActionPayload(Action.SET_SKIN, 0, next));
+        PacketDistributor.sendToServer(new CharmActionPayload(Action.SET_SKIN, 0, next));
     }
 
     private int portraitBottom() {
@@ -336,18 +341,11 @@ public class KindredCharmScreen extends Screen {
     }
 
     private void drawPanel(
-            GuiGraphicsExtractor graphics,
-            int left,
-            int top,
-            int width,
-            int height,
-            Component title,
-            int titleX,
-            int titleY) {
+            GuiGraphics graphics, int left, int top, int width, int height, Component title, int titleX, int titleY) {
         graphics.fill(left - 1, top - 1, left + width + 1, top + height + 1, COLOUR_EDGE);
         graphics.fill(left, top, left + width, top + height, COLOUR_PANEL);
         graphics.fill(left, top, left + width, top + 2, COLOUR_ACCENT);
-        graphics.text(this.font, title, titleX, titleY, COLOUR_TITLE);
+        graphics.drawString(this.font, title, titleX, titleY, COLOUR_TITLE);
     }
 
     private void openPopup(Popup popup) {
@@ -469,26 +467,38 @@ public class KindredCharmScreen extends Screen {
     }
 
     private void send(Action action, int value) {
-        ClientPacketDistributor.sendToServer(new CharmActionPayload(action, value));
+        PacketDistributor.sendToServer(new CharmActionPayload(action, value));
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, COLOUR_BACKDROP);
 
         this.drawPanel(
                 graphics, this.left, this.top, PANEL_WIDTH, this.panelHeight, this.title, this.left + 10, this.top + 9);
+    }
 
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.pendingTooltip = null;
+        super.render(graphics, mouseX, mouseY, partialTick);
+        this.renderContents(graphics, mouseX, mouseY, partialTick);
 
+        if (this.pendingTooltip != null) {
+            this.pendingTooltip.run();
+            this.pendingTooltip = null;
+        }
+    }
+
+    private void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (!this.view.bound()) {
-            graphics.text(
+            graphics.drawString(
                     this.font,
                     Component.translatable("screen.kindredspirits.unbound"),
                     this.left + PAD,
                     this.top + CONTENT_Y,
                     COLOUR_VALUE);
-            graphics.textWithWordWrap(
+            graphics.drawWordWrap(
                     this.font,
                     Component.translatable("screen.kindredspirits.unbound_hint"),
                     this.left + PAD,
@@ -497,7 +507,7 @@ public class KindredCharmScreen extends Screen {
                     COLOUR_LABEL);
 
             if (this.view.companionsBonded() > 0) {
-                graphics.text(
+                graphics.drawString(
                         this.font,
                         Component.translatable("screen.kindredspirits.stat_bonded", this.view.companionsBonded()),
                         this.left + PAD,
@@ -505,7 +515,7 @@ public class KindredCharmScreen extends Screen {
                         COLOUR_LABEL);
             }
             if (this.view.highestLevel() > 0) {
-                graphics.text(
+                graphics.drawString(
                         this.font,
                         Component.translatable("screen.kindredspirits.stat_highest_level", this.view.highestLevel()),
                         this.left + PAD,
@@ -513,7 +523,7 @@ public class KindredCharmScreen extends Screen {
                         COLOUR_LABEL);
             }
             if (this.view.highestStars() > 0) {
-                graphics.text(
+                graphics.drawString(
                         this.font,
                         Component.translatable(
                                 "screen.kindredspirits.stat_highest_stars",
@@ -525,15 +535,18 @@ public class KindredCharmScreen extends Screen {
             return;
         }
 
-        this.renderPortrait(graphics, mouseX, mouseY);
+        this.renderPortrait(graphics, mouseX, mouseY, partialTick);
         this.renderStats(graphics);
 
         if (this.popup != null) {
+            graphics.pose().pushPose();
+            graphics.pose().translate(0.0f, 0.0f, POPUP_Z);
             this.popup.render(graphics, mouseX, mouseY, partialTick);
+            graphics.pose().popPose();
         }
     }
 
-    private void renderPortrait(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void renderPortrait(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         int x0 = this.left + PAD;
         int y0 = this.top + CONTENT_Y;
         int x1 = x0 + PORTRAIT_WIDTH;
@@ -544,10 +557,10 @@ public class KindredCharmScreen extends Screen {
 
         CompanionEntity entity = this.displayEntity();
         if (entity != null) {
-            this.renderPortraitEntity(graphics, x0 + 2, y0 + 2, x1 - 2, y1 - 2, entity);
+            this.renderPortraitEntity(graphics, x0 + 2, y0 + 2, x1 - 2, y1 - 2, entity, partialTick);
         }
 
-        graphics.text(
+        graphics.drawString(
                 this.font,
                 Component.translatable(
                         this.view.present()
@@ -563,31 +576,45 @@ public class KindredCharmScreen extends Screen {
     }
 
     private void renderPortraitEntity(
-            GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, CompanionEntity entity) {
-        EntityRenderState state =
-                this.minecraft.getEntityRenderDispatcher().getRenderer(entity).createRenderState(entity, 1.0f);
-        state.shadowPieces.clear();
-        state.outlineColor = 0;
-        if (state instanceof LivingEntityRenderState living) {
-            living.bodyRot = 180.0f + this.portraitYaw;
-            living.yRot = 0.0f;
-            living.xRot = 0.0f;
-            living.boundingBoxWidth = living.boundingBoxWidth / living.scale;
-            living.boundingBoxHeight = living.boundingBoxHeight / living.scale;
-            living.scale = 1.0f;
-        }
+            GuiGraphics graphics, int x0, int y0, int x1, int y1, CompanionEntity entity, float partialTick) {
+        float bodyRot = 180.0f + this.portraitYaw;
+        entity.yBodyRot = bodyRot;
+        entity.yBodyRotO = bodyRot;
+        entity.setYRot(bodyRot);
+        entity.yRotO = bodyRot;
+        entity.yHeadRot = bodyRot;
+        entity.yHeadRotO = bodyRot;
+        entity.setXRot(0.0f);
+        entity.xRotO = 0.0f;
 
-        Vector3f translation = new Vector3f(0.0f, state.boundingBoxHeight / 2.0f, 0.0f);
-        graphics.entity(
-                state,
-                PORTRAIT_SCALE,
-                translation,
-                new Quaternionf().rotateZ((float) Math.PI),
-                new Quaternionf(),
-                x0,
-                y0,
-                x1,
-                y1);
+        float scale = PORTRAIT_SCALE / entity.getScale();
+        Vector3f translation = new Vector3f(0.0f, entity.getBbHeight() / 2.0f, 0.0f);
+
+        graphics.enableScissor(x0, y0, x1, y1);
+        graphics.pose().pushPose();
+        graphics.pose().translate((x0 + x1) / 2.0f, (y0 + y1) / 2.0f, 50.0f);
+        graphics.pose().scale(scale, scale, -scale);
+        graphics.pose().translate(translation.x, translation.y, translation.z);
+        graphics.pose().mulPose(new Quaternionf().rotateZ((float) Math.PI));
+        Lighting.setupForEntityInInventory();
+        EntityRenderDispatcher dispatcher = this.minecraft.getEntityRenderDispatcher();
+        dispatcher.overrideCameraOrientation(new Quaternionf().rotateY((float) Math.PI));
+        dispatcher.setRenderShadow(false);
+        RenderSystem.runAsFancy(() -> dispatcher.render(
+                entity,
+                0.0,
+                0.0,
+                0.0,
+                0.0f,
+                partialTick,
+                graphics.pose(),
+                graphics.bufferSource(),
+                LightTexture.FULL_BRIGHT));
+        graphics.flush();
+        dispatcher.setRenderShadow(true);
+        graphics.pose().popPose();
+        Lighting.setupFor3DItems();
+        graphics.disableScissor();
     }
 
     private boolean overPortrait(double x, double y) {
@@ -596,11 +623,11 @@ public class KindredCharmScreen extends Screen {
         return x >= x0 && x < x0 + PORTRAIT_WIDTH && y >= y0 && y < this.top + this.portraitBottom();
     }
 
-    private void renderEquipment(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
+    private void renderEquipment(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
         ItemStack equipment = this.view.equipment();
 
         if (equipment.isEmpty()) {
-            graphics.text(
+            graphics.drawString(
                     this.font,
                     Component.translatable("screen.kindredspirits.no_equipment"),
                     x,
@@ -609,8 +636,8 @@ public class KindredCharmScreen extends Screen {
             return;
         }
 
-        graphics.item(equipment, x, y);
-        graphics.text(
+        graphics.renderItem(equipment, x, y);
+        graphics.drawString(
                 this.font,
                 this.font.plainSubstrByWidth(
                         equipment.getHoverName().getString(), PORTRAIT_WIDTH - EQUIPMENT_ICON - UNEQUIP_WIDTH - 8),
@@ -619,21 +646,21 @@ public class KindredCharmScreen extends Screen {
                 COLOUR_VALUE);
 
         if (mouseX >= x && mouseX < x + PORTRAIT_WIDTH - UNEQUIP_WIDTH && mouseY >= y && mouseY < y + EQUIPMENT_ICON) {
-            graphics.setTooltipForNextFrame(this.font, equipment, mouseX, mouseY);
+            this.pendingTooltip = () -> graphics.renderTooltip(this.font, equipment, mouseX, mouseY);
         }
     }
 
-    private void renderStats(GuiGraphicsExtractor graphics) {
+    private void renderStats(GuiGraphics graphics) {
         int x = this.left + COLUMN_X;
 
-        graphics.text(
+        graphics.drawString(
                 this.font,
                 Component.translatable("screen.kindredspirits.level", this.view.level()),
                 x,
                 this.top + LEVEL_Y,
                 COLOUR_VALUE);
         if (this.view.stars() > 0) {
-            graphics.text(
+            graphics.drawString(
                     this.font,
                     CharmView.starText(this.view.stars()),
                     x + COLUMN_WIDTH - this.font.width(CharmView.starText(this.view.stars())),
@@ -648,7 +675,7 @@ public class KindredCharmScreen extends Screen {
                 this.view.experience(),
                 this.view.experienceToNext(),
                 COLOUR_EXPERIENCE);
-        graphics.text(
+        graphics.drawString(
                 this.font,
                 Component.literal(this.view.experience() + " / " + this.view.experienceToNext()),
                 x,
@@ -671,10 +698,10 @@ public class KindredCharmScreen extends Screen {
                     .append(Component.translatable(
                             "screen.kindredspirits.bond_feed_wait", formatDuration(this.view.feedSeconds())));
         }
-        graphics.text(this.font, bondLabel, x, this.top + BOND_BAR_Y + BAR_LABEL_OFFSET, COLOUR_LABEL);
+        graphics.drawString(this.font, bondLabel, x, this.top + BOND_BAR_Y + BAR_LABEL_OFFSET, COLOUR_LABEL);
 
         if (!this.view.present()) {
-            graphics.text(
+            graphics.drawString(
                     this.font,
                     Component.translatable("screen.kindredspirits.stats_unavailable"),
                     x,
@@ -690,7 +717,7 @@ public class KindredCharmScreen extends Screen {
                 (int) this.view.health(),
                 (int) this.view.maxHealth(),
                 COLOUR_HEALTH);
-        graphics.text(
+        graphics.drawString(
                 this.font,
                 Component.translatable(
                         "screen.kindredspirits.health", format(this.view.health()), format(this.view.maxHealth())),
@@ -699,7 +726,7 @@ public class KindredCharmScreen extends Screen {
                 COLOUR_LABEL);
     }
 
-    private void bar(GuiGraphicsExtractor graphics, int x, int y, int value, int max, int colour) {
+    private void bar(GuiGraphics graphics, int x, int y, int value, int max, int colour) {
         int filled = (int) (COLUMN_WIDTH * Math.clamp(value / (double) Math.max(1, max), 0.0, 1.0));
 
         graphics.fill(x - 1, y - 1, x + COLUMN_WIDTH + 1, y + 4, COLOUR_EDGE);
@@ -738,7 +765,7 @@ public class KindredCharmScreen extends Screen {
             return null;
         }
 
-        this.display = KindredEntities.type(species).create(this.minecraft.level, EntitySpawnReason.LOAD);
+        this.display = KindredEntities.type(species).create(this.minecraft.level);
 
         if (this.display != null) {
             this.view.name().ifPresent(name -> this.display.setCustomName(Component.literal(name)));
@@ -756,40 +783,40 @@ public class KindredCharmScreen extends Screen {
     }
 
     private String localName() {
-        return this.minecraft == null ? "" : this.minecraft.getGameProfile().name();
+        return this.minecraft == null ? "" : this.minecraft.getGameProfile().getName();
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (this.popup == null
-                && event.button() == InputConstants.MOUSE_BUTTON_LEFT
-                && this.overPortrait(event.x(), event.y())) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.popup == null && button == InputConstants.MOUSE_BUTTON_LEFT && this.overPortrait(mouseX, mouseY)) {
             this.setFocused(null);
-            if (doubleClick) {
+            long now = Util.getMillis();
+            if (now - this.lastPortraitClick < DOUBLE_CLICK_MILLIS) {
                 this.portraitYaw = PORTRAIT_REST_YAW;
             }
+            this.lastPortraitClick = now;
             this.draggingPortrait = true;
             return true;
         }
-        return super.mouseClicked(event, doubleClick);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
         if (this.draggingPortrait) {
             this.portraitYaw = Mth.wrapDegrees(this.portraitYaw + (float) dx * PORTRAIT_DRAG_SPEED);
             return true;
         }
-        return super.mouseDragged(event, dx, dy);
+        return super.mouseDragged(mouseX, mouseY, button, dx, dy);
     }
 
     @Override
-    public boolean mouseReleased(MouseButtonEvent event) {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (this.draggingPortrait) {
             this.draggingPortrait = false;
             return true;
         }
-        return super.mouseReleased(event);
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
@@ -802,13 +829,13 @@ public class KindredCharmScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent event) {
-        if (event.key() == InputConstants.KEY_ESCAPE && this.popup != null) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == InputConstants.KEY_ESCAPE && this.popup != null) {
             this.closePopup();
             return true;
         }
 
-        if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) {
+        if (keyCode == InputConstants.KEY_RETURN || keyCode == InputConstants.KEY_NUMPADENTER) {
             for (TextField field : this.fields()) {
                 if (field.commitOnEnter()) {
                     return true;
@@ -816,7 +843,7 @@ public class KindredCharmScreen extends Screen {
             }
         }
 
-        return super.keyPressed(event);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     private List<TextField> fields() {
@@ -835,6 +862,10 @@ public class KindredCharmScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
+
+        if (this.display != null) {
+            this.display.tickCount++;
+        }
 
         for (TextField field : this.fields()) {
             field.tickFocus();
@@ -940,7 +971,7 @@ public class KindredCharmScreen extends Screen {
                     this.contentLeft(), this.contentTop() - this.scroll, this.contentTop(), this.contentBottom());
         }
 
-        private void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        private void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
             KindredCharmScreen screen = KindredCharmScreen.this;
             graphics.fill(0, 0, screen.width, screen.height, COLOUR_POPUP_BACKDROP);
             screen.drawPanel(
@@ -972,7 +1003,7 @@ public class KindredCharmScreen extends Screen {
 
             for (AbstractWidget widget : this.widgets) {
                 if (widget.visible) {
-                    widget.extractRenderState(graphics, mouseX, mouseY, partialTick);
+                    widget.render(graphics, mouseX, mouseY, partialTick);
                 }
             }
         }
@@ -987,7 +1018,7 @@ public class KindredCharmScreen extends Screen {
 
         protected abstract int contentHeight();
 
-        protected abstract void renderContent(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY);
+        protected abstract void renderContent(GuiGraphics graphics, int x, int y, int mouseX, int mouseY);
     }
 
     private final class StatsPopup extends Popup {
@@ -1048,7 +1079,7 @@ public class KindredCharmScreen extends Screen {
         }
 
         @Override
-        protected void renderContent(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
+        protected void renderContent(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
             CompanionStats stats = this.stats();
             int right = x + this.contentWidth();
 
@@ -1068,7 +1099,7 @@ public class KindredCharmScreen extends Screen {
             }
 
             y += STAT_GROUP_GAP;
-            graphics.text(
+            graphics.drawString(
                     KindredCharmScreen.this.font,
                     Component.translatable("screen.kindredspirits.stat_hint"),
                     x,
@@ -1076,10 +1107,9 @@ public class KindredCharmScreen extends Screen {
                     COLOUR_LABEL);
         }
 
-        private void row(
-                GuiGraphicsExtractor graphics, int x, int y, int right, Component label, String value, int colour) {
-            graphics.text(KindredCharmScreen.this.font, label, x, y, COLOUR_LABEL);
-            graphics.text(
+        private void row(GuiGraphics graphics, int x, int y, int right, Component label, String value, int colour) {
+            graphics.drawString(KindredCharmScreen.this.font, label, x, y, COLOUR_LABEL);
+            graphics.drawString(
                     KindredCharmScreen.this.font,
                     Component.literal(value),
                     right - KindredCharmScreen.this.font.width(value),
@@ -1139,7 +1169,7 @@ public class KindredCharmScreen extends Screen {
                 String id = unlock.ability().id().getPath();
                 this.toggles.add(this.add(Button.builder(
                                 Component.empty(),
-                                button -> ClientPacketDistributor.sendToServer(
+                                button -> PacketDistributor.sendToServer(
                                         new CharmActionPayload(Action.TOGGLE_ABILITY, 0, id)))
                         .bounds(0, 0, TOGGLE_WIDTH, TOGGLE_HEIGHT)
                         .build()));
@@ -1179,7 +1209,7 @@ public class KindredCharmScreen extends Screen {
         }
 
         @Override
-        protected void renderContent(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
+        protected void renderContent(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
             CharmView view = KindredCharmScreen.this.view;
             var font = KindredCharmScreen.this.font;
             int requirementRight = x + this.contentWidth() - TOGGLE_WIDTH - POPUP_COLUMN_GAP;
@@ -1190,13 +1220,14 @@ public class KindredCharmScreen extends Screen {
                 boolean unlocked = this.unlocked(unlock);
                 boolean enabled = unlocked && !view.isDisabled(ability);
 
-                graphics.text(font, ability.displayName(), x, y + textY, enabled ? COLOUR_VALUE : COLOUR_LABEL);
+                graphics.drawString(font, ability.displayName(), x, y + textY, enabled ? COLOUR_VALUE : COLOUR_LABEL);
                 Component requirement = this.requirement(unlock);
-                graphics.text(font, requirement, requirementRight - font.width(requirement), y + textY, COLOUR_LABEL);
+                graphics.drawString(
+                        font, requirement, requirementRight - font.width(requirement), y + textY, COLOUR_LABEL);
 
                 if (mouseX >= x && mouseX < requirementRight && mouseY >= y && mouseY < y + ABILITY_ROW_HEIGHT) {
-                    graphics.setTooltipForNextFrame(
-                            font, font.split(ability.description(), TOOLTIP_WIDTH), mouseX, mouseY);
+                    List<FormattedCharSequence> lines = font.split(ability.description(), TOOLTIP_WIDTH);
+                    KindredCharmScreen.this.pendingTooltip = () -> graphics.renderTooltip(font, lines, mouseX, mouseY);
                 }
 
                 y += ABILITY_ROW_HEIGHT;
@@ -1243,8 +1274,7 @@ public class KindredCharmScreen extends Screen {
 
             this.dirty = false;
             this.changed = true;
-            ClientPacketDistributor.sendToServer(
-                    new CharmActionPayload(this.action, announce ? 1 : 0, this.box.getValue()));
+            PacketDistributor.sendToServer(new CharmActionPayload(this.action, announce ? 1 : 0, this.box.getValue()));
         }
 
         private boolean commitOnEnter() {

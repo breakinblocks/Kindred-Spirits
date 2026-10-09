@@ -2,7 +2,8 @@
   "parent": "kindredspirits:level_10",
   "display": {
     "icon": {
-      "id": "minecraft:enchanting_table"
+      "id": "minecraft:enchanting_table",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.level_max.title"

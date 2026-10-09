@@ -38,19 +38,19 @@ public final class KindredCommands {
                         .then(Commands.literal("release").executes(context -> releaseBond(context.getSource())))
                         .then(Commands.literal("smelt").executes(context -> useAbility(context.getSource())))
                         .then(Commands.literal("xp")
-                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
                                 .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                                         .executes(context -> grantExperience(
                                                 context.getSource(),
                                                 IntegerArgumentType.getInteger(context, "amount")))))
                         .then(Commands.literal("bond")
-                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
                                 .then(Commands.argument("points", IntegerArgumentType.integer(1))
                                         .executes(context -> grantBond(
                                                 context.getSource(),
                                                 IntegerArgumentType.getInteger(context, "points")))))
                         .then(Commands.literal("resetrevive")
-                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
                                 .then(Commands.argument("players", EntityArgument.players())
                                         .executes(context -> resetRevive(
                                                 context.getSource(), EntityArgument.getPlayers(context, "players"))))));

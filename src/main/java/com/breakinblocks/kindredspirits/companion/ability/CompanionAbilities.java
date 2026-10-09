@@ -29,7 +29,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
@@ -54,10 +54,10 @@ import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.Tags;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public final class CompanionAbilities {
-    private static final Map<Identifier, CompanionAbility> REGISTRY = new LinkedHashMap<>();
+    private static final Map<ResourceLocation, CompanionAbility> REGISTRY = new LinkedHashMap<>();
     private static final double OWNER_RANGE_SQR = 144.0;
     private static final double CRUSHING_RADIUS = 5.0;
     private static final double OWNER_RANGE_LONG_SQR = 256.0;
@@ -81,7 +81,7 @@ public final class CompanionAbilities {
                     companion,
                     owner,
                     OWNER_RANGE_SQR,
-                    MobEffects.SPEED,
+                    MobEffects.MOVEMENT_SPEED,
                     60,
                     companion.hasEquipment(KindredItems.RUNNING_SHOES.get()) ? 1 : 0)));
 
@@ -297,15 +297,15 @@ public final class CompanionAbilities {
         return ability;
     }
 
-    public static @Nullable CompanionAbility get(Identifier id) {
+    public static @Nullable CompanionAbility get(ResourceLocation id) {
         return REGISTRY.get(id);
     }
 
-    public static Map<Identifier, CompanionAbility> all() {
+    public static Map<ResourceLocation, CompanionAbility> all() {
         return Collections.unmodifiableMap(REGISTRY);
     }
 
-    private record SavageLeapAbility(Identifier id) implements CompanionAbility {
+    private record SavageLeapAbility(ResourceLocation id) implements CompanionAbility {
         private static final int COOLDOWN_TICKS = 200;
         private static final double MIN_RANGE_SQR = 9.0;
         private static final double MAX_RANGE_SQR = CompanionEntity.RUN_DISTANCE * CompanionEntity.RUN_DISTANCE;
@@ -346,7 +346,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record ShadowBallAbility(Identifier id) implements CompanionAbility {
+    private record ShadowBallAbility(ResourceLocation id) implements CompanionAbility {
         private static final double RANGE_SQR = 256.0;
         private static final int TRAIL_STEPS = 12;
         private static final float DAMAGE_MULTIPLIER = 0.5f;
@@ -384,7 +384,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record DragonBreathAbility(Identifier id) implements CompanionAbility {
+    private record DragonBreathAbility(ResourceLocation id) implements CompanionAbility {
         private static final double RANGE_SQR = 100.0;
         private static final int COOLDOWN_TICKS = 60;
         private static final int METEOR_COOLDOWN_TICKS = 80;
@@ -447,7 +447,7 @@ public final class CompanionAbilities {
             AreaEffectCloud cloud = new AreaEffectCloud(level, target.getX(), target.getY(), target.getZ());
 
             cloud.setOwner(companion);
-            cloud.setCustomParticle(KindredParticles.DRAGON_SMOKE.get());
+            cloud.setParticle(KindredParticles.DRAGON_SMOKE.get());
             cloud.setRadius(CLOUD_RADIUS);
             cloud.setDuration(CLOUD_TICKS);
             cloud.setWaitTime(CLOUD_WAIT);
@@ -457,7 +457,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record ForgeDraftAbility(Identifier id) implements CompanionAbility {
+    private record ForgeDraftAbility(ResourceLocation id) implements CompanionAbility {
         private static final int RADIUS = 4;
         private static final int EXTRA_TICKS = 20;
 
@@ -508,7 +508,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record WisplightAbility(Identifier id) implements CompanionAbility {
+    private record WisplightAbility(ResourceLocation id) implements CompanionAbility {
         private static final int RADIUS = 8;
         private static final int MAX_LIGHT = 3;
         private static final int MAX_WISPS = 16;
@@ -566,7 +566,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record NightLightAbility(Identifier id) implements CompanionAbility {
+    private record NightLightAbility(ResourceLocation id) implements CompanionAbility {
         private static final int LEVEL = 12;
         private static final double MAX_DISTANCE = 2.0;
 
@@ -597,7 +597,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record XrayStompAbility(Identifier id) implements CompanionAbility {
+    private record XrayStompAbility(ResourceLocation id) implements CompanionAbility {
         private static final double OWNER_RANGE_SQR = 64.0;
         private static final int RADIUS = 12;
         private static final int REVEAL_TICKS = 200;
@@ -633,7 +633,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record KilnBreathAbility(Identifier id) implements CompanionAbility {
+    private record KilnBreathAbility(ResourceLocation id) implements CompanionAbility {
         private static final int COOLDOWN_TICKS = 6000;
         private static final double OWNER_RANGE_SQR = 256.0;
 
@@ -658,7 +658,7 @@ public final class CompanionAbilities {
             Inventory inventory = owner.getInventory();
             int smelted = 0;
 
-            for (int slot = 0; slot < inventory.getNonEquipmentItems().size(); slot++) {
+            for (int slot = 0; slot < inventory.items.size(); slot++) {
                 ItemStack stack = inventory.getItem(slot);
                 if (stack.isEmpty()) {
                     continue;
@@ -666,12 +666,12 @@ public final class CompanionAbilities {
 
                 SingleRecipeInput input = new SingleRecipeInput(stack);
                 Optional<RecipeHolder<SmeltingRecipe>> recipe =
-                        level.recipeAccess().getRecipeFor(RecipeType.SMELTING, input, level);
+                        level.getRecipeManager().getRecipeFor(RecipeType.SMELTING, input, level);
                 if (recipe.isEmpty()) {
                     continue;
                 }
 
-                ItemStack result = recipe.get().value().assemble(input);
+                ItemStack result = recipe.get().value().assemble(input, level.registryAccess());
                 if (result.isEmpty()) {
                     continue;
                 }
@@ -716,7 +716,7 @@ public final class CompanionAbilities {
         public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {}
     }
 
-    private record TinkerAbility(Identifier id) implements CompanionAbility {
+    private record TinkerAbility(ResourceLocation id) implements CompanionAbility {
         private static final int RADIUS = 4;
         private static final int EXTRA_TICKS = 4;
         private static final double BASE_CHANCE = 0.10;
@@ -743,7 +743,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record SnackThiefAbility(Identifier id) implements CompanionAbility {
+    private record SnackThiefAbility(ResourceLocation id) implements CompanionAbility {
         private static final int BUFF_TICKS = 1200;
         private static final double CHANCE = 0.5;
         private static final double SCALE_BONUS = 0.25;
@@ -767,8 +767,8 @@ public final class CompanionAbilities {
             companion.burst(KindredParticles.SNACK_CRUMB.get(), 6);
 
             switch (companion.getRandom().nextInt(3)) {
-                case 0 -> ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.STRENGTH, BUFF_TICKS, 0);
-                case 1 -> ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.SPEED, BUFF_TICKS, 0);
+                case 0 -> ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.DAMAGE_BOOST, BUFF_TICKS, 0);
+                case 1 -> ownerEffect(companion, owner, OWNER_RANGE_SQR, MobEffects.MOVEMENT_SPEED, BUFF_TICKS, 0);
                 default -> grow(owner);
             }
         }
@@ -777,9 +777,8 @@ public final class CompanionAbilities {
             Inventory inventory = owner.getInventory();
             List<Integer> slots = new ArrayList<>();
 
-            for (int slot = 0; slot < inventory.getNonEquipmentItems().size(); slot++) {
-                if (slot != inventory.getSelectedSlot()
-                        && inventory.getItem(slot).has(DataComponents.FOOD)) {
+            for (int slot = 0; slot < inventory.items.size(); slot++) {
+                if (slot != inventory.selected && inventory.getItem(slot).has(DataComponents.FOOD)) {
                     slots.add(slot);
                 }
             }
@@ -818,7 +817,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record EnergizedChaosAbility(Identifier id) implements CompanionAbility {
+    private record EnergizedChaosAbility(ResourceLocation id) implements CompanionAbility {
         private static final int RADIUS = 4;
         private static final double CHANCE = 0.3;
 
@@ -860,7 +859,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record NotAnotherHoleAbility(Identifier id) implements CompanionAbility {
+    private record NotAnotherHoleAbility(ResourceLocation id) implements CompanionAbility {
         private static final int BASE_SECONDS = 180;
         private static final int SECONDS_PER_LEVEL = 4;
 
@@ -897,7 +896,7 @@ public final class CompanionAbilities {
         }
     }
 
-    private record LeaderOfThePackAbility(Identifier id) implements CompanionAbility {
+    private record LeaderOfThePackAbility(ResourceLocation id) implements CompanionAbility {
         private static final int RESISTANCE_TICKS = 400;
         private static final int GLOW_TICKS = 200;
         private static final double GLOW_RADIUS = 24.0;
@@ -911,7 +910,12 @@ public final class CompanionAbilities {
         public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
             if (!(companion.level() instanceof ServerLevel level)
                     || !ownerEffect(
-                            companion, owner, OWNER_RANGE_SHORT_SQR, MobEffects.RESISTANCE, RESISTANCE_TICKS, 1)) {
+                            companion,
+                            owner,
+                            OWNER_RANGE_SHORT_SQR,
+                            MobEffects.DAMAGE_RESISTANCE,
+                            RESISTANCE_TICKS,
+                            1)) {
                 return;
             }
 
@@ -932,7 +936,8 @@ public final class CompanionAbilities {
         }
     }
 
-    private record PassiveAbility(Identifier id, List<AttributeBonus> attributeBonuses) implements CompanionAbility {
+    private record PassiveAbility(ResourceLocation id, List<AttributeBonus> attributeBonuses)
+            implements CompanionAbility {
         @Override
         public int intervalTicks() {
             return Integer.MAX_VALUE;
@@ -942,7 +947,7 @@ public final class CompanionAbilities {
         public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {}
     }
 
-    private record SimpleAbility(Identifier id, int intervalTicks, Effect effect) implements CompanionAbility {
+    private record SimpleAbility(ResourceLocation id, int intervalTicks, Effect effect) implements CompanionAbility {
         @Override
         public void serverTick(CompanionEntity companion, @Nullable ServerPlayer owner) {
             this.effect.apply(companion, owner);

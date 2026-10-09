@@ -4,10 +4,8 @@ import java.util.List;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.util.ARGB;
 import net.minecraft.world.entity.Entity;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public final class PackGlowOverlay {
     private static Set<Integer> marked = Set.of();
@@ -35,13 +33,8 @@ public final class PackGlowOverlay {
         }
     }
 
-    public static void outline(Entity entity, EntityRenderState state) {
-        if (state.outlineColor == 0
-                && !marked.isEmpty()
-                && entity.level() == sourceLevel
-                && marked.contains(entity.getId())) {
-            state.outlineColor = ARGB.opaque(entity.getTeamColor());
-        }
+    public static boolean isMarked(Entity entity) {
+        return !marked.isEmpty() && entity.level() == sourceLevel && marked.contains(entity.getId());
     }
 
     private PackGlowOverlay() {}

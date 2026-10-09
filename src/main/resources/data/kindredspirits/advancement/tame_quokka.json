@@ -2,7 +2,8 @@
   "parent": "kindredspirits:tame_companion",
   "display": {
     "icon": {
-      "id": "kindredspirits:quokka_spawn_egg"
+      "id": "kindredspirits:quokka_spawn_egg",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.tame_quokka.title"

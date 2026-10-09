@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,12 +16,12 @@ public final class CompanionSpawns {
 
     public static @Nullable CompanionEntity spawnWild(
             ServerLevel level, CompanionSpecies species, Vec3 pos, float yaw) {
-        CompanionEntity companion = KindredEntities.type(species).create(level, EntitySpawnReason.EVENT);
+        CompanionEntity companion = KindredEntities.type(species).create(level);
         if (companion == null) {
             return null;
         }
 
-        companion.snapTo(pos.x(), pos.y(), pos.z(), Mth.wrapDegrees(yaw), 0.0f);
+        companion.moveTo(pos.x(), pos.y(), pos.z(), Mth.wrapDegrees(yaw), 0.0f);
         if (!level.addFreshEntity(companion)) return null;
         level.playSound(
                 null, pos.x(), pos.y(), pos.z(), species.sounds().interact().get(), SoundSource.NEUTRAL, 1.0f, 1.0f);

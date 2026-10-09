@@ -4,7 +4,7 @@ import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredParticles;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -23,8 +23,8 @@ public class SpiritArrow extends AbstractArrow {
     @Override
     public void tick() {
         super.tick();
-        if (this.level().isClientSide()) {
-            if (!this.isInGround()) {
+        if (this.level().isClientSide) {
+            if (!this.inGround) {
                 this.level()
                         .addParticle(
                                 KindredParticles.CRAFT_SPARK.get(),
@@ -35,7 +35,7 @@ public class SpiritArrow extends AbstractArrow {
                                 0.0,
                                 0.0);
             }
-        } else if (this.isInGround() && this.inGroundTime >= FADE_TICKS) {
+        } else if (this.inGround && this.inGroundTime >= FADE_TICKS) {
             this.discard();
         }
     }

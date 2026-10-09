@@ -23,32 +23,28 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.*;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.tags.TagKey;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import net.minecraft.world.level.storage.TagValueInput;
-import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
@@ -58,7 +54,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
-import net.neoforged.neoforge.registries.RegisterEvent;
 
 /** Server integration regressions. These classes and fixtures are excluded from the release jar. */
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
@@ -70,7 +65,7 @@ public final class KindredGameTests {
         TESTS.put("particle_types_round_trip", KindredGameTests::particleCodecs);
         TESTS.put("dragon_cloud_uses_custom_visual_particles", KindredGameTests::dragonParticles);
         TESTS.put("quokka_taming_and_equipping", KindredGameTests::quokkaTame);
-        TESTS.put("quokka_growth_ticks_and_age_lock", KindredGameTests::quokkaAgeTicks);
+        TESTS.put("quokka_growth_ticks", KindredGameTests::quokkaAgeTicks);
         TESTS.put("quokka_buffs_and_unlocks", KindredGameTests::quokkaBuffs);
         TESTS.put("bond_speeds_up_only_the_base_buff", KindredGameTests::bondRateScope);
         TESTS.put("dye_recolours_persists_and_washes_off", KindredGameTests::dyeRecolour);
@@ -126,31 +121,40 @@ public final class KindredGameTests {
     }
 
     @SubscribeEvent
-    public static void functions(RegisterEvent event) {
-        event.register(
-                Registries.TEST_FUNCTION,
-                registry -> TESTS.forEach((name, test) -> registry.register(KindredSpirits.id(name), test)));
+    public static void tests(RegisterGameTestsEvent event) {
+        event.register(KindredGameTests.class);
     }
 
-    @SubscribeEvent
-    public static void tests(RegisterGameTestsEvent event) {
-        Holder<TestEnvironmentDefinition<?>> environment = event.registerEnvironment(KindredSpirits.id("regressions"));
-        TESTS.forEach((name, test) -> event.registerTest(
-                KindredSpirits.id(name),
-                new FunctionGameTestInstance(
-                        ResourceKey.create(Registries.TEST_FUNCTION, KindredSpirits.id(name)),
-                        new TestData<>(
-                                environment,
-                                KindredSpirits.id("empty"),
-                                name.equals("quokka_hurt_throws_once_and_flees") ? 300 : 120,
-                                2,
-                                true,
-                                Rotation.NONE,
-                                false,
-                                1,
-                                1,
-                                name.equals("meteor_call_drops_a_meteor_that_hits"),
-                                0))));
+    @GameTestGenerator
+    public static List<TestFunction> regressions() {
+        return TESTS.entrySet().stream()
+                .map(entry -> new TestFunction(
+                        KindredSpirits.MOD_ID,
+                        KindredSpirits.MOD_ID + "." + entry.getKey(),
+                        KindredSpirits.id("empty").toString(),
+                        Rotation.NONE,
+                        entry.getKey().equals("quokka_hurt_throws_once_and_flees") ? 300 : 120,
+                        2,
+                        true,
+                        false,
+                        1,
+                        1,
+                        entry.getKey().equals("meteor_call_drops_a_meteor_that_hits"),
+                        withFloor(entry.getValue())))
+                .toList();
+    }
+
+    private static Consumer<GameTestHelper> withFloor(Consumer<GameTestHelper> test) {
+        return h -> {
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+                    if (x != 0 || z != 0) {
+                        h.setBlock(new BlockPos(x, 0, z), Blocks.STONE);
+                    }
+                }
+            }
+            test.accept(h);
+        };
     }
 
     @SuppressWarnings("removal")
@@ -161,8 +165,13 @@ public final class KindredGameTests {
         ServerPlayer player =
                 new ServerPlayer(level.getServer(), level, cookie.gameProfile(), cookie.clientInformation()) {
                     @Override
-                    public GameType gameMode() {
-                        return GameType.CREATIVE;
+                    public boolean isCreative() {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean isSpectator() {
+                        return false;
                     }
                 };
         Connection connection = new Connection(PacketFlow.SERVERBOUND);
@@ -198,7 +207,7 @@ public final class KindredGameTests {
 
     private static CompanionEntity deployed(ServerPlayer player) {
         UUID uuid = KindredAttachments.bond(player).companion().orElseThrow();
-        return (CompanionEntity) player.level().getEntity(uuid);
+        return (CompanionEntity) player.serverLevel().getEntity(uuid);
     }
 
     private static void advancements(GameTestHelper h) {
@@ -273,7 +282,7 @@ public final class KindredGameTests {
         player.closeContainer();
 
         h.assertTrue(!done.test("revive"), "Nothing has been revived yet");
-        pet.hurtServer(h.getLevel(), pet.damageSources().genericKill(), 10000);
+        pet.hurt(pet.damageSources().genericKill(), 10000);
         KindredAttachments.modifyBond(
                 player, b -> b.withReviveReadyAt(Math.max(1, h.getLevel().getGameTime())));
         action(player, Action.SUMMON);
@@ -325,9 +334,9 @@ public final class KindredGameTests {
         h.assertTrue(count == 1, "Exactly one sand block must turn suspicious (found " + count + ")");
         String table = level.getBlockEntity(found)
                 .saveWithoutMetadata(level.registryAccess())
-                .getStringOr("LootTable", "");
+                .getString("LootTable");
         h.assertTrue(
-                table.equals(BeachSuspiciousSandFeature.LOOT_TABLE.identifier().toString()),
+                table.equals(BeachSuspiciousSandFeature.LOOT_TABLE.location().toString()),
                 "Beach suspicious sand must roll the beach table (found " + table + ")");
 
         LootTable loot = level.getServer().reloadableRegistries().getLootTable(BeachSuspiciousSandFeature.LOOT_TABLE);
@@ -348,13 +357,15 @@ public final class KindredGameTests {
         h.assertTrue(
                 level.registryAccess()
                         .lookupOrThrow(Registries.PLACED_FEATURE)
-                        .get(KindredSpirits.id("beach_suspicious_sand"))
+                        .get(ResourceKey.create(Registries.PLACED_FEATURE, KindredSpirits.id("beach_suspicious_sand")))
                         .isPresent(),
                 "The beach placed feature must load");
         h.assertTrue(
                 level.registryAccess()
                         .lookupOrThrow(net.neoforged.neoforge.registries.NeoForgeRegistries.Keys.BIOME_MODIFIERS)
-                        .get(KindredSpirits.id("beach_suspicious_sand"))
+                        .get(ResourceKey.create(
+                                net.neoforged.neoforge.registries.NeoForgeRegistries.Keys.BIOME_MODIFIERS,
+                                KindredSpirits.id("beach_suspicious_sand")))
                         .isPresent(),
                 "The beach biome modifier must load");
         finish(h, player);
@@ -364,7 +375,7 @@ public final class KindredGameTests {
         ServerPlayer player = player(h);
         for (String path : List.of("archaeology/desert_well", "archaeology/desert_pyramid")) {
             ResourceKey<LootTable> key =
-                    ResourceKey.create(Registries.LOOT_TABLE, Identifier.withDefaultNamespace(path));
+                    ResourceKey.create(Registries.LOOT_TABLE, ResourceLocation.withDefaultNamespace(path));
             LootTable table = h.getLevel().getServer().reloadableRegistries().getLootTable(key);
             LootParams params = new LootParams.Builder(h.getLevel())
                     .withParameter(LootContextParams.ORIGIN, player.position())
@@ -386,13 +397,7 @@ public final class KindredGameTests {
             h.getLevel().setBlockAndUpdate(pos, Blocks.SUSPICIOUS_SAND.defaultBlockState());
             BrushableBlockEntity block = (BrushableBlockEntity) h.getLevel().getBlockEntity(pos);
             block.setLootTable(key, eggSeed);
-            for (int i = 0; i < 10; i++)
-                block.brush(
-                        h.getLevel().getGameTime() + i * 10L,
-                        h.getLevel(),
-                        player,
-                        Direction.UP,
-                        new ItemStack(Items.BRUSH));
+            for (int i = 0; i < 10; i++) block.brush(h.getLevel().getGameTime() + i * 10L, player, Direction.UP);
             h.assertTrue(
                     h.getLevel()
                                     .getEntitiesOfClass(
@@ -472,7 +477,7 @@ public final class KindredGameTests {
 
     private static void assertAbandoned(GameTestHelper h, UUID lost) {
         CompanionEntity stale =
-                KindredEntities.type(CompanionSpecies.MINI_PLAYER).create(h.getLevel(), EntitySpawnReason.LOAD);
+                KindredEntities.type(CompanionSpecies.MINI_PLAYER).create(h.getLevel());
         stale.setUUID(lost);
         stale.setPos(h.absoluteVec(new Vec3(3.5, 1, 3.5)));
         h.assertTrue(!h.getLevel().addFreshEntity(stale), "The lost companion must be refused if its chunk loads");
@@ -482,7 +487,7 @@ public final class KindredGameTests {
         ServerPlayer player = player(h);
         CompanionEntity pet = pet(h, CompanionSpecies.MINI_PLAYER, player, true);
         pet.setEquipment(new ItemStack(Items.IRON_CHESTPLATE));
-        pet.hurtServer(h.getLevel(), pet.damageSources().genericKill(), 10000);
+        pet.hurt(pet.damageSources().genericKill(), 10000);
         CompanionBond recovering = KindredAttachments.bond(player);
         h.assertTrue(recovering.stored() && recovering.reviveReadyAt() > 0, "Death must enter recovery");
         action(player, Action.SUMMON);
@@ -502,10 +507,10 @@ public final class KindredGameTests {
         ServerPlayer player = player(h);
         CompanionEntity pet = pet(h, CompanionSpecies.NIGHTFOX, player, true);
         UUID offline = UUID.randomUUID();
-        pet.setOwnerReference(EntityReference.of(offline));
+        pet.setOwnerUUID(offline);
         pet.refreshBondState();
         h.assertTrue(pet.isBonded(), "An unresolved owner must not erase the bond");
-        pet.hurtServer(h.getLevel(), pet.damageSources().genericKill(), 10000);
+        pet.hurt(pet.damageSources().genericKill(), 10000);
         var storage = h.getLevel().getServer().overworld();
         var death = storage.getData(CompanionWorldData.DEATHS).stream()
                 .filter(d -> d.companion().equals(pet.getUUID()))
@@ -547,7 +552,7 @@ public final class KindredGameTests {
     private static void ownerDimension(GameTestHelper h) {
         ServerPlayer player = player(h);
         var other = h.getLevel().getServer().getLevel(Level.NETHER);
-        CompanionEntity pet = KindredEntities.type(CompanionSpecies.NIGHTFOX).create(other, EntitySpawnReason.COMMAND);
+        CompanionEntity pet = KindredEntities.type(CompanionSpecies.NIGHTFOX).create(other);
         pet.tame(player);
         pet.setPos(player.position());
         h.assertTrue(!pet.ownerWithin(player, 100), "Matching coordinates in different dimensions are not nearby");
@@ -557,8 +562,7 @@ public final class KindredGameTests {
     private static void recall(GameTestHelper h) {
         ServerPlayer player = player(h);
         var other = h.getLevel().getServer().getLevel(Level.NETHER);
-        CompanionEntity pet =
-                KindredEntities.type(CompanionSpecies.MINI_PLAYER).create(other, EntitySpawnReason.COMMAND);
+        CompanionEntity pet = KindredEntities.type(CompanionSpecies.MINI_PLAYER).create(other);
         pet.tame(player);
         pet.setBonded(true);
         pet.setPos(0, 100, 0);
@@ -579,7 +583,7 @@ public final class KindredGameTests {
                     KindredAttachments.bond(player)
                             .lastDimension()
                             .orElseThrow()
-                            .equals(player.level().dimension().identifier()),
+                            .equals(player.level().dimension().location()),
                     "Recall must save the destination dimension");
             player.level().getServer().getPlayerList().remove(player);
         });
@@ -590,7 +594,7 @@ public final class KindredGameTests {
         CompanionEntity pet = pet(h, CompanionSpecies.MINI_PLAYER, player, true);
         LivingEntity target = h.spawnWithNoFreeWill(EntityType.COW, new BlockPos(5, 1, 4));
         float before = target.getHealth();
-        target.hurtServer(h.getLevel(), player.damageSources().playerAttack(player), 4);
+        target.hurt(player.damageSources().playerAttack(player), 4);
         h.assertTrue(
                 Math.abs(target.getHealth() - (before - 5)) < 0.001,
                 "Mirror Strike must add 25% through the triggering hit's invulnerability frames");
@@ -609,7 +613,7 @@ public final class KindredGameTests {
             KindredConfig.COMMON.abilitiesEnabled.set(false);
             float health = target.getHealth();
             h.assertTrue(
-                    !pet.doHurtTarget(h.getLevel(), target) && target.getHealth() == health,
+                    !pet.doHurtTarget(target) && target.getHealth() == health,
                     "Cosmetic mode must prevent companion melee damage");
             h.assertTrue(!pet.useActiveAbility(player), "Cosmetic mode must prevent active abilities");
         } finally {
@@ -689,12 +693,10 @@ public final class KindredGameTests {
         ServerPlayer player = player(h);
         CompanionEntity pet = pet(h, CompanionSpecies.NIGHTFOX, player, true);
         pet.setAbilityCooldown(CompanionAbilities.SHADOW_BALL.id(), 200);
-        TagValueOutput output = TagValueOutput.createWithContext(
-                ProblemReporter.DISCARDING, h.getLevel().registryAccess());
+        CompoundTag output = new CompoundTag();
         pet.save(output);
-        CompanionEntity loaded = KindredEntities.type(pet.species()).create(h.getLevel(), EntitySpawnReason.LOAD);
-        loaded.load(
-                TagValueInput.create(ProblemReporter.DISCARDING, h.getLevel().registryAccess(), output.buildResult()));
+        CompanionEntity loaded = KindredEntities.type(pet.species()).create(h.getLevel());
+        loaded.load(output);
         h.assertTrue(
                 loaded.isBonded() && loaded.abilityCooldownTicks(CompanionAbilities.SHADOW_BALL.id()) == 200,
                 "Entity NBT must retain deployed bond status and cooldowns");
@@ -784,8 +786,8 @@ public final class KindredGameTests {
                 h.spawnWithNoFreeWill(KindredEntities.type(CompanionSpecies.TREX), new BlockPos(4, 1, 4));
         CompanionEntity gremlin =
                 h.spawnWithNoFreeWill(KindredEntities.type(CompanionSpecies.GREMLIN), new BlockPos(8, 1, 8));
-        trex.hurtServer(h.getLevel(), trex.damageSources().genericKill(), 10000);
-        gremlin.hurtServer(h.getLevel(), gremlin.damageSources().genericKill(), 10000);
+        trex.hurt(trex.damageSources().genericKill(), 10000);
+        gremlin.hurt(gremlin.damageSources().genericKill(), 10000);
         h.runAfterDelay(
                 21,
                 () -> h.assertTrue(
@@ -920,13 +922,13 @@ public final class KindredGameTests {
                         pos,
                         KindredBlocks.WISP_LIGHT.get().defaultBlockState(),
                         1);
-        var arrived = pet.teleport(new net.minecraft.world.level.portal.TeleportTransition(
+        var arrived = pet.changeDimension(new net.minecraft.world.level.portal.DimensionTransition(
                 h.getLevel().getServer().getLevel(Level.NETHER),
                 new Vec3(0, 100, 0),
                 Vec3.ZERO,
                 0,
                 0,
-                net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+                net.minecraft.world.level.portal.DimensionTransition.DO_NOTHING));
         h.assertTrue(
                 arrived != null && h.getLevel().getBlockState(pos).isAir(),
                 "Dimension travel must clear lights in the source world");
@@ -1114,7 +1116,7 @@ public final class KindredGameTests {
                 zombie.getTarget() == skeleton,
                 "Vanilla target changes cannot redirect a charmed mob onto a non-hostile");
         float health = cow.getHealth();
-        cow.hurtServer(h.getLevel(), zombie.damageSources().mobAttack(zombie), 4);
+        cow.hurt(zombie.damageSources().mobAttack(zombie), 4);
         h.assertTrue(cow.getHealth() == health, "Charmed attacks cannot hurt non-hostiles");
         h.runAfterDelay(8, () -> {
             h.assertTrue(
@@ -1136,12 +1138,10 @@ public final class KindredGameTests {
                                 .orElse(null)
                         == other,
                 "Brain-based hostiles receive the charmed target too");
-        TagValueOutput output = TagValueOutput.createWithContext(
-                ProblemReporter.DISCARDING, h.getLevel().registryAccess());
+        CompoundTag output = new CompoundTag();
         mob.save(output);
-        var loaded = EntityType.PIGLIN.create(h.getLevel(), EntitySpawnReason.LOAD);
-        loaded.load(
-                TagValueInput.create(ProblemReporter.DISCARDING, h.getLevel().registryAccess(), output.buildResult()));
+        var loaded = EntityType.PIGLIN.create(h.getLevel());
+        loaded.load(output);
         h.assertTrue(
                 QuokkaSupport.isCharmed(loaded)
                         && loaded.getData(KindredAttachments.CHARMED).equals(mob.getData(KindredAttachments.CHARMED)),
@@ -1163,7 +1163,7 @@ public final class KindredGameTests {
                 h
                         .getLevel()
                         .getEntitiesOfClass(
-                                net.minecraft.world.entity.animal.sheep.Sheep.class,
+                                net.minecraft.world.entity.animal.Sheep.class,
                                 quokka.getBoundingBox().inflate(8))
                         .stream()
                         .noneMatch(animal -> animal.isInLove()),
@@ -1208,13 +1208,10 @@ public final class KindredGameTests {
         for (int i = 0; i < 64; i++) baby.mobInteract(owner, net.minecraft.world.InteractionHand.MAIN_HAND);
         h.assertTrue(baby.getBbWidth() < CompanionSpecies.QUOKKA.width(), "Baby decoys have a smaller hitbox");
         h.assertTrue(!baby.isTame() && baby.isBaby(), "Thrown babies remain babies and cannot be tamed");
-        TagValueOutput output = TagValueOutput.createWithContext(
-                ProblemReporter.DISCARDING, h.getLevel().registryAccess());
+        CompoundTag output = new CompoundTag();
         baby.save(output);
-        CompanionEntity loaded =
-                KindredEntities.type(CompanionSpecies.QUOKKA).create(h.getLevel(), EntitySpawnReason.LOAD);
-        loaded.load(
-                TagValueInput.create(ProblemReporter.DISCARDING, h.getLevel().registryAccess(), output.buildResult()));
+        CompanionEntity loaded = KindredEntities.type(CompanionSpecies.QUOKKA).create(h.getLevel());
+        loaded.load(output);
         baby.discard();
         h.getLevel().addFreshEntity(loaded);
         h.assertTrue(loaded.isQuokkaDecoy(), "Temporary status survives a chunk/save reload");
@@ -1227,7 +1224,7 @@ public final class KindredGameTests {
     private static void quokkaFlee(GameTestHelper h) {
         CompanionEntity wild = h.spawn(KindredEntities.type(CompanionSpecies.QUOKKA), new BlockPos(5, 1, 4));
         var attacker = h.spawnWithNoFreeWill(EntityType.ZOMBIE, new BlockPos(7, 1, 4));
-        wild.hurtServer(h.getLevel(), attacker.damageSources().mobAttack(attacker), 1);
+        wild.hurt(attacker.damageSources().mobAttack(attacker), 1);
         h.assertTrue(wild.isQuokkaFleeing(), "Hurt wild adults enter the escape window");
         var babies = h.getLevel()
                 .getEntitiesOfClass(
@@ -1236,7 +1233,7 @@ public final class KindredGameTests {
                 babies.size() == 1 && babies.getFirst().getDeltaMovement().x > 0,
                 "One baby is thrown toward the attacker");
         wild.invulnerableTime = 0;
-        wild.hurtServer(h.getLevel(), attacker.damageSources().mobAttack(attacker), 1);
+        wild.hurt(attacker.damageSources().mobAttack(attacker), 1);
         h.assertTrue(
                 h.getLevel()
                                 .getEntitiesOfClass(
@@ -1343,7 +1340,7 @@ public final class KindredGameTests {
         h.assertTrue(
                 HelpingHandGuard.allows(level, null, Items.OAK_PLANKS, List.of(Items.OAK_LOG), none, 4),
                 "Planks cannot be turned back into logs, so they may be copied");
-        Identifier planks = Identifier.withDefaultNamespace("oak_planks");
+        ResourceLocation planks = ResourceLocation.withDefaultNamespace("oak_planks");
         h.assertFalse(
                 HelpingHandGuard.allows(
                         level, planks, Items.OAK_PLANKS, List.of(Items.OAK_LOG), List.of("minecraft:oak_planks"), 4),
@@ -1414,7 +1411,7 @@ public final class KindredGameTests {
                 arrows.size() == 1 && arrows.getFirst().getOwner() == pet,
                 "The Mini Player must fire one spirit arrow that it owns");
         h.assertTrue(
-                arrows.getFirst().pickup == net.minecraft.world.entity.projectile.arrow.AbstractArrow.Pickup.DISALLOWED,
+                arrows.getFirst().pickup == net.minecraft.world.entity.projectile.AbstractArrow.Pickup.DISALLOWED,
                 "Spirit arrows must not be pickupable");
         finish(h, owner);
     }
@@ -1549,15 +1546,16 @@ public final class KindredGameTests {
     private static void quokkaSpawns(GameTestHelper h) {
         var jungle = h.getLevel()
                 .registryAccess()
-                .getOrThrow(net.minecraft.world.level.biome.Biomes.JUNGLE)
+                .registryOrThrow(Registries.BIOME)
+                .getHolderOrThrow(net.minecraft.world.level.biome.Biomes.JUNGLE)
                 .value();
         var spawns = jungle.getMobSettings().getMobs(MobCategory.CREATURE).unwrap();
         h.assertTrue(
                 spawns.stream()
-                        .anyMatch(entry -> entry.value().type() == KindredEntities.type(CompanionSpecies.QUOKKA)
-                                && entry.weight() == 2
-                                && entry.value().minCount() == 1
-                                && entry.value().maxCount() == 3),
+                        .anyMatch(entry -> entry.type == KindredEntities.type(CompanionSpecies.QUOKKA)
+                                && entry.getWeight().asInt() == 2
+                                && entry.minCount == 1
+                                && entry.maxCount == 3),
                 "Jungles must load the weight-two Quokka biome modifier");
         h.assertTrue(
                 new ItemStack(Items.FERN).is(CompanionSpecies.QUOKKA.tamingTag()),
@@ -1601,20 +1599,13 @@ public final class KindredGameTests {
         quokka.addExperience(Integer.MAX_VALUE);
         quokka.setDisabledAbilityNames(List.of("always_happy"));
         var calf = h.spawn(EntityType.COW, new BlockPos(5, 1, 4));
-        var locked = h.spawn(EntityType.COW, new BlockPos(6, 1, 4));
         calf.setAge(-1000);
-        locked.setAge(-1000);
-        owner.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.GOLDEN_DANDELION));
-        locked.mobInteract(owner, net.minecraft.world.InteractionHand.MAIN_HAND);
-        h.assertTrue(locked.isAgeLocked(), "Fixture golden dandelion must lock the calf's age");
         h.runAfterDelay(1, () -> {
             int age = calf.getAge();
-            int lockedAge = locked.getAge();
             quokka.setDisabledAbilityNames(List.of());
             h.runAfterDelay(10, () -> {
                 h.assertTrue(
                         calf.getAge() == age + 30, "Ten world ticks must advance baby growth by exactly thirty ticks");
-                h.assertTrue(locked.getAge() == lockedAge, "Always Happy respects golden-dandelion age locks");
                 finish(h, owner);
             });
         });
@@ -1658,8 +1649,8 @@ public final class KindredGameTests {
                     sounds.interact())) {
                 var sound = supplier.get();
                 h.assertTrue(
-                        sound.location().getNamespace().equals(KindredSpirits.MOD_ID)
-                                && registry.containsKey(sound.location()),
+                        sound.getLocation().getNamespace().equals(KindredSpirits.MOD_ID)
+                                && registry.containsKey(sound.getLocation()),
                         species + " must resolve registered custom sounds after server startup");
             }
         }
@@ -1701,15 +1692,11 @@ public final class KindredGameTests {
                 clouds.size() == 1 && clouds.getFirst().getParticle().getType() == KindredParticles.DRAGON_SMOKE.get(),
                 "Dragon Breath must create its custom animated smoke pool");
         var cloud = clouds.getFirst();
-        TagValueOutput output = TagValueOutput.createWithContext(
-                ProblemReporter.DISCARDING, h.getLevel().registryAccess());
+        CompoundTag output = new CompoundTag();
         cloud.save(output);
-        h.assertTrue(
-                !output.buildResult().contains("potion_contents"),
-                "The custom pool stays visual-only, with no potion effects");
-        var loaded = EntityType.AREA_EFFECT_CLOUD.create(h.getLevel(), EntitySpawnReason.LOAD);
-        loaded.load(
-                TagValueInput.create(ProblemReporter.DISCARDING, h.getLevel().registryAccess(), output.buildResult()));
+        h.assertTrue(!output.contains("potion_contents"), "The custom pool stays visual-only, with no potion effects");
+        var loaded = EntityType.AREA_EFFECT_CLOUD.create(h.getLevel());
+        loaded.load(output);
         h.assertTrue(
                 loaded.getParticle().getType() == KindredParticles.DRAGON_SMOKE.get(),
                 "Custom cloud appearance survives saving");

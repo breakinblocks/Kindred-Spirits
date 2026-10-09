@@ -1,7 +1,8 @@
 {
   "display": {
     "icon": {
-      "id": "kindredspirits:kindred_charm"
+      "id": "kindredspirits:kindred_charm",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.root.title"
@@ -9,7 +10,7 @@
     "description": {
       "translate": "advancements.kindredspirits.root.description"
     },
-    "background": "minecraft:block/purple_terracotta",
+    "background": "minecraft:textures/block/purple_terracotta.png",
     "show_toast": false,
     "announce_to_chat": false
   },

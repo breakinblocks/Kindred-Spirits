@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,30 +26,30 @@ public final class CompanionLights {
                 .apply(instance, Entry::new));
     }
 
-    public static final Codec<CompanionLights> CODEC = Codec.unboundedMap(Identifier.CODEC, Entry.CODEC.listOf())
+    public static final Codec<CompanionLights> CODEC = Codec.unboundedMap(ResourceLocation.CODEC, Entry.CODEC.listOf())
             .xmap(CompanionLights::new, lights -> lights.entries);
 
-    private final Map<Identifier, List<Entry>> entries;
+    private final Map<ResourceLocation, List<Entry>> entries;
 
     public CompanionLights() {
         this(Map.of());
     }
 
-    private CompanionLights(Map<Identifier, List<Entry>> entries) {
+    private CompanionLights(Map<ResourceLocation, List<Entry>> entries) {
         this.entries = new HashMap<>();
         entries.forEach((key, list) -> this.entries.put(key, new ArrayList<>(list)));
     }
 
-    public int count(Identifier key) {
+    public int count(ResourceLocation key) {
         return this.entries.getOrDefault(key, List.of()).size();
     }
 
-    public boolean holds(Identifier key, BlockPos pos) {
+    public boolean holds(ResourceLocation key, BlockPos pos) {
         return this.entries.getOrDefault(key, List.of()).stream()
                 .anyMatch(entry -> entry.pos().equals(pos));
     }
 
-    public boolean place(ServerLevel level, Identifier key, BlockPos pos, BlockState state, int max) {
+    public boolean place(ServerLevel level, ResourceLocation key, BlockPos pos, BlockState state, int max) {
         if (max <= 0 || !level.isLoaded(pos) || !level.getBlockState(pos).isAir() || this.holds(key, pos)) {
             return false;
         }
@@ -67,7 +67,7 @@ public final class CompanionLights {
         return true;
     }
 
-    public void sweep(ServerLevel level, Identifier key, Vec3 origin, int expiryTicks, double maxDistance) {
+    public void sweep(ServerLevel level, ResourceLocation key, Vec3 origin, int expiryTicks, double maxDistance) {
         List<Entry> list = this.entries.get(key);
         if (list == null) {
             return;
@@ -90,7 +90,7 @@ public final class CompanionLights {
         }
     }
 
-    public void clear(ServerLevel level, Identifier key) {
+    public void clear(ServerLevel level, ResourceLocation key) {
         List<Entry> list = this.entries.remove(key);
         if (list != null) {
             list.forEach(entry -> this.remove(level, entry));

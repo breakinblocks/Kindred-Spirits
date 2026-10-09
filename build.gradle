@@ -19,7 +19,7 @@ base {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
     withSourcesJar()
 }
 
@@ -49,6 +49,11 @@ repositories {
         content { includeGroup 'maven.modrinth' }
     }
     maven {
+        name = 'GeckoLib'
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content { includeGroup 'software.bernie.geckolib' }
+    }
+    maven {
         name = 'Illusive Soulworks'
         url = 'https://maven.theillusivec4.top/'
         content { includeGroup 'top.theillusivec4.curios' }
@@ -57,11 +62,6 @@ repositories {
 
 neoForge {
     version = neoforge_version
-
-    interfaceInjectionData.from provider {
-        zipTree(configurations.geckolibInterfaces.singleFile)
-                .matching { include 'META-INF/interface_injections.json' }
-    }
 
     runs {
         configureEach {
@@ -83,11 +83,10 @@ neoForge {
             type = 'gameTestServer'
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
             gameDirectory = project.file('run-gametest')
-            programArguments.addAll '--tests', 'kindredspirits:*', '--report', 'results.xml'
         }
 
-        clientData {
-            clientData()
+        data {
+            data()
             programArguments.addAll '--mod', mod_id,
                     '--all',
                     '--output', file('src/generated/resources/').getAbsolutePath(),
@@ -105,16 +104,13 @@ neoForge {
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
-    geckolibInterfaces
 }
 
 dependencies {
-    geckolibInterfaces "maven.modrinth:geckolib:${geckolib_version}"
-
     compileOnly "io.github.llamalad7:mixinextras-common:${mixinextras_version}"
     annotationProcessor "io.github.llamalad7:mixinextras-common:${mixinextras_version}"
 
-    implementation "maven.modrinth:geckolib:${geckolib_version}"
+    implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
     compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
@@ -171,12 +167,6 @@ tasks.register('verifyModResources') {
         def json = new groovy.json.JsonSlurper()
         def assets = new File(resourceRoot, 'assets/kindredspirits')
         fileTree(resourceRoot) { include '**/*.json' }.each { json.parse(it) }
-        fileTree(new File(assets, 'items')) { include '*.json' }.each { item ->
-            def model = json.parse(item).model.model
-            if (model?.startsWith('kindredspirits:') && !new File(assets, "models/${model.split(':')[1]}.json").isFile()) {
-                throw new GradleException("${item.name}: missing local item model ${model}")
-            }
-        }
         fileTree(new File(assets, 'models')) { include '**/*.json' }.each { model ->
             def document = json.parse(model)
             document.textures?.values()?.each { texture ->
@@ -185,14 +175,14 @@ tasks.register('verifyModResources') {
                 }
             }
         }
-        fileTree(new File(assets, 'geckolib/models/entity')) { include '*.json' }.each { model ->
+        fileTree(new File(assets, 'geo/entity')) { include '*.json' }.each { model ->
             def geometry = json.parse(model).'minecraft:geometry'[0]
             def names = geometry.bones.collect { it.name } as Set
             geometry.bones.each { bone ->
                 if (bone.parent && !names.contains(bone.parent)) throw new GradleException("${model.name}: missing parent ${bone.parent}")
             }
             def species = model.name.replace('.geo.json', '').replace('_slim', '')
-            def animationFile = new File(assets, "geckolib/animations/entity/${species}.animation.json")
+            def animationFile = new File(assets, "animations/entity/${species}.animation.json")
             if (!animationFile.isFile()) throw new GradleException("${model.name}: missing animation file")
             json.parse(animationFile).animations.each { name, animation ->
                 animation.bones?.keySet()?.each { bone ->
@@ -314,7 +304,7 @@ tasks.named('check').configure { dependsOn 'verifySoundAssets' }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 25
+    options.release = 21
 }
 
 tasks.named('processResources', ProcessResources).configure {

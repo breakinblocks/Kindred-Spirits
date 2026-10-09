@@ -11,13 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -31,19 +30,23 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /** Stateless support mechanics; timers belong to companions or persisted mob attachments. */
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class QuokkaSupport {
-    private static final Identifier SNACK = KindredSpirits.id("quokka_snack");
+    private static final ResourceLocation SNACK = KindredSpirits.id("quokka_snack");
     private static final List<Holder<MobEffect>> SMILE_EFFECTS = List.of(
-            MobEffects.REGENERATION, MobEffects.HASTE, MobEffects.SPEED, MobEffects.RESISTANCE, MobEffects.ABSORPTION);
+            MobEffects.REGENERATION,
+            MobEffects.DIG_SPEED,
+            MobEffects.MOVEMENT_SPEED,
+            MobEffects.DAMAGE_RESISTANCE,
+            MobEffects.ABSORPTION);
 
     private QuokkaSupport() {}
 
     public static void smile(CompanionEntity companion, @Nullable ServerPlayer owner) {
-        Identifier id = CompanionAbilities.SMILE.id();
+        ResourceLocation id = CompanionAbilities.SMILE.id();
         if (!companion.ownerWithin(owner, 256) || !companion.isAbilityReady(id)) return;
         owner.addEffect(
                 new MobEffectInstance(SMILE_EFFECTS.get(companion.getRandom().nextInt(SMILE_EFFECTS.size())), 600));
@@ -54,7 +57,7 @@ public final class QuokkaSupport {
     }
 
     public static void breed(CompanionEntity companion, @Nullable ServerPlayer owner) {
-        Identifier id = CompanionAbilities.ALWAYS_HAPPY.id();
+        ResourceLocation id = CompanionAbilities.ALWAYS_HAPPY.id();
         if (!companion.isAbilityReady(id)) return;
         companion.setAbilityCooldown(id, 2400);
         Map<EntityType<?>, List<Animal>> groups =
@@ -95,9 +98,7 @@ public final class QuokkaSupport {
             // Exactly two extra age ticks; a per-animal stamp prevents overlapping companions stacking.
             long now = companion.level().getGameTime();
             for (Animal animal : nearbyAnimals(companion)) {
-                if (animal.isBaby()
-                        && !animal.isAgeLocked()
-                        && animal.getData(KindredAttachments.QUOKKA_AGED_AT) != now) {
+                if (animal.isBaby() && animal.getData(KindredAttachments.QUOKKA_AGED_AT) != now) {
                     animal.setData(KindredAttachments.QUOKKA_AGED_AT, now);
                     animal.setAge(Math.min(0, animal.getAge() + 2));
                 }
@@ -207,10 +208,10 @@ public final class QuokkaSupport {
 
     public static void throwBaby(CompanionEntity parent, LivingEntity attacker) {
         ServerLevel level = (ServerLevel) parent.level();
-        CompanionEntity baby = KindredEntities.type(CompanionSpecies.QUOKKA).create(level, EntitySpawnReason.EVENT);
+        CompanionEntity baby = KindredEntities.type(CompanionSpecies.QUOKKA).create(level);
         if (baby == null) return;
         baby.makeQuokkaDecoy(1200);
-        baby.snapTo(parent.getX(), parent.getY() + 0.3, parent.getZ(), parent.getYRot(), 0);
+        baby.moveTo(parent.getX(), parent.getY() + 0.3, parent.getZ(), parent.getYRot(), 0);
         Vec3 direction = attacker.position().subtract(parent.position()).normalize();
         baby.setDeltaMovement(direction.x * 0.7, 0.4, direction.z * 0.7);
         if (level.addFreshEntity(baby)) parent.playSpecialAttack(0.7f, 1.2f);

@@ -6,15 +6,15 @@ import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.registration.IRecipeRegistration;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
 
 @JeiPlugin
 public class KindredJeiPlugin implements IModPlugin {
-    private static final Identifier UID = KindredSpirits.id("jei");
+    private static final ResourceLocation UID = KindredSpirits.id("jei");
 
     @Override
-    public Identifier getPluginUid() {
+    public ResourceLocation getPluginUid() {
         return UID;
     }
 

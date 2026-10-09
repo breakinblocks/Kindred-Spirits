@@ -2,7 +2,8 @@
   "parent": "kindredspirits:bond_companion",
   "display": {
     "icon": {
-      "id": "minecraft:magenta_dye"
+      "id": "minecraft:magenta_dye",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.dye.title"

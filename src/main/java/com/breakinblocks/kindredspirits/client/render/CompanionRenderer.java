@@ -7,39 +7,23 @@ import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import com.breakinblocks.kindredspirits.registry.KindredItems;
-import com.geckolib.constant.dataticket.DataTicket;
-import com.geckolib.model.GeoModel;
-import com.geckolib.renderer.GeoEntityRenderer;
-import com.geckolib.renderer.base.BoneSnapshots;
-import com.geckolib.renderer.base.GeoRenderState;
-import com.geckolib.renderer.base.RenderPassInfo;
-import com.geckolib.renderer.layer.builtin.AutoGlowingGeoLayer;
-import java.util.List;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
-import net.neoforged.neoforge.registries.DeferredItem;
+import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.model.GeoModel;
+import software.bernie.geckolib.renderer.GeoEntityRenderer;
+import software.bernie.geckolib.renderer.layer.AutoGlowingGeoLayer;
 
-public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, LivingEntityRenderState> {
-    static final DataTicket<String> EQUIPMENT = DataTicket.create("kindredspirits:equipment", String.class);
-    static final DataTicket<Integer> DYE = DataTicket.create("kindredspirits:dye", Integer.class);
-    static final DataTicket<String> SKIN = DataTicket.create("kindredspirits:skin", String.class);
-
+public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity> {
     private final CompanionSpecies species;
 
     public CompanionRenderer(EntityRendererProvider.Context context, CompanionSpecies species) {
         this(context, species, modelFor(species));
-        this.withRenderLayer(new DyeMaskGeoLayer(this));
-        if (species.hasGlowMask())
-            this.withRenderLayer(new AutoGlowingGeoLayer<>(this) {
-                @Override
-                protected boolean shouldAddZOffset(LivingEntityRenderState renderState) {
-                    return true;
-                }
-            });
+        this.addRenderLayer(new DyeMaskGeoLayer(this));
+        if (species.hasGlowMask()) this.addRenderLayer(new AutoGlowingGeoLayer<>(this));
     }
 
     private static GeoModel<CompanionEntity> modelFor(CompanionSpecies species) {
@@ -53,10 +37,6 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
         };
     }
 
-    static boolean wears(GeoRenderState state, DeferredItem<?> item) {
-        return item.getId().toString().equals(state.getOrDefaultGeckolibData(EQUIPMENT, ""));
-    }
-
     protected CompanionRenderer(
             EntityRendererProvider.Context context, CompanionSpecies species, GeoModel<CompanionEntity> model) {
         super(context, model);
@@ -66,70 +46,65 @@ public class CompanionRenderer extends GeoEntityRenderer<CompanionEntity, Living
     }
 
     @Override
-    public void addRenderData(
-            CompanionEntity entity, Void relatedObject, LivingEntityRenderState renderState, float partialTick) {
-        super.addRenderData(entity, relatedObject, renderState, partialTick);
-        renderState.addGeckolibData(EQUIPMENT, entity.equipmentId());
-        renderState.addGeckolibData(DYE, entity.getDyeId());
-        renderState.addGeckolibData(SKIN, this.species.usesPlayerSkin() ? "" : entity.getSkinName());
+    public void scaleModelForRender(
+            float widthScale,
+            float heightScale,
+            PoseStack poseStack,
+            CompanionEntity animatable,
+            BakedGeoModel model,
+            boolean isReRender,
+            float partialTick,
+            int packedLight,
+            int packedOverlay) {
+        float ageScale = animatable.getAgeScale();
+        super.scaleModelForRender(
+                widthScale * ageScale,
+                heightScale * ageScale,
+                poseStack,
+                animatable,
+                model,
+                isReRender,
+                partialTick,
+                packedLight,
+                packedOverlay);
     }
 
     @Override
-    public void scaleModelForRender(RenderPassInfo<LivingEntityRenderState> renderPass, float width, float height) {
-        float ageScale = renderPass.renderState().ageScale;
-        super.scaleModelForRender(renderPass, width * ageScale, height * ageScale);
+    protected float getDeathMaxRotation(CompanionEntity animatable) {
+        return this.species.hasAnimation(CompanionAnimations.DEATH) ? 0.0f : super.getDeathMaxRotation(animatable);
     }
 
     @Override
-    protected float getDeathMaxRotation(GeoRenderState renderState) {
-        return this.species.hasAnimation(CompanionAnimations.DEATH) ? 0.0f : super.getDeathMaxRotation(renderState);
+    public boolean shouldShowName(CompanionEntity entity) {
+        return (entity.isTame() && KindredConfig.CLIENT.showLevelInName.get()) || super.shouldShowName(entity);
     }
 
     @Override
-    public void adjustModelBonesForRender(
-            RenderPassInfo<LivingEntityRenderState> renderPass, BoneSnapshots boneSnapshots) {
-        super.adjustModelBonesForRender(renderPass, boneSnapshots);
+    protected void renderNameTag(
+            CompanionEntity entity,
+            Component displayName,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight,
+            float partialTick) {
+        super.renderNameTag(
+                entity, this.nameTag(entity, displayName), poseStack, bufferSource, packedLight, partialTick);
+    }
 
-        List<String> headBones = this.species.headBones();
-        if (headBones.isEmpty()) {
-            return;
+    private Component nameTag(CompanionEntity entity, Component displayName) {
+        if (!entity.isTame() || !KindredConfig.CLIENT.showLevelInName.get()) {
+            return displayName;
         }
 
-        LivingEntityRenderState state = renderPass.renderState();
-        float limit = this.species.maxHeadYaw();
-        float yaw = Mth.clamp(state.yRot, -limit, limit) * Mth.DEG_TO_RAD / headBones.size();
-        float pitch = Mth.clamp(state.xRot, -limit, limit) * Mth.DEG_TO_RAD / headBones.size();
-
-        boolean yawOnZ = this.species.headYawAxis() == Direction.Axis.Z;
-
-        for (String bone : headBones) {
-            boneSnapshots.ifPresent(bone, snapshot -> {
-                snapshot.setRotX(snapshot.getRotX() + pitch);
-                if (yawOnZ) {
-                    snapshot.setRotZ(snapshot.getRotZ() + yaw);
-                } else {
-                    snapshot.setRotY(snapshot.getRotY() + yaw);
-                }
-            });
-        }
-    }
-
-    @Override
-    public void extractRenderState(CompanionEntity entity, LivingEntityRenderState state, float partialTick) {
-        super.extractRenderState(entity, state, partialTick);
-
-        if (entity.isTame() && KindredConfig.CLIENT.showLevelInName.get()) {
-            int stars = entity.getStars();
-            state.nameTag = stars > 0
-                    ? Component.translatable(
-                                    "entity.kindredspirits.name_with_stars",
-                                    entity.getDisplayName(),
-                                    entity.getLevel(),
-                                    CharmView.starText(stars))
-                            .withStyle(
-                                    stars >= entity.configuredMaxStars() ? ChatFormatting.GOLD : ChatFormatting.WHITE)
-                    : Component.translatable(
-                            "entity.kindredspirits.name_with_level", entity.getDisplayName(), entity.getLevel());
-        }
+        int stars = entity.getStars();
+        return stars > 0
+                ? Component.translatable(
+                                "entity.kindredspirits.name_with_stars",
+                                entity.getDisplayName(),
+                                entity.getLevel(),
+                                CharmView.starText(stars))
+                        .withStyle(stars >= entity.configuredMaxStars() ? ChatFormatting.GOLD : ChatFormatting.WHITE)
+                : Component.translatable(
+                        "entity.kindredspirits.name_with_level", entity.getDisplayName(), entity.getLevel());
     }
 }

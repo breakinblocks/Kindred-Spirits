@@ -3,33 +3,34 @@ package com.breakinblocks.kindredspirits.client.render;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.KindredSkins;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
-import com.geckolib.constant.dataticket.DataTicket;
-import com.geckolib.model.DefaultedEntityGeoModel;
-import com.geckolib.renderer.base.GeoRenderState;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.resources.PlayerSkin;
+import net.minecraft.resources.ResourceLocation;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 
 public class MiniPlayerGeoModel extends DefaultedEntityGeoModel<CompanionEntity> {
-    public static final DataTicket<Identifier> SKIN_TEXTURE =
-            DataTicket.create("kindredspirits:skin_texture", Identifier.class);
-    public static final DataTicket<Boolean> SLIM_ARMS = DataTicket.create("kindredspirits:slim_arms", Boolean.class);
+    private final ResourceLocation slimModel;
 
-    private final Identifier slimModel;
-
-    public MiniPlayerGeoModel(Identifier assetSubpath) {
+    public MiniPlayerGeoModel(ResourceLocation assetSubpath) {
         super(assetSubpath);
         this.slimModel = this.buildFormattedModelPath(KindredSpirits.id(assetSubpath.getPath() + "_slim"));
     }
 
     @Override
-    public Identifier getModelResource(GeoRenderState renderState) {
-        return renderState.getOrDefaultGeckolibData(SLIM_ARMS, false)
+    public ResourceLocation getModelResource(CompanionEntity companion) {
+        return KindredSkins.skinFor(companion).model() == PlayerSkin.Model.SLIM
                 ? this.slimModel
-                : super.getModelResource(renderState);
+                : super.getModelResource(companion);
     }
 
     @Override
-    public Identifier getTextureResource(GeoRenderState renderState) {
-        return renderState.getOrDefaultGeckolibData(
-                SKIN_TEXTURE, KindredSkins.steve().body().texturePath());
+    public ResourceLocation getTextureResource(CompanionEntity companion) {
+        return KindredSkins.skinFor(companion).texture();
+    }
+
+    @Override
+    public void setCustomAnimations(
+            CompanionEntity companion, long instanceId, AnimationState<CompanionEntity> animationState) {
+        CompanionGeoModel.turnHead(this, companion, animationState);
     }
 }

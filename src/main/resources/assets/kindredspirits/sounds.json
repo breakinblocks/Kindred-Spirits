@@ -413,13 +413,13 @@
     "subtitle": "subtitles.kindredspirits.direwolf_hurt",
     "sounds": [
       {
-        "name": "minecraft:mob/wolf/classic/hurt1"
+        "name": "minecraft:mob/wolf/hurt1"
       },
       {
-        "name": "minecraft:mob/wolf/classic/hurt2"
+        "name": "minecraft:mob/wolf/hurt2"
       },
       {
-        "name": "minecraft:mob/wolf/classic/hurt3"
+        "name": "minecraft:mob/wolf/hurt3"
       }
     ]
   },
@@ -427,7 +427,7 @@
     "subtitle": "subtitles.kindredspirits.direwolf_death",
     "sounds": [
       {
-        "name": "minecraft:mob/wolf/classic/death"
+        "name": "minecraft:mob/wolf/death"
       }
     ]
   },
@@ -435,13 +435,13 @@
     "subtitle": "subtitles.kindredspirits.direwolf_attack",
     "sounds": [
       {
-        "name": "minecraft:mob/wolf/classic/growl1"
+        "name": "minecraft:mob/wolf/growl1"
       },
       {
-        "name": "minecraft:mob/wolf/classic/growl2"
+        "name": "minecraft:mob/wolf/growl2"
       },
       {
-        "name": "minecraft:mob/wolf/classic/growl3"
+        "name": "minecraft:mob/wolf/growl3"
       }
     ]
   },

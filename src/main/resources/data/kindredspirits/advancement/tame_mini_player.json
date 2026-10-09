@@ -2,7 +2,8 @@
   "parent": "kindredspirits:tame_companion",
   "display": {
     "icon": {
-      "id": "kindredspirits:mini_player_spawn_egg"
+      "id": "kindredspirits:mini_player_spawn_egg",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.tame_mini_player.title"

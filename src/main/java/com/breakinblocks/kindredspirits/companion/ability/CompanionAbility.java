@@ -4,12 +4,12 @@ import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionLevels.AttributeBonus;
 import java.util.List;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public interface CompanionAbility {
-    Identifier id();
+    ResourceLocation id();
 
     default Component displayName() {
         return Component.translatable("ability." + id().getNamespace() + "." + id().getPath());

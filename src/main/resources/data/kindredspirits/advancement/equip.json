@@ -2,7 +2,8 @@
   "parent": "kindredspirits:bond_companion",
   "display": {
     "icon": {
-      "id": "kindredspirits:boxing_gloves"
+      "id": "kindredspirits:boxing_gloves",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.equip.title"

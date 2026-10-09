@@ -12,6 +12,9 @@ authors = "${mod_authors}"
 credits = "${mod_credits}"
 description = '''${mod_description}'''
 
+[[mixins]]
+config = "${mod_id}.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId = "neoforge"
     type = "required"
@@ -29,7 +32,7 @@ description = '''${mod_description}'''
 [[dependencies.${mod_id}]]
     modId = "geckolib"
     type = "required"
-    versionRange = "[5.5.2,)"
+    versionRange = "[4.9.3,)"
     ordering = "AFTER"
     side = "BOTH"
 
@@ -50,6 +53,6 @@ description = '''${mod_description}'''
 [[dependencies.${mod_id}]]
     modId = "curios"
     type = "optional"
-    versionRange = "[15.0.0,)"
+    versionRange = "[9.5.1,)"
     ordering = "NONE"
     side = "BOTH"

@@ -2,7 +2,8 @@
   "parent": "kindredspirits:tame_companion",
   "display": {
     "icon": {
-      "id": "minecraft:sculk"
+      "id": "minecraft:sculk",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.tame_nightfox.title"

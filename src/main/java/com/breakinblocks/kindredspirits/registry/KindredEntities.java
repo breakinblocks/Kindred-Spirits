@@ -8,7 +8,6 @@ import com.breakinblocks.kindredspirits.companion.SpiritArrow;
 import java.util.EnumMap;
 import java.util.Map;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -21,22 +20,20 @@ public final class KindredEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<MeteorEntity>> METEOR = ENTITY_TYPES.register(
             "meteor",
             registryName -> EntityType.Builder.<MeteorEntity>of(MeteorEntity::new, MobCategory.MISC)
-                    .noLootTable()
                     .sized(1.0f, 1.0f)
                     .fireImmune()
                     .clientTrackingRange(4)
                     .updateInterval(10)
-                    .build(ResourceKey.create(Registries.ENTITY_TYPE, registryName)));
+                    .build(registryName.toString()));
 
     public static final DeferredHolder<EntityType<?>, EntityType<SpiritArrow>> SPIRIT_ARROW = ENTITY_TYPES.register(
             "spirit_arrow",
             registryName -> EntityType.Builder.<SpiritArrow>of(SpiritArrow::new, MobCategory.MISC)
-                    .noLootTable()
                     .sized(0.5f, 0.5f)
                     .eyeHeight(0.13f)
                     .clientTrackingRange(4)
                     .updateInterval(20)
-                    .build(ResourceKey.create(Registries.ENTITY_TYPE, registryName)));
+                    .build(registryName.toString()));
 
     private static final Map<CompanionSpecies, DeferredHolder<EntityType<?>, EntityType<CompanionEntity>>> BY_SPECIES =
             new EnumMap<>(CompanionSpecies.class);
@@ -52,7 +49,7 @@ public final class KindredEntities {
                 if (species.immunities().fireImmune()) {
                     builder.fireImmune();
                 }
-                return builder.build(ResourceKey.create(Registries.ENTITY_TYPE, registryName));
+                return builder.build(registryName.toString());
             }));
         }
     }

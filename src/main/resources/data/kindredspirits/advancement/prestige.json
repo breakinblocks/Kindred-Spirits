@@ -2,7 +2,8 @@
   "parent": "kindredspirits:level_max",
   "display": {
     "icon": {
-      "id": "minecraft:nether_star"
+      "id": "minecraft:nether_star",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.prestige.title"

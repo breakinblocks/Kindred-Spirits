@@ -32,7 +32,7 @@ public class TrexEggBlock extends Block {
     private static final int HATCH_TICKS = 6000;
     private static final int WARM_RADIUS = 2;
     private static final int RANDOM_OFFSET = 100;
-    private static final VoxelShape SHAPE = Block.column(12.0, 0.0, 14.0);
+    private static final VoxelShape SHAPE = Block.box(2.0, 0.0, 2.0, 14.0, 14.0, 14.0);
 
     public TrexEggBlock(BlockBehaviour.Properties properties) {
         super(properties);

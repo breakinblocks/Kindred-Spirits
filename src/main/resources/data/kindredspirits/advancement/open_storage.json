@@ -2,7 +2,8 @@
   "parent": "kindredspirits:bond_companion",
   "display": {
     "icon": {
-      "id": "minecraft:chest"
+      "id": "minecraft:chest",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.open_storage.title"

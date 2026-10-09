@@ -15,7 +15,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
-import net.minecraft.world.item.SpawnEggItem;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -64,7 +64,7 @@ public final class KindredItems {
     private static final List<DeferredItem<KindredEquipmentItem>> EQUIPMENT =
             List.of(BOXING_GLOVES, DRAGON_TABLET, RUNNING_SHOES, BATTERY, QUOKKA_SNACK);
 
-    private static final Map<CompanionSpecies, DeferredItem<SpawnEggItem>> SPAWN_EGGS =
+    private static final Map<CompanionSpecies, DeferredItem<DeferredSpawnEggItem>> SPAWN_EGGS =
             new EnumMap<>(CompanionSpecies.class);
 
     static {
@@ -73,7 +73,8 @@ public final class KindredItems {
                     species,
                     ITEMS.registerItem(
                             species.getSerializedName() + "_spawn_egg",
-                            props -> new SpawnEggItem(props.spawnEgg(KindredEntities.type(species)))));
+                            props -> new DeferredSpawnEggItem(
+                                    () -> KindredEntities.type(species), 0xFFFFFF, 0xFFFFFF, props)));
         }
     }
 
@@ -86,7 +87,7 @@ public final class KindredItems {
         return EQUIPMENT;
     }
 
-    public static Map<CompanionSpecies, DeferredItem<SpawnEggItem>> spawnEggs() {
+    public static Map<CompanionSpecies, DeferredItem<DeferredSpawnEggItem>> spawnEggs() {
         return Collections.unmodifiableMap(SPAWN_EGGS);
     }
 

@@ -11,9 +11,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.Container;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.Item;
@@ -23,9 +22,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.display.RecipeDisplay;
-import net.minecraft.world.item.crafting.display.SlotDisplayContext;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public final class HelpingHandGuard {
     private static WeakReference<RecipeManager> graphSource = new WeakReference<>(null);
@@ -34,10 +31,10 @@ public final class HelpingHandGuard {
     private static int cachedDepth = -1;
 
     public static boolean mayDuplicate(ServerLevel level, ItemStack crafted, Container grid) {
-        Identifier recipeId = grid instanceof CraftingContainer crafting
-                ? level.recipeAccess()
+        ResourceLocation recipeId = grid instanceof CraftingContainer crafting
+                ? level.getRecipeManager()
                         .getRecipeFor(RecipeType.CRAFTING, crafting.asCraftInput(), level)
-                        .map(holder -> holder.id().identifier())
+                        .map(RecipeHolder::id)
                         .orElse(null)
                 : null;
 
@@ -60,7 +57,7 @@ public final class HelpingHandGuard {
 
     public static boolean allows(
             ServerLevel level,
-            @Nullable Identifier recipeId,
+            @Nullable ResourceLocation recipeId,
             Item crafted,
             Collection<Item> inputs,
             List<? extends String> blacklist,
@@ -76,7 +73,7 @@ public final class HelpingHandGuard {
         return Collections.disjoint(reachableFrom(level, crafted, depth), Set.copyOf(inputs));
     }
 
-    public static boolean isBlacklisted(Identifier recipeId, List<? extends String> blacklist) {
+    public static boolean isBlacklisted(ResourceLocation recipeId, List<? extends String> blacklist) {
         String id = recipeId.toString();
         for (String entry : blacklist) {
             String pattern = entry.trim();
@@ -122,30 +119,25 @@ public final class HelpingHandGuard {
     }
 
     private static Map<Item, Set<Item>> buildGraph(ServerLevel level, RecipeManager manager) {
-        ContextMap context = SlotDisplayContext.fromLevel(level);
         Map<Item, Set<Item>> edges = new HashMap<>();
         int skipped = 0;
 
         for (RecipeHolder<?> holder : manager.getRecipes()) {
             try {
                 Recipe<?> recipe = holder.value();
-                Set<Item> outputs = new HashSet<>();
-                for (RecipeDisplay display : recipe.display()) {
-                    for (ItemStack stack : display.result().resolveForStacks(context)) {
-                        if (!stack.isEmpty()) {
-                            outputs.add(stack.getItem());
-                        }
-                    }
-                }
-                if (outputs.isEmpty()) {
+                ItemStack result = recipe.getResultItem(level.registryAccess());
+                if (result.isEmpty()) {
                     continue;
                 }
+                Item output = result.getItem();
 
-                for (Ingredient ingredient : recipe.placementInfo().ingredients()) {
-                    ingredient
-                            .items()
-                            .forEach(input -> edges.computeIfAbsent(input.value(), item -> new HashSet<>())
-                                    .addAll(outputs));
+                for (Ingredient ingredient : recipe.getIngredients()) {
+                    for (ItemStack input : ingredient.getItems()) {
+                        if (!input.isEmpty()) {
+                            edges.computeIfAbsent(input.getItem(), item -> new HashSet<>())
+                                    .add(output);
+                        }
+                    }
                 }
             } catch (RuntimeException e) {
                 skipped++;

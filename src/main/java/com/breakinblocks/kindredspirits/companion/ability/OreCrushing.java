@@ -9,14 +9,14 @@ import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public final class OreCrushing {
     private static final String COMMON = "c";
@@ -48,7 +48,7 @@ public final class OreCrushing {
             }
 
             level.sendParticles(
-                    new ItemParticleOption(ParticleTypes.ITEM, ore.getItem()),
+                    new ItemParticleOption(ParticleTypes.ITEM, ore),
                     item.getX(),
                     item.getY() + 0.2,
                     item.getZ(),
@@ -84,8 +84,7 @@ public final class OreCrushing {
         }
 
         String namespace = BuiltInRegistries.ITEM.getKey(ore.getItem()).getNamespace();
-        return ore.typeHolder()
-                .tags()
+        return ore.getTags()
                 .map(TagKey::location)
                 .filter(tag -> tag.getNamespace().equals(COMMON))
                 .map(tag -> material(tag.getPath()))
@@ -121,7 +120,7 @@ public final class OreCrushing {
     }
 
     private static TagKey<Item> itemTag(String path) {
-        return TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(COMMON, path));
+        return TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(COMMON, path));
     }
 
     private OreCrushing() {}

@@ -2,9 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "L": "minecraft:leather",
-    "F": "minecraft:feather",
-    "R": "minecraft:redstone"
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "F": {
+      "item": "minecraft:feather"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
   },
   "pattern": [
     "F F",
@@ -12,6 +18,7 @@
     "L L"
   ],
   "result": {
-    "id": "kindredspirits:running_shoes"
+    "id": "kindredspirits:running_shoes",
+    "count": 1
   }
 }

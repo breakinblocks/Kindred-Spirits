@@ -2,7 +2,8 @@
   "parent": "kindredspirits:tame_companion",
   "display": {
     "icon": {
-      "id": "minecraft:dragon_egg"
+      "id": "minecraft:dragon_egg",
+      "count": 1
     },
     "title": {
       "translate": "advancements.kindredspirits.tame_baby_dragon.title"
