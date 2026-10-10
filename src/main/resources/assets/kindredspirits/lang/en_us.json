@@ -74,6 +74,7 @@
   "command.kindredspirits.bond_granted": "Granted %s bond points to %s, now bond level %s",
   "command.kindredspirits.revive_reset": "Cleared the revive timer for %s player(s)",
   "command.kindredspirits.revive_not_waiting": "None of those players were waiting on a revive timer.",
+  "command.kindredspirits.not_mini_player": "Only a bonded Mini Player can wear a player skin.",
   "message.kindredspirits.charm_not_carried": "You need a Kindred Charm with you to open it",
   "message.kindredspirits.level_up": "%s reached level %s",
   "message.kindredspirits.bond_up": "Your bond with %s deepens to level %s",

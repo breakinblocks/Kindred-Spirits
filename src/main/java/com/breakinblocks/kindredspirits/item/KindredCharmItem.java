@@ -384,7 +384,7 @@ public class KindredCharmItem extends Item {
         if (live != null) {
             live.setBonded(false);
             live.dropEquipment();
-        } else {
+        } else if (!bond.stored() || !setFree(player, bond, snapshot)) {
             if (!bond.stored()) {
                 CompanionWorldData.abandon(
                         player.level().getServer(), bond.companion().orElseThrow());
@@ -397,6 +397,36 @@ public class KindredCharmItem extends Item {
 
         releaseBond(player);
         KindredMessages.send(player, "charm_released", name);
+    }
+
+    private static boolean setFree(ServerPlayer player, CompanionBond bond, CompanionSnapshot snapshot) {
+        ServerLevel level = player.serverLevel();
+        boolean reviving = bond.reviveReadyAt() > 0;
+        CompanionEntity companion =
+                create(player, level, snapshot, reviving ? penalisedExperience(snapshot) : snapshot.experience());
+        if (companion == null) {
+            return false;
+        }
+
+        UUID bound = bond.companion().orElseThrow();
+        if (findEntity(level.getServer(), bound) == null) {
+            companion.setUUID(bound);
+        }
+
+        if (reviving) companion.setHealth(companion.getMaxHealth());
+        companion.setBonded(false);
+        ItemStack equipment = companion.takeEquipment();
+
+        if (!level.tryAddFreshEntityWithPassengers(companion)) {
+            return false;
+        }
+
+        if (!equipment.isEmpty()) {
+            player.getInventory().placeItemBackInInventory(equipment);
+        }
+        companion.burst(KindredParticles.SUMMON_RUNE.get(), 16);
+        companion.playSound(KindredSounds.CHARM_SUMMON.get(), 0.6f, 1.0f);
+        return true;
     }
 
     private static boolean missingLive(ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live) {
