@@ -10,6 +10,7 @@ import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -37,6 +38,11 @@ public final class KindredCommands {
                         .then(Commands.literal("info").executes(context -> reportCompanion(context.getSource())))
                         .then(Commands.literal("release").executes(context -> releaseBond(context.getSource())))
                         .then(Commands.literal("smelt").executes(context -> useAbility(context.getSource())))
+                        .then(Commands.literal("skin")
+                                .executes(context -> setSkin(context.getSource(), ""))
+                                .then(Commands.argument("player", StringArgumentType.word())
+                                        .executes(context -> setSkin(
+                                                context.getSource(), StringArgumentType.getString(context, "player")))))
                         .then(Commands.literal("xp")
                                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                                 .then(Commands.argument("amount", IntegerArgumentType.integer(1))
@@ -108,6 +114,23 @@ public final class KindredCommands {
                 source.sendFailure(Component.translatable("message.kindredspirits.charm_empty"));
                 return 0;
             }
+            return 1;
+        });
+    }
+
+    private static int setSkin(CommandSourceStack source, String name) {
+        return withPlayer(source, player -> {
+            CompanionBond bond = KindredAttachments.bond(player);
+            if (!bond.isBound()) {
+                source.sendFailure(Component.translatable("message.kindredspirits.charm_empty"));
+                return 0;
+            }
+            if (!bond.snapshot().orElseThrow().usesPlayerSkin()) {
+                source.sendFailure(Component.translatable("command.kindredspirits.not_mini_player"));
+                return 0;
+            }
+
+            KindredCharmItem.handleAction(player, KindredNetworking.CharmActionPayload.Action.SET_SKIN, 1, name);
             return 1;
         });
     }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.7
+
+- Releasing the bond with a companion that is resting in the Kindred Charm, or waiting to be revived, no longer deletes it. It now appears beside you, still tamed but unbonded, with its name, level and looks intact, and its gear goes to your inventory.
+- Added `/kindredspirits skin <player>`, open to every player, which dresses your bonded Mini Player in that player's skin. Run it with no name to go back to your own skin. It follows the same `allow_skin_choice` setting as the skin box on the charm screen.
+- Companions level about 50% faster. `base_experience` in the common config now defaults to 93 (was 140), so the climb to level 30 takes about 21,400 experience instead of 32,500. An existing config file keeps its old value until it is updated or deleted.
+
 ## 1.0.6
 
 - Raised every companion's level 1 health by 2.5 times: Baby Dragon and Gremlin 25, Nightfox 35, Mini Player, Quokka and Direwolf 45, T-Rex 75. These are the defaults in `kindredspirits-startup.toml`, so an existing config file keeps its old values until it is updated or deleted.

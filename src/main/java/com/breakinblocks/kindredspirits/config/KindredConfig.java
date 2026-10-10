@@ -154,7 +154,7 @@ public final class KindredConfig {
             maxLevel = builder.comment("Highest level a companion can reach.").defineInRange("max_level", 30, 1, 200);
             baseExperience = builder.comment(
                             "Experience needed to go from level 1 to level 2. Each level adds half this again.")
-                    .defineInRange("base_experience", 140, 1, 10000);
+                    .defineInRange("base_experience", 93, 1, 10000);
             experiencePerFeed = builder.comment("Experience granted when a companion is fed.")
                     .defineInRange("experience_per_feed", 4, 0, 1000);
             storageBaseSlots = builder.comment(
