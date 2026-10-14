@@ -1,11 +1,7 @@
 # Changelog
 
-## 1.0.7
+## 1.0.8
 
-- Releasing the bond with a companion that is resting in the Kindred Charm, or waiting to be revived, no longer deletes it. It now appears beside you, still tamed but unbonded, with its name, level and looks intact, and its gear goes to your inventory.
-- Added `/kindredspirits skin <player>`, open to every player, which dresses your bonded Mini Player in that player's skin. Run it with no name to go back to your own skin. It follows the same `allow_skin_choice` setting as the skin box on the charm screen.
-- Companions level about 50% faster. `base_experience` in the common config now defaults to 93 (was 140), so the climb to level 30 takes about 21,400 experience instead of 32,500. An existing config file keeps its old value until it is updated or deleted.
-- Added `/kindredspirits minime [mc_name] ["custom name"]`, which summons a Mini Player beside you that is tamed to you but not bonded and wanders on its own. It wears `mc_name`'s skin (yours by default) and shows the custom name, or `mc_name` when none is given. `minime_permission_level` in the common config sets who may use it, and defaults to operators (level 2).
 - Added the Companion Bed. Hurt companions rest in a nearby bed and heal with Regeneration II. Dye the cushion any colour.
 - Tamed companions on Stay now use their abilities without being bonded. Right-click one with an empty hand to toggle its abilities.
 - A bonded T-Rex or Direwolf can be ridden: press Mount in its pack. Hold sprint to gallop.
@@ -13,11 +9,15 @@
 - Companion attack and armour grow faster with level, and each star adds 5% attack and 0.25 armour.
 - Meteor Call and the Battery shock now scale with attack.
 - Bond xp bonus raised to 2.5x at bond 30 (was 1.5x), and each star adds 20% xp.
-- Companions level about 50% faster.
 - Fixed the bond xp bonus not applying to most xp orbs.
+- Added `/kindredspirits minime [mc_name] ["custom name"]` to summon an unbonded Mini Player that wanders on its own. Operators only by default (`minime_permission_level`).
+- New config options: `star_attack_bonus`, `star_armour_bonus`, `star_experience_bonus` and `bond_experience_bonus`. Existing configs keep their old `attack_per_level` and `armour_per_level` until updated or deleted.
+
+## 1.0.7
+
+- Companions level about 50% faster. Existing configs keep their old `base_experience` until updated or deleted.
 - Releasing a resting or dead companion now brings it out beside you instead of deleting it.
 - Added `/kindredspirits skin <player>` to dress your Mini Player in a player's skin.
-- New config options: `star_attack_bonus`, `star_armour_bonus`, `star_experience_bonus` and `bond_experience_bonus`. Existing configs keep their old `base_experience`, `attack_per_level` and `armour_per_level` until updated or deleted.
 
 ## 1.0.6
 
