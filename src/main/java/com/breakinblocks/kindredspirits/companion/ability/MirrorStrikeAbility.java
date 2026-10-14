@@ -60,7 +60,7 @@ public final class MirrorStrikeAbility implements CompanionAbility {
             return;
         }
 
-        CompanionEntity.bondedWithAbility(owner, OWNER_RANGE, CompanionAbilities.MIRROR_STRIKE)
+        CompanionEntity.withAbility(owner, OWNER_RANGE, CompanionAbilities.MIRROR_STRIKE)
                 .filter(companion -> companion.isAbilityReady(CompanionAbilities.MIRROR_STRIKE.id())
                         && companion.distanceToSqr(target) <= TARGET_RANGE_SQR
                         && companion.hasLineOfSight(target))

@@ -89,8 +89,7 @@ public final class QuokkaSupport {
     }
 
     public static void tick(CompanionEntity companion) {
-        if (companion.species() != CompanionSpecies.QUOKKA || !companion.isBonded() || !CompanionAbilities.enabled())
-            return;
+        if (companion.species() != CompanionSpecies.QUOKKA || !companion.usesAbilities()) return;
         if (companion.hasAbility(CompanionAbilities.ALWAYS_HAPPY)) {
             // Exactly two extra age ticks; a per-animal stamp prevents overlapping companions stacking.
             long now = companion.level().getGameTime();

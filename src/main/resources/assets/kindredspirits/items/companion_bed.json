@@ -1,0 +1,11 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "kindredspirits:block/companion_bed",
+    "tints": [
+      {
+        "type": "kindredspirits:cushion"
+      }
+    ]
+  }
+}

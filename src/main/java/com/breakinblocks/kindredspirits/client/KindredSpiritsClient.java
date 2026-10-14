@@ -8,9 +8,11 @@ import com.breakinblocks.kindredspirits.client.render.SpiritArrowRenderer;
 import com.breakinblocks.kindredspirits.client.screen.KindredStorageScreen;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
+import com.breakinblocks.kindredspirits.registry.KindredBlocks;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredMenus;
 import com.google.common.reflect.TypeToken;
+import java.util.List;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -23,6 +25,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
@@ -39,6 +42,16 @@ public final class KindredSpiritsClient {
         modEventBus.addListener(KindredSpiritsClient::registerScreens);
         modEventBus.addListener(KindredSpiritsClient::registerRenderStateModifiers);
         modEventBus.addListener(KindredSpiritsClient::registerReloadListeners);
+        modEventBus.addListener(KindredSpiritsClient::registerBlockTints);
+        modEventBus.addListener(KindredSpiritsClient::registerItemTints);
+    }
+
+    private static void registerBlockTints(RegisterColorHandlersEvent.BlockTintSources event) {
+        event.register(List.of(CushionTint.BLOCK), KindredBlocks.COMPANION_BED.get());
+    }
+
+    private static void registerItemTints(RegisterColorHandlersEvent.ItemTintSources event) {
+        event.register(KindredSpirits.id("cushion"), CushionTint.Item.MAP_CODEC);
     }
 
     private static void registerRenderStateModifiers(RegisterRenderStateModifiersEvent event) {

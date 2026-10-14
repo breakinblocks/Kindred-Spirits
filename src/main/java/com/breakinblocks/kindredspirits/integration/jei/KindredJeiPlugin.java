@@ -25,6 +25,8 @@ public class KindredJeiPlugin implements IModPlugin {
         registration.addIngredientInfo(
                 KindredItems.TREX_EGG.get(), Component.translatable("jei.kindredspirits.trex_egg"));
         registration.addIngredientInfo(
+                KindredItems.COMPANION_BED.get(), Component.translatable("jei.kindredspirits.companion_bed"));
+        registration.addIngredientInfo(
                 KindredItems.GOLDEN_BONE.get(), Component.translatable("jei.kindredspirits.golden_bone"));
         registration.addIngredientInfo(
                 KindredItems.SPIRIT_BANDAGE.get(), Component.translatable("jei.kindredspirits.spirit_bandage"));

@@ -25,6 +25,8 @@ import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 
 public enum CompanionSpecies implements StringRepresentable {
     NIGHTFOX(
@@ -240,6 +242,8 @@ public enum CompanionSpecies implements StringRepresentable {
                     Unlock.level(30, CompanionAbilities.LEADER_OF_THE_PACK)));
 
     public static final double DEFAULT_FOLLOW_RANGE = 24.0;
+    private static final Vec3 TREX_SEAT = new Vec3(0.0, 1.25, 0.45);
+    private static final Vec3 DIREWOLF_SEAT = new Vec3(0.0, 1.05, 0.1);
 
     private final String name;
     private final Size size;
@@ -355,6 +359,18 @@ public enum CompanionSpecies implements StringRepresentable {
 
     public boolean carriesWeapons() {
         return this == MINI_PLAYER;
+    }
+
+    public @Nullable Vec3 seat() {
+        return switch (this) {
+            case TREX -> TREX_SEAT;
+            case DIREWOLF -> DIREWOLF_SEAT;
+            default -> null;
+        };
+    }
+
+    public boolean rideable() {
+        return this.seat() != null;
     }
 
     public int storageRows() {

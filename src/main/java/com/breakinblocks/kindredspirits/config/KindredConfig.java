@@ -131,12 +131,16 @@ public final class KindredConfig {
         public final ModConfigSpec.IntValue restedCap;
         public final ModConfigSpec.IntValue maxStars;
         public final ModConfigSpec.DoubleValue starGrowthBonus;
+        public final ModConfigSpec.DoubleValue starExperienceBonus;
+        public final ModConfigSpec.DoubleValue starAttackBonus;
+        public final ModConfigSpec.DoubleValue starArmourBonus;
         public final ModConfigSpec.IntValue bondMaxLevel;
         public final ModConfigSpec.IntValue bondBaseCost;
         public final ModConfigSpec.DoubleValue bondGrowth;
         public final ModConfigSpec.IntValue bondFeedCooldownSeconds;
         public final ModConfigSpec.DoubleValue bondFeedFraction;
         public final ModConfigSpec.IntValue bondDeathFloor;
+        public final ModConfigSpec.DoubleValue bondExperienceBonus;
         public final ModConfigSpec.IntValue afkSeconds;
         public final ModConfigSpec.DoubleValue tamingChance;
         public final ModConfigSpec.BooleanValue beachSuspiciousSand;
@@ -172,9 +176,9 @@ public final class KindredConfig {
                     .defineInRange("health_per_level", 1.0, 0.0, 20.0);
             attackPerLevel = builder.comment(
                             "Extra attack damage added per level, before the species growth multiplier.")
-                    .defineInRange("attack_per_level", 0.25, 0.0, 20.0);
+                    .defineInRange("attack_per_level", 0.35, 0.0, 20.0);
             armourPerLevel = builder.comment("Extra armour added per level, before the species growth multiplier.")
-                    .defineInRange("armour_per_level", 0.1, 0.0, 5.0);
+                    .defineInRange("armour_per_level", 0.125, 0.0, 5.0);
             speedPerLevel = builder.comment(
                             "Extra movement speed added per level, before the species growth multiplier.")
                     .defineInRange("speed_per_level", 0.002, 0.0, 0.1);
@@ -198,6 +202,16 @@ public final class KindredConfig {
                     .defineInRange("max_stars", 5, 0, 10);
             starGrowthBonus = builder.comment("Extra per-level stat growth for each star, as a fraction.")
                     .defineInRange("star_growth_bonus", 0.1, 0.0, 5.0);
+            starExperienceBonus = builder.comment(
+                            "Extra experience gain for each star, as a fraction. Stars add together, so 0.2 gives",
+                            "a five star companion twice the experience of a fresh one.")
+                    .defineInRange("star_experience_bonus", 0.2, 0.0, 5.0);
+            starAttackBonus = builder.comment(
+                            "Extra attack damage for each star, as a fraction of the levelled value. Stars add",
+                            "together, so 0.05 gives a five star companion a quarter more.")
+                    .defineInRange("star_attack_bonus", 0.05, 0.0, 5.0);
+            starArmourBonus = builder.comment("Flat armour added for each star.")
+                    .defineInRange("star_armour_bonus", 0.25, 0.0, 20.0);
             builder.pop();
 
             builder.push("bond");
@@ -216,6 +230,10 @@ public final class KindredConfig {
                     .defineInRange("bond_feed_fraction", 0.05, 0.0, 1.0);
             bondDeathFloor = builder.comment("Bond level above which dying costs the companion a bond level.")
                     .defineInRange("bond_death_floor", 10, 0, 100);
+            bondExperienceBonus = builder.comment(
+                            "Extra experience gain at max bond, as a fraction. It rises evenly from none at bond 0,",
+                            "so 1.5 gives a max bond companion 2.5 times the experience.")
+                    .defineInRange("bond_experience_bonus", 1.5, 0.0, 10.0);
             afkSeconds = builder.comment(
                             "Seconds without the owner moving or looking around before bond stops growing.")
                     .defineInRange("afk_seconds", 120, 1, 86400);

@@ -93,7 +93,7 @@ public final class CompanionBondMath {
     }
 
     public static double experienceMultiplier(int level) {
-        return 1.0 + 0.5 * fraction(level);
+        return 1.0 + KindredConfig.COMMON.bondExperienceBonus.get() * fraction(level);
     }
 
     public static int reviveCooldownTicks(int level) {

@@ -28,6 +28,9 @@ public final class KindredItems {
     public static final DeferredItem<BlockItem> TREX_EGG =
             ITEMS.registerSimpleBlockItem("trex_egg", KindredBlocks.TREX_EGG);
 
+    public static final DeferredItem<BlockItem> COMPANION_BED =
+            ITEMS.registerSimpleBlockItem("companion_bed", KindredBlocks.COMPANION_BED);
+
     public static final DeferredItem<Item> GOLDEN_BONE =
             ITEMS.registerItem("golden_bone", props -> new Item(props.rarity(Rarity.UNCOMMON)));
 

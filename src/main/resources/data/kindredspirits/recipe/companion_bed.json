@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": "#minecraft:planks",
+    "H": "minecraft:hay_block",
+    "S": "#minecraft:wooden_slabs"
+  },
+  "pattern": [
+    "PHP",
+    "SSS"
+  ],
+  "result": {
+    "id": "kindredspirits:companion_bed"
+  }
+}

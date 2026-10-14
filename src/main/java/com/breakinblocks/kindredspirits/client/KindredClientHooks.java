@@ -1,6 +1,8 @@
 package com.breakinblocks.kindredspirits.client;
 
+import com.breakinblocks.kindredspirits.client.screen.CompanionAbilitiesScreen;
 import com.breakinblocks.kindredspirits.client.screen.KindredCharmScreen;
+import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.net.CharmView;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -18,6 +20,13 @@ public final class KindredClientHooks {
 
         if (open) {
             minecraft.setScreen(new KindredCharmScreen(view));
+        }
+    }
+
+    public static void openAbilities(int entityId) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level != null && minecraft.level.getEntity(entityId) instanceof CompanionEntity companion) {
+            minecraft.setScreen(new CompanionAbilitiesScreen(companion));
         }
     }
 

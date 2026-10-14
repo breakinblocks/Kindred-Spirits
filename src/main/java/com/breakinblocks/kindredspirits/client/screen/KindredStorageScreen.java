@@ -1,17 +1,23 @@
 package com.breakinblocks.kindredspirits.client.screen;
 
 import com.breakinblocks.kindredspirits.menu.KindredStorageMenu;
+import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 public class KindredStorageScreen extends AbstractContainerScreen<KindredStorageMenu> {
     private static final Identifier CONTAINER_BACKGROUND =
             Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
     private static final int COLOUR_LOCKED = 0x80311D3D;
+    private static final int MOUNT_BUTTON_WIDTH = 60;
+    private static final int MOUNT_BUTTON_HEIGHT = 20;
+    private static final int MOUNT_BUTTON_GAP = 4;
 
     private final int rows;
 
@@ -19,6 +25,23 @@ public class KindredStorageScreen extends AbstractContainerScreen<KindredStorage
         super(menu, inventory, title, 176, 114 + menu.getRowCount() * 18);
         this.rows = menu.getRowCount();
         this.inventoryLabelY = this.imageHeight - 94;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+
+        if (this.menu.mountable()) {
+            this.addRenderableWidget(Button.builder(
+                            Component.translatable("screen.kindredspirits.mount"),
+                            button -> ClientPacketDistributor.sendToServer(KindredNetworking.MountPayload.INSTANCE))
+                    .bounds(
+                            this.leftPos + this.imageWidth + MOUNT_BUTTON_GAP,
+                            this.topPos,
+                            MOUNT_BUTTON_WIDTH,
+                            MOUNT_BUTTON_HEIGHT)
+                    .build());
+        }
     }
 
     @Override
