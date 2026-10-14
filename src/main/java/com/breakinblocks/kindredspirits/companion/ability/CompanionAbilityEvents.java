@@ -39,7 +39,7 @@ public final class CompanionAbilityEvents {
     }
 
     private static Optional<CompanionEntity> companionWith(ServerPlayer owner, CompanionAbility ability) {
-        return CompanionEntity.bondedWithAbility(owner, ABILITY_RANGE, ability);
+        return CompanionEntity.withAbility(owner, ABILITY_RANGE, ability);
     }
 
     @SubscribeEvent
@@ -60,8 +60,7 @@ public final class CompanionAbilityEvents {
         boolean denied = !level.getEntitiesOfClass(
                         CompanionEntity.class,
                         search,
-                        companion -> companion.isAlive()
-                                && companion.isBonded()
+                        companion -> companion.usesAbilities()
                                 && companion.hasAbility(CompanionAbilities.ALPHA)
                                 && companion.distanceToSqr(event.getX(), event.getY(), event.getZ())
                                         <= square(alphaRadius(companion.getLevel())))

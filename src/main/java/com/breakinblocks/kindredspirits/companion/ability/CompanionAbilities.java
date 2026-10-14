@@ -95,7 +95,7 @@ public final class CompanionAbilities {
     public static final CompanionAbility NIGHT_WARD =
             register(new SimpleAbility(KindredSpirits.id("night_ward"), 40, (companion, owner) -> {
                 if (companion.ownerWithin(owner, OWNER_RANGE_FIRE_SQR) && owner.isOnFire()) {
-                    owner.clearFire();
+                    nightWard(owner);
                 }
             }));
 
@@ -191,6 +191,14 @@ public final class CompanionAbilities {
                     ownerEffect(companion, owner, OWNER_RANGE_LONG_SQR, MobEffects.INVISIBILITY, 80, 0);
                 }
             }));
+
+    public static final int NIGHT_WARD_FIRE_RESISTANCE = 600;
+
+    public static void nightWard(LivingEntity entity) {
+        entity.clearFire();
+        entity.addEffect(
+                new MobEffectInstance(MobEffects.FIRE_RESISTANCE, NIGHT_WARD_FIRE_RESISTANCE, 0, true, false, true));
+    }
 
     private static final Set<CompanionAbility> BASE_BUFFS =
             Set.of(ALPHA, FORGE_DRAFT, SMILE, TINKER, EAT_THAT, WISPLIGHT, NOT_ANOTHER_HOLE);

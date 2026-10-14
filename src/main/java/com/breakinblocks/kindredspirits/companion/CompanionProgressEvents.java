@@ -93,10 +93,9 @@ public final class CompanionProgressEvents {
         }
         player.setData(KindredAttachments.ORB_XP_PICKUP, -1L);
 
-        bondedCompanionNear(player, CompanionBondMath.PASSIVE_RANGE).ifPresent(companion -> {
-            int share = companion.progress().shareExperience(event.getAmount(), KindredConfig.COMMON.xpShare.get());
-            if (share > 0) companion.gainExperience(share);
-        });
+        bondedCompanionNear(player, CompanionBondMath.PASSIVE_RANGE)
+                .ifPresent(
+                        companion -> companion.gainExperience(event.getAmount(), KindredConfig.COMMON.xpShare.get()));
     }
 
     public static Optional<CompanionEntity> bondedCompanionNear(ServerPlayer player, double range) {

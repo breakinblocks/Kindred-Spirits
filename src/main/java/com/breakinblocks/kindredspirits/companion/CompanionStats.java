@@ -52,7 +52,7 @@ public record CompanionStats(
             CompanionStats::new);
 
     public static CompanionStats of(CompanionEntity companion) {
-        return build(companion.species(), companion.getBondLevel(), companion::getAttributeValue);
+        return build(companion.species(), companion.getBondLevel(), companion.getStars(), companion::getAttributeValue);
     }
 
     public static CompanionStats of(CompanionSpecies species, CompanionSnapshot snapshot) {
@@ -79,11 +79,11 @@ public record CompanionStats(
                 if (instance != null) instance.addOrReplacePermanentModifier(modifier);
             });
         }
-        return build(species, snapshot.bondLevel(), attributes::getValue);
+        return build(species, snapshot.bondLevel(), stars, attributes::getValue);
     }
 
     private static CompanionStats build(
-            CompanionSpecies species, int bondLevel, ToDoubleFunction<Holder<Attribute>> value) {
+            CompanionSpecies species, int bondLevel, int stars, ToDoubleFunction<Holder<Attribute>> value) {
         AttributeSupplier defaults =
                 CompanionEntity.createCompanionAttributes(species).build();
         List<Float> base = ATTRIBUTES.stream()
@@ -96,7 +96,7 @@ public record CompanionStats(
         return new CompanionStats(
                 base,
                 modified,
-                (float) CompanionBondMath.experienceMultiplier(bondLevel),
+                (float) CompanionLevels.experienceMultiplier(bondLevel, stars),
                 CompanionLevels.storageSlots(species, bondLevel),
                 species.storageSlots(),
                 CompanionBondMath.reviveCooldownTicks(bondLevel) / 20);

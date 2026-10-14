@@ -7,6 +7,7 @@
   "storage.mdx": { "name": "Storage", "icon": null },
   "abilities.mdx": { "name": "Abilities", "icon": null },
   "equipment.mdx": { "name": "Equipment", "icon": null },
+  "companion_bed.mdx": { "name": "Companion Bed", "icon": null },
   "spirits": { "name": "Spirits", "icon": null },
   "commands.mdx": { "name": "Commands", "icon": null }
 }

@@ -8,6 +8,7 @@ import com.breakinblocks.kindredspirits.client.render.SpiritArrowRenderer;
 import com.breakinblocks.kindredspirits.client.screen.KindredStorageScreen;
 import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
+import com.breakinblocks.kindredspirits.registry.KindredBlocks;
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.breakinblocks.kindredspirits.registry.KindredMenus;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -19,6 +20,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
@@ -34,6 +36,16 @@ public final class KindredSpiritsClient {
         modEventBus.addListener(KindredParticle::register);
         modEventBus.addListener(KindredSpiritsClient::registerScreens);
         modEventBus.addListener(KindredSpiritsClient::registerReloadListeners);
+        modEventBus.addListener(KindredSpiritsClient::registerBlockTints);
+        modEventBus.addListener(KindredSpiritsClient::registerItemTints);
+    }
+
+    private static void registerBlockTints(RegisterColorHandlersEvent.Block event) {
+        event.register(CushionTint::block, KindredBlocks.COMPANION_BED.get());
+    }
+
+    private static void registerItemTints(RegisterColorHandlersEvent.Item event) {
+        event.register(CushionTint::item, KindredBlocks.COMPANION_BED.get());
     }
 
     private static void clientSetup(FMLClientSetupEvent event) {

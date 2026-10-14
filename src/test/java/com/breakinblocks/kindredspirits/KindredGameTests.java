@@ -1,7 +1,10 @@
 package com.breakinblocks.kindredspirits;
 
+import com.breakinblocks.kindredspirits.block.CompanionBedBlock;
+import com.breakinblocks.kindredspirits.block.CushionColor;
 import com.breakinblocks.kindredspirits.block.TrexEggBlock;
 import com.breakinblocks.kindredspirits.companion.*;
+import com.breakinblocks.kindredspirits.companion.CompanionBedGoal;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
 import com.breakinblocks.kindredspirits.companion.ability.HelpingHandGuard;
 import com.breakinblocks.kindredspirits.companion.ability.OreCrushing;
@@ -118,6 +121,10 @@ public final class KindredGameTests {
         TESTS.put("invalid_ability_name_is_ignored", KindredGameTests::invalidAbility);
         TESTS.put("light_cleanup_on_dimension_transfer", KindredGameTests::lightTransfer);
         TESTS.put("light_cleanup_on_chunk_unload", KindredGameTests::lightUnload);
+        TESTS.put("only_a_bonded_trex_or_direwolf_can_be_ridden", KindredGameTests::riding);
+        TESTS.put("night_ward_protects_the_nightfox_from_fire", KindredGameTests::nightWardSelf);
+        TESTS.put("a_staying_tamed_companion_uses_its_abilities", KindredGameTests::stayingAbilities);
+        TESTS.put("a_companion_bed_heals_takes_dye_and_is_found", KindredGameTests::companionBed);
     }
 
     @SubscribeEvent
@@ -429,6 +436,112 @@ public final class KindredGameTests {
         h.assertTrue(
                 summoned.abilityCooldownTicks(CompanionAbilities.KILN_BREATH.id()) == 6000,
                 "Summoning must not reset Kiln Breath");
+        finish(h, player);
+    }
+
+    private static void nightWardSelf(GameTestHelper h) {
+        ServerPlayer player = player(h);
+        CompanionEntity nightfox = pet(h, CompanionSpecies.NIGHTFOX, player, true);
+        nightfox.addExperience(Integer.MAX_VALUE);
+        nightfox.igniteForSeconds(5);
+        nightfox.hurt(nightfox.damageSources().onFire(), 1.0f);
+        h.assertTrue(
+                !nightfox.isOnFire() && nightfox.hasEffect(net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE),
+                "Fire damage must put out a Night Ward Nightfox and give it Fire Resistance");
+        finish(h, player);
+    }
+
+    private static void companionBed(GameTestHelper h) {
+        ServerPlayer player = player(h);
+        BlockPos used = new BlockPos(4, 1, 4);
+        BlockPos free = new BlockPos(6, 1, 6);
+        h.setBlock(used, KindredBlocks.COMPANION_BED.get());
+        h.setBlock(free, KindredBlocks.COMPANION_BED.get());
+        CompanionEntity resting = pet(h, CompanionSpecies.NIGHTFOX, player, true);
+        CompanionEntity hurt =
+                h.spawnWithNoFreeWill(KindredEntities.type(CompanionSpecies.DIREWOLF), new BlockPos(2, 1, 6));
+        hurt.tame(player);
+        hurt.setCommand(CompanionCommand.FOLLOW);
+        hurt.setHealth(1.0f);
+        h.runAfterDelay(2, () -> {
+            var regen = resting.getEffect(net.minecraft.world.effect.MobEffects.REGENERATION);
+            h.assertTrue(
+                    regen != null && regen.getAmplifier() == CompanionEntity.BED_REGEN_AMPLIFIER,
+                    "A companion in a bed must get Regeneration II");
+
+            BlockPos bed = h.absolutePos(used);
+            ItemStack dye = new ItemStack(Items.RED_DYE);
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, dye);
+            h.getLevel()
+                    .getBlockState(bed)
+                    .useItemOn(
+                            dye,
+                            h.getLevel(),
+                            player,
+                            net.minecraft.world.InteractionHand.MAIN_HAND,
+                            new net.minecraft.world.phys.BlockHitResult(
+                                    Vec3.atCenterOf(bed), Direction.UP, bed, false));
+            h.assertTrue(
+                    h.getLevel().getBlockState(bed).getValue(CompanionBedBlock.COLOR) == CushionColor.RED,
+                    "Dye must recolour the cushion");
+
+            h.assertTrue(CompanionBedGoal.wantsBed(hurt), "A hurt following companion must want a bed");
+            h.assertTrue(
+                    h.absolutePos(free).equals(CompanionBedGoal.findBed(hurt)),
+                    "A companion must pick a free bed over one already in use");
+            hurt.setCommand(CompanionCommand.STAY);
+            h.assertFalse(CompanionBedGoal.wantsBed(hurt), "A companion on Stay must not go to bed");
+            finish(h, player);
+        });
+    }
+
+    private static void stayingAbilities(GameTestHelper h) {
+        ServerPlayer player = player(h);
+        CompanionEntity nightfox = pet(h, CompanionSpecies.NIGHTFOX, player, false);
+        nightfox.setBondPoints(CompanionBondMath.pointsAtLevelStart(5));
+        nightfox.setCommand(CompanionCommand.FOLLOW);
+        BlockPos pos = nightfox.blockPosition();
+        h.assertFalse(nightfox.usesAbilities(), "An unbonded companion that is not staying must not use abilities");
+        h.runAfterDelay(3, () -> {
+            h.assertTrue(h.getLevel().getBlockState(pos).isAir(), "A following unbonded Nightfox must not light up");
+            nightfox.setCommand(CompanionCommand.STAY);
+            h.runAfterDelay(3, () -> {
+                h.assertTrue(
+                        h.getLevel().getBlockState(pos).is(Blocks.LIGHT),
+                        "A staying unbonded Nightfox must use Night Light");
+                h.assertTrue(
+                        CompanionEntity.withAbility(player, 16.0, CompanionAbilities.NIGHT_LIGHT)
+                                .isPresent(),
+                        "A staying companion must answer for its owner's reactive abilities");
+                nightfox.setCommand(CompanionCommand.FOLLOW);
+                h.runAfterDelay(3, () -> {
+                    h.assertTrue(
+                            h.getLevel().getBlockState(pos).isAir()
+                                    && nightfox.lights().isEmpty(),
+                            "Leaving Stay must take the companion's lights with it");
+                    finish(h, player);
+                });
+            });
+        });
+    }
+
+    private static void riding(GameTestHelper h) {
+        ServerPlayer player = player(h);
+        CompanionEntity nightfox = pet(h, CompanionSpecies.NIGHTFOX, player, false);
+        nightfox.setBonded(true);
+        h.assertFalse(nightfox.mount(player), "A Nightfox must not be rideable");
+        nightfox.setBonded(false);
+
+        CompanionEntity direwolf = pet(h, CompanionSpecies.DIREWOLF, player, false);
+        h.assertFalse(direwolf.mount(player), "An unbonded Direwolf must not be rideable");
+
+        CompanionEntity trex = pet(h, CompanionSpecies.TREX, player, true);
+        h.assertTrue(
+                trex.mount(player) && player.getVehicle() == trex && trex.getControllingPassenger() == player,
+                "The owner must be able to ride a bonded T-Rex and steer it");
+        h.assertTrue(trex.getCommand() == CompanionCommand.FOLLOW, "Mounting must lift a Stay order");
+        trex.setBonded(false);
+        h.assertFalse(player.isPassenger(), "Releasing the bond must throw the rider off");
         finish(h, player);
     }
 

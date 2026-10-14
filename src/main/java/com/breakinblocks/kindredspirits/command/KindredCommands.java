@@ -2,13 +2,17 @@ package com.breakinblocks.kindredspirits.command;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.companion.CompanionBondMath;
+import com.breakinblocks.kindredspirits.companion.CompanionCommand;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
 import com.breakinblocks.kindredspirits.companion.CompanionProgressEvents;
+import com.breakinblocks.kindredspirits.companion.CompanionSpecies;
 import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
+import com.breakinblocks.kindredspirits.config.KindredConfig;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
 import com.breakinblocks.kindredspirits.net.KindredNetworking;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments;
 import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBond;
+import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import java.util.Collection;
@@ -22,7 +26,9 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.StringUtil;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -30,6 +36,8 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class KindredCommands {
     private static final double SEARCH_RANGE = 32.0;
+    private static final int MAX_MINIME_NAME = 32;
+    private static final String FALLBACK_SKIN = "MHF_Steve";
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -43,6 +51,19 @@ public final class KindredCommands {
                                 .then(Commands.argument("player", StringArgumentType.word())
                                         .executes(context -> setSkin(
                                                 context.getSource(), StringArgumentType.getString(context, "player")))))
+                        .then(Commands.literal("minime")
+                                .requires(KindredCommands::canUseMinime)
+                                .executes(context -> spawnMinime(context.getSource(), "", ""))
+                                .then(Commands.argument("mc_name", StringArgumentType.string())
+                                        .executes(context -> spawnMinime(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "mc_name"),
+                                                ""))
+                                        .then(Commands.argument("custom_name", StringArgumentType.string())
+                                                .executes(context -> spawnMinime(
+                                                        context.getSource(),
+                                                        StringArgumentType.getString(context, "mc_name"),
+                                                        StringArgumentType.getString(context, "custom_name"))))))
                         .then(Commands.literal("xp")
                                 .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
                                 .then(Commands.argument("amount", IntegerArgumentType.integer(1))
@@ -60,6 +81,51 @@ public final class KindredCommands {
                                 .then(Commands.argument("players", EntityArgument.players())
                                         .executes(context -> resetRevive(
                                                 context.getSource(), EntityArgument.getPlayers(context, "players"))))));
+    }
+
+    private static boolean canUseMinime(CommandSourceStack source) {
+        int level = KindredConfig.COMMON.minimePermissionLevel.get();
+        return level <= 0 || source.hasPermission(level);
+    }
+
+    private static int spawnMinime(CommandSourceStack source, String mcName, String customName) {
+        return withPlayer(source, player -> {
+            String skinName = mcName.trim().isEmpty() ? player.getGameProfile().getName() : mcName.trim();
+            String displayName = customName.replace('§', ' ').trim();
+            if (displayName.isEmpty()) {
+                displayName = skinName;
+            }
+            if (skinName.length() > MAX_MINIME_NAME || displayName.length() > MAX_MINIME_NAME) {
+                source.sendFailure(Component.translatable("command.kindredspirits.minime_invalid_name"));
+                return 0;
+            }
+
+            ServerLevel level = player.serverLevel();
+            CompanionEntity minime =
+                    KindredEntities.type(CompanionSpecies.MINI_PLAYER).create(level);
+            if (minime == null) {
+                source.sendFailure(Component.translatable("command.kindredspirits.minime_failed"));
+                return 0;
+            }
+
+            minime.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0f);
+            minime.tame(player);
+            minime.setSkinName(StringUtil.isValidPlayerName(skinName) ? skinName : FALLBACK_SKIN);
+            minime.setCustomName(Component.literal(displayName));
+            minime.setCustomNameVisible(true);
+            minime.setCommand(CompanionCommand.WANDER);
+            minime.setPersistenceRequired();
+
+            if (!level.tryAddFreshEntityWithPassengers(minime)) {
+                source.sendFailure(Component.translatable("command.kindredspirits.minime_failed"));
+                return 0;
+            }
+
+            source.sendSuccess(
+                    () -> Component.translatable("command.kindredspirits.minime_spawned", minime.getDisplayName()),
+                    false);
+            return 1;
+        });
     }
 
     private static int resetRevive(CommandSourceStack source, Collection<ServerPlayer> players) {

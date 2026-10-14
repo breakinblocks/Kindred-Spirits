@@ -67,6 +67,11 @@ public final class CompanionLevels {
         return species.growthMultiplier() * (1.0 + KindredConfig.COMMON.starGrowthBonus.get() * stars);
     }
 
+    public static double experienceMultiplier(int bondLevel, int stars) {
+        return CompanionBondMath.experienceMultiplier(bondLevel)
+                * (1.0 + KindredConfig.COMMON.starExperienceBonus.get() * clampStars(stars));
+    }
+
     private static double statAt(double base, double perLevel, CompanionSpecies species, int level, int stars) {
         return base + (level - 1) * perLevel * growth(species, stars);
     }
@@ -76,11 +81,13 @@ public final class CompanionLevels {
     }
 
     public static double attackDamageAt(CompanionSpecies species, int level, int stars) {
-        return statAt(species.attackDamage(), KindredConfig.COMMON.attackPerLevel.get(), species, level, stars);
+        return statAt(species.attackDamage(), KindredConfig.COMMON.attackPerLevel.get(), species, level, stars)
+                * (1.0 + KindredConfig.COMMON.starAttackBonus.get() * clampStars(stars));
     }
 
     public static double armourAt(CompanionSpecies species, int level, int stars) {
-        return statAt(species.armour(), KindredConfig.COMMON.armourPerLevel.get(), species, level, stars);
+        return statAt(species.armour(), KindredConfig.COMMON.armourPerLevel.get(), species, level, stars)
+                + KindredConfig.COMMON.starArmourBonus.get() * clampStars(stars);
     }
 
     public static double speedAt(CompanionSpecies species, int level, int stars) {

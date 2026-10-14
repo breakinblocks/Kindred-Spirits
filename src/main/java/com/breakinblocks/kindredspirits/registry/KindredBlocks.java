@@ -1,6 +1,7 @@
 package com.breakinblocks.kindredspirits.registry;
 
 import com.breakinblocks.kindredspirits.KindredSpirits;
+import com.breakinblocks.kindredspirits.block.CompanionBedBlock;
 import com.breakinblocks.kindredspirits.block.TrexEggBlock;
 import com.breakinblocks.kindredspirits.block.WispLightBlock;
 import net.minecraft.world.level.block.SoundType;
@@ -35,6 +36,16 @@ public final class KindredBlocks {
                     .strength(0.5f)
                     .noOcclusion()
                     .sound(SoundType.STONE));
+
+    public static final DeferredBlock<CompanionBedBlock> COMPANION_BED = BLOCKS.registerBlock(
+            "companion_bed",
+            CompanionBedBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.WOOD)
+                    .strength(0.8f)
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD));
 
     private KindredBlocks() {}
 }

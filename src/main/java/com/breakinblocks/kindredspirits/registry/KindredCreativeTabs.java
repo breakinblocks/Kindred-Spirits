@@ -20,6 +20,7 @@ public final class KindredCreativeTabs {
                     .displayItems((parameters, output) -> {
                         output.accept(KindredItems.KINDRED_CHARM.get());
                         output.accept(KindredItems.TREX_EGG.get());
+                        output.accept(KindredItems.COMPANION_BED.get());
                         output.accept(KindredItems.GOLDEN_BONE.get());
                         output.accept(KindredItems.SPIRIT_BANDAGE.get());
                         KindredItems.equipment().forEach(item -> output.accept(item.get()));

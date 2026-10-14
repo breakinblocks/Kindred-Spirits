@@ -26,6 +26,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 public class MeteorEntity extends AbstractHurtingProjectile implements GeoEntity {
     private static final RawAnimation SPIN = RawAnimation.begin().thenLoop("spin");
     private static final float DIRECT_DAMAGE = 6.0f;
+    private static final float DIRECT_DAMAGE_MULTIPLIER = 0.85f;
 
     private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
 
@@ -71,7 +72,10 @@ public class MeteorEntity extends AbstractHurtingProjectile implements GeoEntity
         if (this.level() instanceof ServerLevel level) {
             Entity victim = hitResult.getEntity();
             DamageSource source = this.damageSources().source(DamageTypes.FIREBALL, this, this.getOwner());
-            victim.hurt(source, DIRECT_DAMAGE);
+            float damage = this.getOwner() instanceof CompanionEntity companion
+                    ? companion.attackDamage() * DIRECT_DAMAGE_MULTIPLIER
+                    : DIRECT_DAMAGE;
+            victim.hurt(source, damage);
             EnchantmentHelper.doPostAttackEffects(level, victim, source);
         }
     }

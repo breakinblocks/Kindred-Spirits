@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "kindredspirits:companion_bed",
+          "functions": [
+            {
+              "function": "minecraft:copy_state",
+              "block": "kindredspirits:companion_bed",
+              "properties": [
+                "color"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "random_sequence": "kindredspirits:blocks/companion_bed"
+}

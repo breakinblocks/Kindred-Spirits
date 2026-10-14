@@ -3,7 +3,10 @@ package com.breakinblocks.kindredspirits.net;
 import com.breakinblocks.kindredspirits.KindredSpirits;
 import com.breakinblocks.kindredspirits.client.KindredClientHooks;
 import com.breakinblocks.kindredspirits.companion.CompanionEntity;
+import com.breakinblocks.kindredspirits.companion.ability.CompanionAbilities;
+import com.breakinblocks.kindredspirits.companion.ability.CompanionAbility;
 import com.breakinblocks.kindredspirits.item.KindredCharmItem;
+import com.breakinblocks.kindredspirits.menu.KindredStorageMenu;
 import com.breakinblocks.kindredspirits.registry.KindredSounds;
 import io.netty.handler.codec.DecoderException;
 import java.util.List;
@@ -12,6 +15,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -24,15 +28,24 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
 public final class KindredNetworking {
     private static final double COMMAND_RANGE = 24.0;
+    public static final double ABILITY_SCREEN_RANGE = 8.0;
 
     @SubscribeEvent
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("4");
+        var registrar = event.registrar("6");
 
         registrar.playToServer(
                 CycleCommandPayload.TYPE, CycleCommandPayload.STREAM_CODEC, CycleCommandPayload::handleOnServer);
 
         registrar.playToServer(OpenCharmPayload.TYPE, OpenCharmPayload.STREAM_CODEC, OpenCharmPayload::handleOnServer);
+
+        registrar.playToServer(MountPayload.TYPE, MountPayload.STREAM_CODEC, MountPayload::handleOnServer);
+
+        registrar.playToClient(
+                OpenAbilitiesPayload.TYPE, OpenAbilitiesPayload.STREAM_CODEC, OpenAbilitiesPayload::handleOnClient);
+
+        registrar.playToServer(
+                ToggleAbilityPayload.TYPE, ToggleAbilityPayload.STREAM_CODEC, ToggleAbilityPayload::handleOnServer);
 
         registrar.playToClient(
                 CompanionLevelUpPayload.TYPE,
@@ -54,6 +67,17 @@ public final class KindredNetworking {
 
     public static void sendPackGlow(ServerPlayer player, List<Integer> entityIds, int ticks) {
         PacketDistributor.sendToPlayer(player, new PackGlowPayload(entityIds, ticks));
+    }
+
+    public static void openAbilities(ServerPlayer player, CompanionEntity companion) {
+        PacketDistributor.sendToPlayer(player, new OpenAbilitiesPayload(companion.getId()));
+    }
+
+    public static boolean canEditAbilities(Player player, CompanionEntity companion) {
+        return companion.isAlive()
+                && companion.isTame()
+                && companion.isOwnedBy(player)
+                && companion.distanceToSqr(player) <= ABILITY_SCREEN_RANGE * ABILITY_SCREEN_RANGE;
     }
 
     public static void sendLevelUp(ServerPlayer player, int companionId, int level) {
@@ -173,6 +197,76 @@ public final class KindredNetworking {
             context.enqueueWork(() -> {
                 if (context.player() instanceof ServerPlayer player) {
                     KindredCharmItem.openFromKey(player);
+                }
+            });
+        }
+    }
+
+    public record MountPayload() implements CustomPacketPayload {
+        public static final MountPayload INSTANCE = new MountPayload();
+        public static final Type<MountPayload> TYPE = new Type<>(KindredSpirits.id("mount"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, MountPayload> STREAM_CODEC =
+                StreamCodec.unit(INSTANCE);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+
+        public static void handleOnServer(MountPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player
+                        && player.containerMenu instanceof KindredStorageMenu menu
+                        && menu.stillValid(player)
+                        && menu.companion() != null) {
+                    menu.companion().mount(player);
+                }
+            });
+        }
+    }
+
+    public record OpenAbilitiesPayload(int entityId) implements CustomPacketPayload {
+        public static final Type<OpenAbilitiesPayload> TYPE = new Type<>(KindredSpirits.id("open_abilities"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, OpenAbilitiesPayload> STREAM_CODEC =
+                StreamCodec.composite(ByteBufCodecs.VAR_INT, OpenAbilitiesPayload::entityId, OpenAbilitiesPayload::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+
+        public static void handleOnClient(OpenAbilitiesPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> KindredClientHooks.openAbilities(payload.entityId()));
+        }
+    }
+
+    public record ToggleAbilityPayload(int entityId, String ability) implements CustomPacketPayload {
+        public static final Type<ToggleAbilityPayload> TYPE = new Type<>(KindredSpirits.id("toggle_ability"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, ToggleAbilityPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.VAR_INT,
+                        ToggleAbilityPayload::entityId,
+                        ByteBufCodecs.stringUtf8(64),
+                        ToggleAbilityPayload::ability,
+                        ToggleAbilityPayload::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+
+        public static void handleOnServer(ToggleAbilityPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (!(context.player() instanceof ServerPlayer player)
+                        || !(player.level().getEntity(payload.entityId()) instanceof CompanionEntity companion)
+                        || !canEditAbilities(player, companion)) {
+                    return;
+                }
+
+                ResourceLocation id = ResourceLocation.tryParse(KindredSpirits.MOD_ID + ":" + payload.ability());
+                CompanionAbility ability = id == null ? null : CompanionAbilities.get(id);
+                if (ability != null && companion.unlockedAbilities().contains(ability)) {
+                    companion.setAbilityEnabled(ability, companion.isAbilityDisabled(ability));
                 }
             });
         }

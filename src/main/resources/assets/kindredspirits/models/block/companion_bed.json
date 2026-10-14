@@ -1,0 +1,86 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {"particle": "kindredspirits:block/companion_bed_frame", "frame": "kindredspirits:block/companion_bed_frame", "cushion": "kindredspirits:block/companion_bed_cushion", "hay_side": "minecraft:block/hay_block_side", "hay_top": "minecraft:block/hay_block_top"},
+  "elements": [
+    {
+      "name": "base",
+      "from": [0, 0, 0],
+      "to": [16, 4, 16],
+      "faces": {
+        "north": {"uv": [0, 0, 16, 4], "texture": "#frame", "cullface": "north"},
+        "east": {"uv": [0, 0, 16, 4], "texture": "#frame", "cullface": "east"},
+        "south": {"uv": [0, 0, 16, 4], "texture": "#frame", "cullface": "south"},
+        "west": {"uv": [0, 0, 16, 4], "texture": "#frame", "cullface": "west"},
+        "down": {"uv": [0, 0, 16, 16], "texture": "#frame", "cullface": "down"}
+      }
+    },
+    {
+      "name": "hay",
+      "from": [0, 4, 0],
+      "to": [16, 5, 16],
+      "faces": {
+        "north": {"uv": [0, 7, 16, 8], "texture": "#hay_side", "cullface": "north"},
+        "east": {"uv": [0, 7, 16, 8], "texture": "#hay_side", "cullface": "east"},
+        "south": {"uv": [0, 7, 16, 8], "texture": "#hay_side", "cullface": "south"},
+        "west": {"uv": [0, 7, 16, 8], "texture": "#hay_side", "cullface": "west"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#hay_top"}
+      }
+    },
+    {
+      "name": "bolster_north",
+      "from": [0, 5, 0],
+      "to": [16, 8, 3],
+      "faces": {
+        "north": {"uv": [0, 3, 16, 6], "texture": "#cushion", "cullface": "north", "tintindex": 0},
+        "east": {"uv": [0, 3, 3, 6], "texture": "#cushion", "cullface": "east", "tintindex": 0},
+        "south": {"uv": [0, 3, 16, 6], "texture": "#cushion", "tintindex": 0},
+        "west": {"uv": [0, 3, 3, 6], "texture": "#cushion", "cullface": "west", "tintindex": 0},
+        "up": {"uv": [0, 0, 16, 3], "texture": "#cushion", "tintindex": 0}
+      }
+    },
+    {
+      "name": "bolster_south",
+      "from": [0, 5, 13],
+      "to": [16, 8, 16],
+      "faces": {
+        "north": {"uv": [0, 3, 16, 6], "texture": "#cushion", "tintindex": 0},
+        "east": {"uv": [0, 3, 3, 6], "texture": "#cushion", "cullface": "east", "tintindex": 0},
+        "south": {"uv": [0, 3, 16, 6], "texture": "#cushion", "cullface": "south", "tintindex": 0},
+        "west": {"uv": [0, 3, 3, 6], "texture": "#cushion", "cullface": "west", "tintindex": 0},
+        "up": {"uv": [0, 3, 16, 0], "texture": "#cushion", "tintindex": 0}
+      }
+    },
+    {
+      "name": "bolster_west",
+      "from": [0, 5, 3],
+      "to": [3, 8, 13],
+      "faces": {
+        "east": {"uv": [3, 3, 13, 6], "texture": "#cushion", "tintindex": 0},
+        "west": {"uv": [3, 3, 13, 6], "texture": "#cushion", "cullface": "west", "tintindex": 0},
+        "up": {"uv": [0, 0, 10, 3], "rotation": 270, "texture": "#cushion", "tintindex": 0}
+      }
+    },
+    {
+      "name": "bolster_east",
+      "from": [13, 5, 3],
+      "to": [16, 8, 13],
+      "faces": {
+        "east": {"uv": [3, 3, 13, 6], "texture": "#cushion", "cullface": "east", "tintindex": 0},
+        "west": {"uv": [3, 3, 13, 6], "texture": "#cushion", "tintindex": 0},
+        "up": {"uv": [0, 0, 10, 3], "rotation": 90, "texture": "#cushion", "tintindex": 0}
+      }
+    },
+    {
+      "name": "pad",
+      "from": [4, 5, 4],
+      "to": [12, 6, 12],
+      "faces": {
+        "north": {"uv": [0, 14, 8, 15], "texture": "#cushion", "tintindex": 0},
+        "east": {"uv": [0, 14, 8, 15], "texture": "#cushion", "tintindex": 0},
+        "south": {"uv": [0, 14, 8, 15], "texture": "#cushion", "tintindex": 0},
+        "west": {"uv": [0, 14, 8, 15], "texture": "#cushion", "tintindex": 0},
+        "up": {"uv": [0, 6, 8, 14], "texture": "#cushion", "tintindex": 0}
+      }
+    }
+  ]
+}

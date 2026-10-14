@@ -20,6 +20,7 @@ public class KindredStorageMenu extends AbstractContainerMenu {
     private final int rows;
     private final int accessibleSlots;
     private final @Nullable CompanionEntity companion;
+    private boolean mountable;
 
     public KindredStorageMenu(
             int containerId,
@@ -56,13 +57,23 @@ public class KindredStorageMenu extends AbstractContainerMenu {
     public static KindredStorageMenu client(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf data) {
         int rows = data.readVarInt();
         int accessible = data.readVarInt();
-        return new KindredStorageMenu(
+        KindredStorageMenu menu = new KindredStorageMenu(
                 containerId,
                 playerInventory,
                 new SimpleContainer(CompanionLevels.MAX_STORAGE_SLOTS),
                 rows,
                 accessible,
                 null);
+        menu.mountable = data.readBoolean();
+        return menu;
+    }
+
+    public boolean mountable() {
+        return this.mountable;
+    }
+
+    public @Nullable CompanionEntity companion() {
+        return this.companion;
     }
 
     public int getRowCount() {
