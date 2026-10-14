@@ -15,11 +15,14 @@ public class KindredStorageScreen extends AbstractContainerScreen<KindredStorage
     private static final Identifier CONTAINER_BACKGROUND =
             Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
     private static final int COLOUR_LOCKED = 0x80311D3D;
-    private static final int MOUNT_BUTTON_WIDTH = 60;
-    private static final int MOUNT_BUTTON_HEIGHT = 20;
-    private static final int MOUNT_BUTTON_GAP = 4;
+    private static final int COLOUR_LABEL = 0xFF404040;
+    private static final int MOUNT_BUTTON_HEIGHT = 12;
+    private static final int MOUNT_BUTTON_PADDING = 8;
+    private static final int MOUNT_BUTTON_RIGHT = 7;
+    private static final int MOUNT_BUTTON_TOP = 4;
 
     private final int rows;
+    private int titleWidth;
 
     public KindredStorageScreen(KindredStorageMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title, 176, 114 + menu.getRowCount() * 18);
@@ -30,18 +33,36 @@ public class KindredStorageScreen extends AbstractContainerScreen<KindredStorage
     @Override
     protected void init() {
         super.init();
+        this.titleWidth = this.imageWidth - this.titleLabelX * 2;
 
         if (this.menu.mountable()) {
+            Component label = Component.translatable("screen.kindredspirits.mount");
+            int width = this.font.width(label) + MOUNT_BUTTON_PADDING;
+            this.titleWidth = this.imageWidth - MOUNT_BUTTON_RIGHT - width - MOUNT_BUTTON_PADDING - this.titleLabelX;
             this.addRenderableWidget(Button.builder(
-                            Component.translatable("screen.kindredspirits.mount"),
+                            label,
                             button -> ClientPacketDistributor.sendToServer(KindredNetworking.MountPayload.INSTANCE))
                     .bounds(
-                            this.leftPos + this.imageWidth + MOUNT_BUTTON_GAP,
-                            this.topPos,
-                            MOUNT_BUTTON_WIDTH,
+                            this.leftPos + this.imageWidth - MOUNT_BUTTON_RIGHT - width,
+                            this.topPos + MOUNT_BUTTON_TOP,
+                            width,
                             MOUNT_BUTTON_HEIGHT)
                     .build());
         }
+    }
+
+    @Override
+    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        Component title = this.title;
+        if (this.font.width(title) > this.titleWidth) {
+            String ellipsis = "...";
+            title = Component.literal(
+                    this.font.plainSubstrByWidth(title.getString(), this.titleWidth - this.font.width(ellipsis))
+                            + ellipsis);
+        }
+        graphics.text(this.font, title, this.titleLabelX, this.titleLabelY, COLOUR_LABEL, false);
+        graphics.text(
+                this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, COLOUR_LABEL, false);
     }
 
     @Override
