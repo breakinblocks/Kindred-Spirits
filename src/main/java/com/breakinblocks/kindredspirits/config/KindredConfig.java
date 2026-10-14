@@ -148,6 +148,7 @@ public final class KindredConfig {
         public final ModConfigSpec.DoubleValue reviveExperiencePenalty;
         public final ModConfigSpec.BooleanValue mimicOwnerWeapon;
         public final ModConfigSpec.BooleanValue allowSkinChoice;
+        public final ModConfigSpec.IntValue minimePermissionLevel;
 
         Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
@@ -265,6 +266,13 @@ public final class KindredConfig {
                             "Let players name the player skin a Mini Player wears.",
                             "Turn off to keep every Mini Player wearing its owner's skin.")
                     .define("allow_skin_choice", true);
+            builder.pop();
+
+            builder.push("commands");
+            minimePermissionLevel = builder.comment(
+                            "Permission level needed for /kindredspirits minime, which summons a tamed, unbonded Mini Player.",
+                            "0 lets everyone use it, 2 needs the default op level, 4 needs server owner.")
+                    .defineInRange("minime_permission_level", 2, 0, 4);
             builder.pop();
         }
     }

@@ -5,6 +5,7 @@
 - Releasing the bond with a companion that is resting in the Kindred Charm, or waiting to be revived, no longer deletes it. It now appears beside you, still tamed but unbonded, with its name, level and looks intact, and its gear goes to your inventory.
 - Added `/kindredspirits skin <player>`, open to every player, which dresses your bonded Mini Player in that player's skin. Run it with no name to go back to your own skin. It follows the same `allow_skin_choice` setting as the skin box on the charm screen.
 - Companions level about 50% faster. `base_experience` in the common config now defaults to 93 (was 140), so the climb to level 30 takes about 21,400 experience instead of 32,500. An existing config file keeps its old value until it is updated or deleted.
+- Added `/kindredspirits minime [mc_name] ["custom name"]`, which summons a Mini Player beside you that is tamed to you but not bonded and wanders on its own. It wears `mc_name`'s skin (yours by default) and shows the custom name, or `mc_name` when none is given. `minime_permission_level` in the common config sets who may use it, and defaults to operators (level 2).
 
 ## 1.0.6
 
