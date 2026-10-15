@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.9
+
+- Fixed mod interaction edgecase possible dupes
+
 ## 1.0.8
 
 - Added the Companion Bed. Hurt companions rest in a nearby bed and heal with Regeneration II. Dye the cushion any colour.
