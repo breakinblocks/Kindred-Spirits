@@ -151,6 +151,7 @@ public final class KindredNetworking {
             USE_ABILITY,
             UNEQUIP,
             TOGGLE_ABILITY,
+            SET_BABY_BODY,
             REFRESH;
 
             private static Action decode(int ordinal) {

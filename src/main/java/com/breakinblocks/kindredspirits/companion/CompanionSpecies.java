@@ -353,6 +353,10 @@ public enum CompanionSpecies implements StringRepresentable {
         return this == MINI_PLAYER;
     }
 
+    public boolean hasBabyBody() {
+        return this == MINI_PLAYER;
+    }
+
     public boolean hasGlowMask() {
         return this != QUOKKA && this != DIREWOLF;
     }

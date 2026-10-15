@@ -55,7 +55,8 @@ public record CharmView(
         ItemStack equipment,
         CompanionStats stats,
         List<String> disabledAbilities,
-        int dye) {
+        int dye,
+        boolean babyBody) {
 
     public static CharmView unbound(BondRecord record) {
         return new CharmView(
@@ -90,7 +91,8 @@ public record CharmView(
                 ItemStack.EMPTY,
                 CompanionStats.EMPTY,
                 List.of(),
-                CompanionEntity.NO_DYE);
+                CompanionEntity.NO_DYE,
+                false);
     }
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CharmView> STREAM_CODEC = new StreamCodec<>() {
@@ -128,7 +130,8 @@ public record CharmView(
                     ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer),
                     CompanionStats.STREAM_CODEC.decode(buffer),
                     ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).decode(buffer),
-                    ByteBufCodecs.VAR_INT.decode(buffer));
+                    ByteBufCodecs.VAR_INT.decode(buffer),
+                    ByteBufCodecs.BOOL.decode(buffer));
         }
 
         @Override
@@ -165,11 +168,16 @@ public record CharmView(
             CompanionStats.STREAM_CODEC.encode(buffer, view.stats());
             ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).encode(buffer, view.disabledAbilities());
             ByteBufCodecs.VAR_INT.encode(buffer, view.dye());
+            ByteBufCodecs.BOOL.encode(buffer, view.babyBody());
         }
     };
 
     public boolean usesPlayerSkin() {
         return this.resolveSpecies().map(CompanionSpecies::usesPlayerSkin).orElse(false);
+    }
+
+    public boolean hasBabyBody() {
+        return this.resolveSpecies().map(CompanionSpecies::hasBabyBody).orElse(false);
     }
 
     public static int cooldownSeconds(int ticks) {
@@ -231,7 +239,8 @@ public record CharmView(
                                 .map(species -> CompanionStats.of(species, snapshot))
                                 .orElse(CompanionStats.EMPTY),
                 snapshot.disabledAbilities(),
-                snapshot.dye());
+                snapshot.dye(),
+                snapshot.babyBody());
     }
 
     public boolean isDisabled(CompanionAbility ability) {

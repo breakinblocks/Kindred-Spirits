@@ -199,6 +199,7 @@ public class KindredCharmItem extends Item {
             case TOGGLE_ABILITY -> toggleAbility(player, live, text);
             case SET_NAME -> rename(player, bond, live, text, value == 1);
             case SET_SKIN -> setSkin(player, bond, live, text, value == 1);
+            case SET_BABY_BODY -> setBabyBody(player, bond, live, value == 1);
             case REFRESH -> {}
         }
 
@@ -318,6 +319,19 @@ public class KindredCharmItem extends Item {
         name.ifPresentOrElse(
                 value -> KindredMessages.send(player, "charm_renamed", value),
                 () -> KindredMessages.send(player, "charm_name_cleared"));
+    }
+
+    private static void setBabyBody(
+            ServerPlayer player, CompanionBond bond, @Nullable CompanionEntity live, boolean babyBody) {
+        boolean supported = live != null
+                ? live.species().hasBabyBody()
+                : bond.snapshot()
+                        .flatMap(CompanionSnapshot::resolveSpecies)
+                        .map(CompanionSpecies::hasBabyBody)
+                        .orElse(false);
+        if (supported) {
+            apply(player, live, entity -> entity.setBabyBody(babyBody), snap -> snap.withBabyBody(babyBody));
+        }
     }
 
     private static void setSkin(
@@ -572,6 +586,7 @@ public class KindredCharmItem extends Item {
         snapshot.name().ifPresent(name -> companion.setCustomName(Component.literal(name)));
         companion.setSkinName(snapshot.skin().orElse(""));
         companion.setDyeId(snapshot.dye());
+        companion.setBabyBody(snapshot.babyBody());
         companion.restoreProgress(snapshot, experience);
         companion.setCommand(snapshot.commandValue());
         companion.setAggression(snapshot.aggressionValue());

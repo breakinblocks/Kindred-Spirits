@@ -53,6 +53,7 @@ public class KindredCharmScreen extends Screen {
     private static final int EQUIPMENT_Y = 236;
     private static final int EQUIPMENT_ICON = 16;
     private static final int UNEQUIP_WIDTH = 14;
+    private static final int BODY_BUTTON_WIDTH = 34;
 
     private static final int COLUMN_X = PAD + PORTRAIT_WIDTH + 12;
     private static final int COLUMN_WIDTH = PANEL_WIDTH - COLUMN_X - PAD;
@@ -111,6 +112,7 @@ public class KindredCharmScreen extends Screen {
     private @Nullable TextField nameField;
     private @Nullable TextField skinField;
     private @Nullable Button skinButton;
+    private @Nullable Button bodyButton;
     private @Nullable CompanionEntity display;
     private int left;
     private int top;
@@ -149,6 +151,7 @@ public class KindredCharmScreen extends Screen {
         } else if (this.display != null) {
             this.display.showEquipment(view.equipment());
             this.display.setDyeId(view.dye());
+            this.display.setBabyBody(view.babyBody());
             if (!view.usesPlayerSkin()) {
                 this.display.setSkinName(view.skin());
             }
@@ -172,6 +175,10 @@ public class KindredCharmScreen extends Screen {
             this.skinButton.setMessage(this.skinLabel());
         }
 
+        if (this.bodyButton != null) {
+            this.bodyButton.setMessage(this.bodyLabel());
+        }
+
         if (this.summonButton != null) {
             this.updateButtonState();
         }
@@ -192,6 +199,11 @@ public class KindredCharmScreen extends Screen {
                 .map(species -> CompanionSkins.displayName(species, this.view.skin()))
                 .orElse(Component.empty());
         return Component.translatable("screen.kindredspirits.skin_variant", name);
+    }
+
+    private Component bodyLabel() {
+        return Component.translatable(
+                this.view.babyBody() ? "screen.kindredspirits.body_baby" : "screen.kindredspirits.body_adult");
     }
 
     private void cycleSkin() {
@@ -288,12 +300,26 @@ public class KindredCharmScreen extends Screen {
 
         this.skinField = null;
         this.skinButton = null;
+        this.bodyButton = null;
+        int skinWidth = PORTRAIT_WIDTH;
+        if (this.skinRow && this.view.hasBabyBody()) {
+            skinWidth -= BODY_BUTTON_WIDTH + 2;
+            this.bodyButton = this.addRenderableWidget(Button.builder(
+                            this.bodyLabel(), button -> this.send(Action.SET_BABY_BODY, this.view.babyBody() ? 0 : 1))
+                    .bounds(
+                            this.left + PAD + PORTRAIT_WIDTH - BODY_BUTTON_WIDTH,
+                            this.top + this.lowerY(SKIN_BOX_Y),
+                            BODY_BUTTON_WIDTH,
+                            NAME_BOX_HEIGHT)
+                    .build());
+            this.bodyButton.setTooltip(Tooltip.create(Component.translatable("screen.kindredspirits.body_tooltip")));
+        }
         if (this.skinRow && this.view.usesPlayerSkin()) {
             EditBox skinBox = new EditBox(
                     this.font,
                     this.left + PAD,
                     this.top + this.lowerY(SKIN_BOX_Y),
-                    PORTRAIT_WIDTH,
+                    skinWidth,
                     NAME_BOX_HEIGHT,
                     Component.translatable("screen.kindredspirits.skin"));
             skinBox.setMaxLength(MAX_SKIN_LENGTH);
@@ -303,7 +329,7 @@ public class KindredCharmScreen extends Screen {
             this.skinField = new TextField(Action.SET_SKIN, this.addRenderableWidget(skinBox));
         } else if (this.skinRow) {
             this.skinButton = this.addRenderableWidget(Button.builder(this.skinLabel(), button -> this.cycleSkin())
-                    .bounds(this.left + PAD, this.top + this.lowerY(SKIN_BOX_Y), PORTRAIT_WIDTH, NAME_BOX_HEIGHT)
+                    .bounds(this.left + PAD, this.top + this.lowerY(SKIN_BOX_Y), skinWidth, NAME_BOX_HEIGHT)
                     .build());
         }
 
@@ -375,6 +401,12 @@ public class KindredCharmScreen extends Screen {
                 this.unequipButton,
                 this.statsButton,
                 this.abilitiesButton));
+        if (this.skinButton != null) {
+            widgets.add(this.skinButton);
+        }
+        if (this.bodyButton != null) {
+            widgets.add(this.bodyButton);
+        }
         for (TextField field : this.fields()) {
             widgets.add(field.box);
         }
@@ -434,6 +466,14 @@ public class KindredCharmScreen extends Screen {
         this.commandButton.visible = true;
         this.aggressionButton.visible = true;
         this.releaseButton.visible = true;
+        if (this.skinButton != null) {
+            this.skinButton.visible = bound;
+            this.skinButton.active = editable;
+        }
+        if (this.bodyButton != null) {
+            this.bodyButton.visible = bound;
+            this.bodyButton.active = editable;
+        }
 
         if (this.popup != null) {
             for (AbstractWidget widget : this.mainWidgets()) {
@@ -771,6 +811,7 @@ public class KindredCharmScreen extends Screen {
             this.view.name().ifPresent(name -> this.display.setCustomName(Component.literal(name)));
             this.display.showEquipment(this.view.equipment());
             this.display.setDyeId(this.view.dye());
+            this.display.setBabyBody(this.view.babyBody());
 
             if (species.usesPlayerSkin()) {
                 this.display.setSkinName(this.view.skin().isEmpty() ? this.localName() : this.view.skin());

@@ -2,7 +2,8 @@
 
 ## 1.0.9
 
-- Fixed the armour, weapons and bows companions wear being duplicated by mods that take equipment off mobs, such as Reliquary's Rod of Lyssa and the Integrated Tunnels entity item importer (breakinblocks/Kindred-Spirits#14). Companions no longer offer their slots to item pipes or importers, and anything taken off them anyway is gone the moment it leaves. The companion's real equipment is not affected.
+- Fixed mod interaction edgecase possible dupes
+- Added an optional baby body for the Mini Player: full-size head on a half-size body. Switch it with the Adult / Baby button beside the skin box in the charm screen (breakinblocks/Kindred-Spirits#13). `/kindredspirits minime` takes an optional `adult` or `baby` at the end.
 
 ## 1.0.8
 
