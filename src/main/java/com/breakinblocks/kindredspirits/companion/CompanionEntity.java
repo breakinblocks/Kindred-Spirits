@@ -264,6 +264,7 @@ public class CompanionEntity extends TamableAnimal
     private boolean playedSpawnAnimation;
     private boolean rangedMode = true;
     private boolean followingOwner;
+    private boolean equipping;
     private float hitboxYaw = Float.NaN;
     private RawAnimation sitVariant = SIT;
     private long sitVariantUntil;
@@ -1822,11 +1823,31 @@ public class CompanionEntity extends TamableAnimal
     }
 
     private void equip(EquipmentSlot slot, ItemStack stack) {
+        CompanionEquipmentGuard.mark(stack);
         if (!ItemStack.matches(this.getItemBySlot(slot), stack)) {
-            this.setItemSlot(slot, stack);
+            this.equipping = true;
+            try {
+                this.setItemSlot(slot, stack);
+            } finally {
+                this.equipping = false;
+            }
         }
 
         this.setDropChance(slot, 0.0f);
+    }
+
+    @Override
+    public void setItemSlot(EquipmentSlot slot, ItemStack stack) {
+        if (this.equipping || this.level().isClientSide()) {
+            super.setItemSlot(slot, stack);
+            return;
+        }
+
+        ItemStack taken = this.getItemBySlot(slot);
+        if (CompanionEquipmentGuard.isCopy(taken)) {
+            taken.setCount(0);
+            this.refreshEquipment();
+        }
     }
 
     private static boolean isMeleeWeapon(ItemStack stack) {

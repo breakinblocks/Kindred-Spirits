@@ -56,7 +56,9 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
+import net.neoforged.neoforge.items.IItemHandler;
 
 /** Server integration regressions. These classes and fixtures are excluded from the release jar. */
 @EventBusSubscriber(modid = KindredSpirits.MOD_ID)
@@ -96,6 +98,7 @@ public final class KindredGameTests {
         TESTS.put("beach_suspicious_sand_generates_and_can_be_disabled", KindredGameTests::beachSuspiciousSand);
         TESTS.put("stored_health_and_cooldowns", KindredGameTests::storage);
         TESTS.put("unreachable_equipment_is_not_duplicated", KindredGameTests::unreachable);
+        TESTS.put("worn_equipment_copies_cannot_be_stolen", KindredGameTests::equipmentTheft);
         TESTS.put("lost_companion_reforms_at_owner", KindredGameTests::lostReform);
         TESTS.put("revival_heals_and_retains_equipment", KindredGameTests::revival);
         TESTS.put("offline_death_reconciles", KindredGameTests::offlineDeath);
@@ -565,6 +568,45 @@ public final class KindredGameTests {
                 player.getInventory().countItem(Items.DIAMOND_CHESTPLATE) == 1,
                 "Release must return the snapshot equipment once");
         assertAbandoned(h, pet.getUUID());
+        finish(h, player);
+    }
+
+    private static void equipmentTheft(GameTestHelper h) {
+        ServerPlayer player = player(h);
+        CompanionEntity pet = pet(h, CompanionSpecies.MINI_PLAYER, player, true);
+        pet.setEquipment(new ItemStack(Items.DIAMOND_CHESTPLATE));
+        IItemHandler entityHandler = pet.getCapability(Capabilities.ItemHandler.ENTITY);
+        IItemHandler automationHandler = pet.getCapability(Capabilities.ItemHandler.ENTITY_AUTOMATION, null);
+        h.assertTrue(
+                entityHandler != null
+                        && entityHandler.getSlots() == 0
+                        && automationHandler != null
+                        && automationHandler.getSlots() == 0,
+                "A companion must not expose its equipment slots to item handlers");
+
+        ItemStack worn = pet.getItemBySlot(EquipmentSlot.CHEST);
+        ItemStack held = pet.getItemBySlot(EquipmentSlot.MAINHAND);
+        h.assertTrue(
+                worn.is(Items.DIAMOND_CHESTPLATE) && CompanionEquipmentGuard.isCopy(worn),
+                "The worn chestplate must be a marked copy");
+        h.assertTrue(
+                held.is(Items.BOW) && CompanionEquipmentGuard.isCopy(held), "The carried bow must be a marked copy");
+
+        ItemEntity dropped = new ItemEntity(h.getLevel(), pet.getX(), pet.getY(), pet.getZ(), worn.copy());
+        h.assertFalse(h.getLevel().addFreshEntity(dropped), "A marked copy must not enter the world as an item");
+
+        pet.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
+        pet.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        h.assertTrue(worn.isEmpty() && held.isEmpty(), "Taking a worn copy must leave the taker with nothing");
+        ItemStack rewornChest = pet.getItemBySlot(EquipmentSlot.CHEST);
+        ItemStack rewornHand = pet.getItemBySlot(EquipmentSlot.MAINHAND);
+        h.assertTrue(
+                rewornChest.is(Items.DIAMOND_CHESTPLATE) && rewornChest != worn,
+                "The companion must go on wearing its chestplate");
+        h.assertTrue(rewornHand.is(Items.BOW) && rewornHand != held, "The companion must go on carrying its bow");
+        h.assertTrue(
+                pet.equipment().is(Items.DIAMOND_CHESTPLATE) && !CompanionEquipmentGuard.isCopy(pet.equipment()),
+                "The real equipment stack must be untouched");
         finish(h, player);
     }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.9
+
+- Fixed the armour, weapons and bows companions wear being duplicated by mods that take equipment off mobs, such as Reliquary's Rod of Lyssa and the Integrated Tunnels entity item importer (breakinblocks/Kindred-Spirits#14). Companions no longer offer their slots to item pipes or importers, and anything taken off them anyway is gone the moment it leaves. The companion's real equipment is not affected.
+
 ## 1.0.8
 
 - Added the Companion Bed. Hurt companions rest in a nearby bed and heal with Regeneration II. Dye the cushion any colour.
