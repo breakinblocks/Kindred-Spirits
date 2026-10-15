@@ -15,6 +15,8 @@ import com.breakinblocks.kindredspirits.registry.KindredAttachments.CompanionBon
 import com.breakinblocks.kindredspirits.registry.KindredEntities;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -55,19 +57,36 @@ public final class KindredCommands {
                                 .then(Commands.argument("player", StringArgumentType.word())
                                         .executes(context -> setSkin(
                                                 context.getSource(), StringArgumentType.getString(context, "player")))))
-                        .then(Commands.literal("minime")
-                                .requires(KindredCommands::canUseMinime)
-                                .executes(context -> spawnMinime(context.getSource(), "", ""))
-                                .then(Commands.argument("mc_name", StringArgumentType.string())
-                                        .executes(context -> spawnMinime(
-                                                context.getSource(),
-                                                StringArgumentType.getString(context, "mc_name"),
-                                                ""))
-                                        .then(Commands.argument("custom_name", StringArgumentType.string())
-                                                .executes(context -> spawnMinime(
-                                                        context.getSource(),
-                                                        StringArgumentType.getString(context, "mc_name"),
-                                                        StringArgumentType.getString(context, "custom_name"))))))
+                        .then(withBodyChoice(
+                                Commands.literal("minime")
+                                        .requires(KindredCommands::canUseMinime)
+                                        .executes(context -> spawnMinime(context.getSource(), "", "", false))
+                                        .then(withBodyChoice(
+                                                Commands.argument("mc_name", StringArgumentType.string())
+                                                        .executes(context -> spawnMinime(
+                                                                context.getSource(),
+                                                                StringArgumentType.getString(context, "mc_name"),
+                                                                "",
+                                                                false))
+                                                        .then(withBodyChoice(
+                                                                Commands.argument(
+                                                                                "custom_name",
+                                                                                StringArgumentType.string())
+                                                                        .executes(context -> spawnMinime(
+                                                                                context.getSource(),
+                                                                                StringArgumentType.getString(
+                                                                                        context, "mc_name"),
+                                                                                StringArgumentType.getString(
+                                                                                        context, "custom_name"),
+                                                                                false)),
+                                                                context -> StringArgumentType.getString(
+                                                                        context, "mc_name"),
+                                                                context -> StringArgumentType.getString(
+                                                                        context, "custom_name"))),
+                                                context -> StringArgumentType.getString(context, "mc_name"),
+                                                context -> "")),
+                                context -> "",
+                                context -> ""))
                         .then(Commands.literal("xp")
                                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                                 .then(Commands.argument("amount", IntegerArgumentType.integer(1))
@@ -95,7 +114,19 @@ public final class KindredCommands {
         return Commands.<CommandSourceStack>hasPermission(check).test(source);
     }
 
-    private static int spawnMinime(CommandSourceStack source, String mcName, String customName) {
+    private static <T extends ArgumentBuilder<CommandSourceStack, T>> T withBodyChoice(
+            T node,
+            Function<CommandContext<CommandSourceStack>, String> mcName,
+            Function<CommandContext<CommandSourceStack>, String> customName) {
+        return node.then(Commands.literal("adult")
+                        .executes(context -> spawnMinime(
+                                context.getSource(), mcName.apply(context), customName.apply(context), false)))
+                .then(Commands.literal("baby")
+                        .executes(context -> spawnMinime(
+                                context.getSource(), mcName.apply(context), customName.apply(context), true)));
+    }
+
+    private static int spawnMinime(CommandSourceStack source, String mcName, String customName, boolean babyBody) {
         return withPlayer(source, player -> {
             String skinName = mcName.trim().isEmpty() ? player.getGameProfile().name() : mcName.trim();
             String displayName = customName.replace('§', ' ').trim();
@@ -121,6 +152,7 @@ public final class KindredCommands {
             minime.setCustomName(Component.literal(displayName));
             minime.setCustomNameVisible(true);
             minime.setCommand(CompanionCommand.WANDER);
+            minime.setBabyBody(babyBody);
             minime.setPersistenceRequired();
 
             if (!level.tryAddFreshEntityWithPassengers(minime)) {

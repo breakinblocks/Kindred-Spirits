@@ -74,6 +74,7 @@ import net.minecraft.world.entity.HasCustomInventoryScreen;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PlayerRideableJumping;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -165,6 +166,8 @@ public class CompanionEntity extends TamableAnimal
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Integer> DATA_DYE =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> DATA_BABY_BODY =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<String> DATA_EQUIPMENT_ID =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.STRING);
 
@@ -205,6 +208,7 @@ public class CompanionEntity extends TamableAnimal
     private static final int FEED_HEARTS = 7;
     private static final int FOOD_BOND_POINTS = 1;
     public static final int NO_DYE = -1;
+    public static final float BABY_BODY_HEIGHT = 20.0f / 32.0f;
     private static final int BOW_INTERVAL = 35;
     private static final double MELEE_SWITCH_RANGE = 3.0;
     private static final double BOW_SWITCH_RANGE = 6.0;
@@ -450,6 +454,7 @@ public class CompanionEntity extends TamableAnimal
         entityData.define(DATA_BONDED, false);
         entityData.define(DATA_SKIN, "");
         entityData.define(DATA_DYE, NO_DYE);
+        entityData.define(DATA_BABY_BODY, false);
         entityData.define(DATA_EQUIPMENT_ID, "");
         entityData.define(DATA_DISABLED_ABILITIES, "");
     }
@@ -475,6 +480,9 @@ public class CompanionEntity extends TamableAnimal
         output.putString("Skin", this.getSkinName());
         if (this.getDyeId() != NO_DYE) {
             output.putString("Dye", DyeColor.byId(this.getDyeId()).getSerializedName());
+        }
+        if (this.isBabyBody()) {
+            output.putBoolean("BabyBody", true);
         }
         if (!this.disabledAbilityNames().isEmpty()) {
             output.store("DisabledAbilities", Codec.STRING.listOf(), this.disabledAbilityNames());
@@ -505,6 +513,7 @@ public class CompanionEntity extends TamableAnimal
         this.entityData.set(DATA_SKIN, input.getStringOr("Skin", ""));
         DyeColor dye = DyeColor.byName(input.getStringOr("Dye", ""), null);
         this.setDyeId(dye == null ? NO_DYE : dye.getId());
+        this.setBabyBody(input.getBooleanOr("BabyBody", false));
         this.setDisabledAbilityNames(
                 input.read("DisabledAbilities", Codec.STRING.listOf()).orElse(List.of()));
         this.equipment = input.read("Equipment", ItemStack.CODEC).orElse(ItemStack.EMPTY);
@@ -675,6 +684,28 @@ public class CompanionEntity extends TamableAnimal
 
     public void setDyeId(int dye) {
         this.entityData.set(DATA_DYE, dye < 0 || dye >= DyeColor.values().length ? NO_DYE : dye);
+    }
+
+    public boolean isBabyBody() {
+        return this.entityData.get(DATA_BABY_BODY);
+    }
+
+    public void setBabyBody(boolean babyBody) {
+        this.entityData.set(DATA_BABY_BODY, babyBody && this.species.hasBabyBody());
+    }
+
+    @Override
+    public EntityDimensions getDefaultDimensions(Pose pose) {
+        EntityDimensions dimensions = super.getDefaultDimensions(pose);
+        return this.isBabyBody() ? dimensions.scale(1.0f, BABY_BODY_HEIGHT) : dimensions;
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> accessor) {
+        super.onSyncedDataUpdated(accessor);
+        if (DATA_BABY_BODY.equals(accessor)) {
+            this.refreshDimensions();
+        }
     }
 
     private boolean tryDye(Player player, ItemStack stack) {

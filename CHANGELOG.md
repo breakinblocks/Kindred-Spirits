@@ -3,6 +3,7 @@
 ## 1.0.9
 
 - Fixed mod interaction edgecase possible dupes
+- Added an optional baby body for the Mini Player: full-size head on a half-size body. Switch it with the Adult / Baby button beside the skin box in the charm screen (breakinblocks/Kindred-Spirits#13). `/kindredspirits minime` takes an optional `adult` or `baby` at the end.
 
 ## 1.0.8
 

@@ -99,6 +99,7 @@ public final class KindredGameTests {
         TESTS.put("mini_player_fires_spirit_arrows", KindredGameTests::spiritArrow);
         TESTS.put("helping_hand_skips_reversible_recipes", KindredGameTests::helpingHandGuard);
         TESTS.put("skin_choice_is_saved_and_validated", KindredGameTests::skinChoice);
+        TESTS.put("mini_player_baby_body_is_chosen_and_kept", KindredGameTests::babyBody);
         TESTS.put("advancements_follow_companion_progress", KindredGameTests::advancements);
         TESTS.put("archaeology_egg_is_brushable", KindredGameTests::archaeology);
         TESTS.put("beach_suspicious_sand_generates_and_can_be_disabled", KindredGameTests::beachSuspiciousSand);
@@ -1588,6 +1589,77 @@ public final class KindredGameTests {
         h.assertTrue(summoned.getSkinName().equals("frost"), "The skin must survive a rest in the charm");
         KindredCharmItem.handleAction(owner, Action.SET_SKIN, 0, "");
         h.assertTrue(summoned.getSkinName().isEmpty(), "An empty skin id goes back to the default look");
+        finish(h, owner);
+    }
+
+    private static void babyBody(GameTestHelper h) {
+        ServerPlayer owner = player(h);
+        CompanionEntity mini = pet(h, CompanionSpecies.MINI_PLAYER, owner, true);
+        float adultHeight = mini.getBbHeight();
+        h.assertFalse(mini.isBabyBody(), "A Mini Player starts with the adult body");
+
+        KindredCharmItem.handleAction(owner, Action.SET_BABY_BODY, 1, "");
+        h.assertTrue(
+                mini.isBabyBody()
+                        && Math.abs(mini.getBbHeight() - adultHeight * CompanionEntity.BABY_BODY_HEIGHT) < 0.001f,
+                "The baby body must be stored and shrink the hitbox to the model");
+
+        TagValueOutput output = TagValueOutput.createWithContext(
+                ProblemReporter.DISCARDING, h.getLevel().registryAccess());
+        mini.save(output);
+        CompanionEntity loaded = KindredEntities.type(mini.species()).create(h.getLevel(), EntitySpawnReason.LOAD);
+        loaded.load(
+                TagValueInput.create(ProblemReporter.DISCARDING, h.getLevel().registryAccess(), output.buildResult()));
+        h.assertTrue(
+                loaded.isBabyBody() && Math.abs(loaded.getBbHeight() - mini.getBbHeight()) < 0.001f,
+                "Entity NBT must keep the baby body");
+
+        CompanionSnapshot snapshot = CompanionSnapshot.of(mini);
+        var ops = h.getLevel().registryAccess().createSerializationContext(JsonOps.INSTANCE);
+        CompanionSnapshot saved = CompanionSnapshot.CODEC
+                .parse(ops, CompanionSnapshot.CODEC.encodeStart(ops, snapshot).getOrThrow())
+                .getOrThrow();
+        var buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), h.getLevel().registryAccess());
+        try {
+            CompanionSnapshot.STREAM_CODEC.encode(buffer, saved);
+            h.assertTrue(
+                    CompanionSnapshot.STREAM_CODEC.decode(buffer).babyBody() && buffer.readableBytes() == 0,
+                    "Save and network codecs must keep the baby body");
+        } finally {
+            buffer.release();
+        }
+
+        action(owner, Action.DISMISS);
+        KindredCharmItem.handleAction(owner, Action.SET_BABY_BODY, 0, "");
+        h.assertFalse(
+                KindredAttachments.bond(owner).snapshot().orElseThrow().babyBody(),
+                "The body must be changeable while the companion rests");
+        KindredCharmItem.handleAction(owner, Action.SET_BABY_BODY, 1, "");
+        action(owner, Action.SUMMON);
+        h.assertTrue(deployed(owner).isBabyBody(), "The baby body must survive a rest in the charm");
+
+        CompanionEntity trex = pet(h, CompanionSpecies.TREX, owner, false);
+        trex.setBabyBody(true);
+        h.assertFalse(trex.isBabyBody(), "Only the Mini Player has a baby body");
+
+        var dispatcher = h.getLevel().getServer().getCommands().getDispatcher();
+        var source = h.getLevel().getServer().createCommandSourceStack();
+        for (String command : List.of(
+                "kindredspirits minime baby",
+                "kindredspirits minime Notch baby",
+                "kindredspirits minime Notch \"Tiny Notch\" baby")) {
+            var nodes = dispatcher.parse(command, source).getContext().getNodes();
+            h.assertTrue(
+                    !nodes.isEmpty() && nodes.getLast().getNode().getName().equals("baby"),
+                    "The minime command must take baby after any of its names: " + command);
+        }
+        var quoted = dispatcher
+                .parse("kindredspirits minime \"baby\"", source)
+                .getContext()
+                .getNodes();
+        h.assertTrue(
+                quoted.getLast().getNode().getName().equals("mc_name"),
+                "A quoted name must still be read as a player name");
         finish(h, owner);
     }
 
